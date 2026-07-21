@@ -7,32 +7,132 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="main.css" />
   </head>
   <body>
+
+    <!-- =====================================================================
+         CRT OVERLAY — scanlines / vignette / flicker (visual only)
+         ===================================================================== -->
     <div class="crt" aria-hidden="true">
       <div class="crt__scanlines"></div>
       <div class="crt__vignette"></div>
       <div class="crt__flicker"></div>
     </div>
 
-    <!-- Boot sequence -->
+
+    <!-- =====================================================================
+         SCREEN: BOOT — Lattice OS resuscitation sequence
+         Edit copy / code in: boot-content.js
+         Sequence: clearance keypad → log → logo → hub
+         ===================================================================== -->
     <section id="boot" class="screen screen--boot" aria-label="System boot">
+
       <div class="boot__log" id="boot-log" role="log" aria-live="polite"></div>
+
+      <!-- -----------------------------------------------------------------
+           BOOT · EMPIRE LOGO (Imago) — after scrolling text
+           Drop SVG/PNG at assets/empire-imago.svg and set BOOT_LOGO.src
+           ----------------------------------------------------------------- -->
+      <div class="boot__logo" id="boot-logo" hidden>
+        <div class="boot__logo-frame">
+          <img
+            class="boot__logo-img"
+            id="boot-logo-img"
+            alt="Arkhidian Empire — Imago"
+            hidden
+          />
+          <div class="boot__logo-placeholder" id="boot-logo-placeholder" aria-hidden="true">
+            <svg class="boot__logo-triad" viewBox="0 0 120 120" width="120" height="120">
+              <polygon
+                points="60,8 112,108 8,108"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              />
+              <polygon
+                points="60,32 94,100 26,100"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                opacity="0.55"
+              />
+              <circle cx="60" cy="72" r="5" fill="currentColor" />
+            </svg>
+            <p class="boot__logo-caption">IMAGO · AWAITING MARK</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- -----------------------------------------------------------------
+           BOOT · CLEARANCE KEYPAD — ARG gate (code in boot-content.js)
+           ----------------------------------------------------------------- -->
+      <div class="boot__gate" id="boot-gate" hidden>
+        <div class="gate-flash" id="gate-flash" aria-hidden="true"></div>
+        <div class="gate">
+          <p class="gate__label">CLEARANCE</p>
+          <div class="gate__display" id="gate-display" aria-live="polite">_ _ _</div>
+          <p class="gate__status" id="gate-status"></p>
+          <div class="gate__cascade" id="gate-cascade" hidden></div>
+          <div class="gate__pad" role="group" aria-label="Clearance number pad">
+            <button type="button" class="gate__key" data-key="1">1</button>
+            <button type="button" class="gate__key" data-key="2">2</button>
+            <button type="button" class="gate__key" data-key="3">3</button>
+            <button type="button" class="gate__key" data-key="4">4</button>
+            <button type="button" class="gate__key" data-key="5">5</button>
+            <button type="button" class="gate__key" data-key="6">6</button>
+            <button type="button" class="gate__key" data-key="7">7</button>
+            <button type="button" class="gate__key" data-key="8">8</button>
+            <button type="button" class="gate__key" data-key="9">9</button>
+            <button type="button" class="gate__key gate__key--action" data-key="clear">CLR</button>
+            <button type="button" class="gate__key" data-key="0">0</button>
+            <button type="button" class="gate__key gate__key--action" data-key="enter">ENT</button>
+          </div>
+        </div>
+      </div>
+
       <button type="button" class="boot__skip" id="boot-skip" hidden>
         [ SKIP ]
       </button>
     </section>
 
-    <!-- Central hub: crashed Khan craft terminal -->
+
+    <!-- =====================================================================
+         SCREEN: HUB — Cara terminal (G512 Carapace · bonded Solus)
+         ===================================================================== -->
     <section id="hub" class="screen screen--hub" hidden aria-label="Lattice OS terminal">
+
+
+      <!-- -----------------------------------------------------------------
+           HUB · HEADER — triad seal, Lattice OS ID, craft meta
+           ----------------------------------------------------------------- -->
       <header class="terminal-header">
         <div class="terminal-header__left">
-          <span class="sigil" aria-hidden="true">◈</span>
+          <div class="triad-seal" aria-hidden="true" title="Imperial Triad">
+            <svg class="triad-seal__mark" viewBox="0 0 48 48" width="44" height="44">
+              <polygon
+                points="24,4 44,42 4,42"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <polygon
+                points="24,14 36,38 12,38"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                opacity="0.55"
+              />
+              <circle cx="24" cy="28" r="2.2" fill="currentColor" />
+            </svg>
+          </div>
           <div class="terminal-header__id">
+            <p class="terminal-header__license">
+              CONSECRATED UNDER SCARLET ORDER · LATTICE EULA · NON-RELAY USE
+            </p>
             <h1 class="terminal-header__title">LATTICE OS</h1>
             <p class="terminal-header__bond">
               FTHFLL · <span class="bond-name">khan-link · solus</span>
@@ -40,26 +140,45 @@
           </div>
         </div>
         <div class="terminal-header__meta">
-          <p class="meta-line">
-            <span class="meta-label">CRAFT</span>
-            <span id="craft-id">G512 · CARA</span>
-          </p>
-          <p class="meta-line">
-            <span class="meta-label">HULL</span>
-            <span class="status status--crit" id="hull-status">CRITICAL</span>
-          </p>
-          <p class="meta-line">
-            <span class="meta-label">LOC</span>
-            <span id="node-id">UROS · STURM</span>
-          </p>
-          <p class="meta-line">
-            <span class="meta-label">CHRONO</span>
-            <time id="chrono" datetime="">--:--:--</time>
-          </p>
+          <div class="meta-ids">
+            <p class="meta-ids__model">G512-CARAPACE©</p>
+            <p class="meta-ids__line">HULL <span id="hull-status" class="status status--crit">CRITICAL</span></p>
+            <p class="meta-ids__line">CRAFT <span id="craft-id">CARA</span></p>
+            <p class="meta-ids__line">LOC <span id="node-id">UROS · STURM</span></p>
+            <p class="meta-ids__line">
+              CHRONO <time id="chrono" datetime="">--:--:--</time>
+            </p>
+            <p class="meta-ids__ref">REF 7A-STURM / SN G512-SOLUS-BOUND</p>
+          </div>
+          <div class="triad-warn" aria-hidden="true" title="Triad authority">
+            <svg viewBox="0 0 40 36" width="28" height="26">
+              <polygon
+                points="20,2 38,34 2,34"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              />
+              <text
+                x="20"
+                y="28"
+                text-anchor="middle"
+                fill="currentColor"
+                font-size="14"
+                font-family="IBM Plex Mono, monospace"
+                font-weight="700"
+              >!</text>
+            </svg>
+          </div>
         </div>
       </header>
 
+
       <div class="hub-layout">
+
+
+        <!-- ---------------------------------------------------------------
+             HUB · NAV RAIL — ship channels + guest channel
+             --------------------------------------------------------------- -->
         <aside class="nav-rail" aria-label="Primary directories">
           <p class="nav-rail__label">SHIP CHANNELS</p>
           <nav class="nav-rail__list">
@@ -134,8 +253,17 @@
           </div>
         </aside>
 
+
+        <!-- ---------------------------------------------------------------
+             HUB · VIEWPORT — channel panels
+             --------------------------------------------------------------- -->
         <main class="viewport" id="viewport">
-          <!-- STATUS -->
+
+
+          <!-- =============================================================
+               CHANNEL 01 — STATUS
+               Hull telemetry / crash state
+               ============================================================= -->
           <article class="panel is-active" id="panel-overview" data-panel="overview">
             <header class="panel__header">
               <p class="panel__eyebrow">LATTICE OS // HULL TELEMETRY</p>
@@ -165,6 +293,22 @@
                   <span class="status-cell__value status-cell__value--crit">NONE</span>
                 </div>
               </div>
+              <div class="arch-lines" aria-hidden="true">
+                <p class="arch-line">
+                  <span>TRIAD FRAMEWORK</span>
+                  <span class="arch-line__dash"></span>
+                  <span>EMPRESS · S.O.V. · SCOURGE</span>
+                </p>
+                <p class="arch-line">
+                  <span>HULL INTEGRATION</span>
+                  <span class="arch-line__dash"></span>
+                  <span>ACT (G512-CARA / FTHFLL)</span>
+                </p>
+              </div>
+              <p class="warn-strip">
+                <span class="warn-strip__mark" aria-hidden="true">△</span>
+                Uncontrolled Ascendancy results in recursion, chaos, and suffering.
+              </p>
               <p class="prompt-line">
                 <span class="prompt-line__cursor" aria-hidden="true"></span>
                 Awaiting operator input…
@@ -172,7 +316,11 @@
             </div>
           </article>
 
-          <!-- FLIGHT LOG (Solus short story) -->
+
+          <!-- =============================================================
+               CHANNEL 02 — FLIGHT LOG
+               Solus short story / personal record
+               ============================================================= -->
           <article class="panel" id="panel-flightlog" data-panel="flightlog" hidden>
             <header class="panel__header">
               <p class="panel__eyebrow">CHANNEL 02 // PERSONAL RECORD</p>
@@ -199,7 +347,11 @@
             </div>
           </article>
 
-          <!-- ARCHIVES (lore) -->
+
+          <!-- =============================================================
+               CHANNEL 03 — ARCHIVES
+               Ship memory / lore
+               ============================================================= -->
           <article class="panel" id="panel-archives" data-panel="archives" hidden>
             <header class="panel__header">
               <p class="panel__eyebrow">CHANNEL 03 // SHIP MEMORY</p>
@@ -239,7 +391,11 @@
             </div>
           </article>
 
-          <!-- CARTOGRAPHY (solar map — future) -->
+
+          <!-- =============================================================
+               CHANNEL 04 — CARTOGRAPHY
+               The Nine / star chart (future)
+               ============================================================= -->
           <article class="panel" id="panel-cartography" data-panel="cartography" hidden>
             <header class="panel__header">
               <p class="panel__eyebrow">CHANNEL 04 // NAVIGATION</p>
@@ -251,7 +407,7 @@
                 Local body: Sturm. Imperial ephemeris may load.
               </p>
               <div class="locked-block">
-                <p class="locked-block__sigil" aria-hidden="true">◎</p>
+                <p class="locked-block__sigil" aria-hidden="true">△</p>
                 <p class="locked-block__text">
                   STAR CHART MODULE — AWAITING CONSTRUCTION
                 </p>
@@ -259,7 +415,11 @@
             </div>
           </article>
 
-          <!-- DIAGNOSTICS (settings) -->
+
+          <!-- =============================================================
+               CHANNEL 05 — DIAGNOSTICS
+               Audio / CRT fidelity controls
+               ============================================================= -->
           <article class="panel" id="panel-diagnostics" data-panel="diagnostics" hidden>
             <header class="panel__header">
               <p class="panel__eyebrow">CHANNEL 05 // FIDELITY</p>
@@ -294,7 +454,11 @@
             </div>
           </article>
 
-          <!-- AUXILIARY (future campaigns — sectioned off) -->
+
+          <!-- =============================================================
+               CHANNEL AUX — GUEST CHANNEL
+               Future campaigns (sectioned off from Solus’s story)
+               ============================================================= -->
           <article class="panel" id="panel-auxiliary" data-panel="auxiliary" hidden>
             <header class="panel__header">
               <p class="panel__eyebrow">EXTERNAL // GUEST CLEARANCE</p>
@@ -307,7 +471,7 @@
                 Solus’s flight record.
               </p>
               <div class="locked-block locked-block--aux">
-                <p class="locked-block__sigil" aria-hidden="true">▣</p>
+                <p class="locked-block__sigil" aria-hidden="true">△</p>
                 <p class="locked-block__text">
                   GUEST CHANNEL SEALED — NO ACTIVE ROSTER
                 </p>
@@ -318,19 +482,39 @@
               </p>
             </div>
           </article>
+
+
         </main>
       </div>
 
+
+      <!-- -----------------------------------------------------------------
+           HUB · FOOTER — doctrine line + channel hint
+           ----------------------------------------------------------------- -->
       <footer class="terminal-footer">
-        <p class="terminal-footer__left">
-          LATTICE OS · FTHFLL — G512 CARA · HULL UNSTABLE
-        </p>
+        <div class="terminal-footer__stack">
+          <p class="arch-line arch-line--footer">
+            <span>LATTICE OS · FTHFLL</span>
+            <span class="arch-line__dash"></span>
+            <span>G512 CARA · HULL UNSTABLE</span>
+          </p>
+          <p class="terminal-footer__patent">
+            PROTECTED UNDER IMPERIAL TRIAD DOCTRINE — VEILED SYSTEMS ONLY
+          </p>
+        </div>
         <p class="terminal-footer__right" id="footer-hint">
           SELECT A CHANNEL TO PROCEED
         </p>
       </footer>
-    </section>
 
+
+    </section>
+    <!-- =========================== END HUB ================================ -->
+
+
+    <!-- =====================================================================
+         SCRIPTS
+         ===================================================================== -->
     <script src="main.js" type="module"></script>
   </body>
 </html>

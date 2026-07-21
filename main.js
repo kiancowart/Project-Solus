@@ -1,22 +1,11 @@
 /**
  * LATTICE OS — G512 Carapace (Cara), bonded: Solus
- * Boot, navigation, CRT fidelity, and interface audio.
+ * Boot playback, navigation, CRT fidelity, and interface audio.
+ *
+ * Intro splash COPY lives in: boot-content.js  ← edit text / logo there
  */
 
-const BOOT_LINES = [
-  { text: "LATTICE OS — FTHFLL resuscitating…", cls: "boot-line--ok", delay: 420 },
-  { text: "Scarlet Order of the Veil · consecrated craftware", cls: "boot-line--gold", delay: 480 },
-  { text: "Craft ID … G512 Carapace-class · CARA", cls: "boot-line--ok", delay: 450 },
-  { text: "Khan-link handshake … SOLUS · BOUND", cls: "boot-line--ok", delay: 520 },
-  { text: "WARNING: hull integrity critical", cls: "boot-line--err", delay: 400 },
-  { text: "Propulsion lattice … OFFLINE", cls: "boot-line--err", delay: 380 },
-  { text: "Life support … partial / recycling", cls: "boot-line--warn", delay: 420 },
-  { text: "Imperial relay … NO SIGNAL", cls: "boot-line--err", delay: 450 },
-  { text: "Nav fix … Uros · Sturm", cls: "boot-line--warn", delay: 400 },
-  { text: "Flight log partition … recoverable", cls: "boot-line--ok", delay: 380 },
-  { text: "Guest channel … sealed", cls: "", delay: 320 },
-  { text: "Operator session opened aboard Cara.", cls: "boot-line--ok", delay: 650 },
-];
+import { BOOT_LINES, BOOT_LOGO, ACCESS_CODE, ACCESS_SUCCESS, MOTION } from "./boot-content.js";
 
 const PANEL_HINTS = {
   overview: "HULL TELEMETRY — CRITICAL · G512 CARA",
@@ -27,7 +16,9 @@ const PANEL_HINTS = {
   auxiliary: "GUEST CHANNEL — SEALED",
 };
 
-/* ---------- Audio (Web Audio API synthesizer) ---------- */
+/* ==========================================================================
+   AUDIO — Web Audio API synthesizer
+   ========================================================================== */
 
 class TerminalAudio {
   constructor() {
@@ -67,8 +58,17 @@ class TerminalAudio {
     master.connect(this.ctx.destination);
 
     if (type === "boot") {
-      this.#tone(master, 180, 0.08, t, "square");
-      this.#tone(master, 320, 0.06, t + 0.09, "square");
+      this.#tone(master, 180, 0.045, t, "square");
+      return;
+    }
+
+    if (type === "unlock") {
+      // Heavier clearance sting — ascending industrial tones
+      this.#tone(master, 160, 0.1, t, "square");
+      this.#tone(master, 240, 0.1, t + 0.12, "square");
+      this.#tone(master, 360, 0.14, t + 0.26, "triangle");
+      this.#tone(master, 520, 0.18, t + 0.42, "triangle");
+      this.#noise(master, 0.08, t + 0.5);
       return;
     }
 
@@ -84,7 +84,6 @@ class TerminalAudio {
       return;
     }
 
-    // click / default
     this.#tone(master, 520, 0.035, t, "square");
   }
 
@@ -122,85 +121,389 @@ class TerminalAudio {
 
 const audio = new TerminalAudio();
 
-/* ---------- Boot ---------- */
+/* ==========================================================================
+   MOTION HELPERS — stiff Alien-terminal typing / stepped reveal
+   ========================================================================== */
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function prefersReducedMotion() {
+  return (
+    document.body.classList.contains("reduce-motion") ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+async function typeText(el, fullText, skippedRef = null) {
+  if (prefersReducedMotion()) {
+    el.textContent = fullText;
+    return;
+  }
+
+  const typeMs = MOTION.typeMs ?? 22;
+  const hitchEvery = MOTION.hitchEvery ?? 7;
+  const hitchMs = MOTION.hitchMs ?? 55;
+  let out = "";
+
+  for (let i = 0; i < fullText.length; i++) {
+    if (skippedRef?.skipped) {
+      el.textContent = fullText;
+      return;
+    }
+    out += fullText[i];
+    el.textContent = out;
+    if (i % 8 === 0) audio.play("boot");
+    let wait = typeMs;
+    if (hitchEvery > 0 && i > 0 && i % hitchEvery === 0) wait += hitchMs;
+    await sleep(wait);
+  }
+}
+
+async function revealTopToBottom(container) {
+  if (!container) return;
+
+  const blocks = [...container.children].filter(
+    (el) => el.nodeType === 1 && !el.hidden && !el.hasAttribute("hidden")
+  );
+
+  if (prefersReducedMotion()) {
+    blocks.forEach((el) => {
+      el.classList.remove("is-pending");
+      el.classList.add("is-shown");
+    });
+    return;
+  }
+
+  blocks.forEach((el) => {
+    el.classList.remove("is-shown");
+    el.classList.add("is-pending");
+  });
+
+  const step = MOTION.blockStepMs ?? 70;
+  for (const el of blocks) {
+    el.classList.remove("is-pending");
+    el.classList.add("is-shown");
+    audio.play("boot");
+    await sleep(step);
+  }
+}
+
+async function revealPanel(panel) {
+  panel.classList.add("is-revealing");
+  const header = panel.querySelector(".panel__header");
+  const body = panel.querySelector(".panel__body");
+  if (header) await revealTopToBottom(header);
+  if (body) await revealTopToBottom(body);
+  panel.classList.remove("is-revealing");
+}
+
+/* ==========================================================================
+   BOOT SEQUENCE — clearance keypad → log → logo → hub
+   ========================================================================== */
+
+function prepareBootLogo() {
+  const stage = document.getElementById("boot-logo");
+  const img = document.getElementById("boot-logo-img");
+  const placeholder = document.getElementById("boot-logo-placeholder");
+
+  if (!BOOT_LOGO.enabled) {
+    stage.hidden = true;
+    return stage;
+  }
+
+  stage.hidden = false;
+  stage.classList.remove("is-visible");
+  img.alt = BOOT_LOGO.alt || img.alt;
+
+  if (BOOT_LOGO.src) {
+    img.src = BOOT_LOGO.src;
+    img.hidden = false;
+    placeholder.hidden = true;
+  } else {
+    img.removeAttribute("src");
+    img.hidden = true;
+    placeholder.hidden = false;
+  }
+
+  return stage;
+}
+
+async function playBootLogo() {
+  if (!BOOT_LOGO.enabled) return;
+
+  const log = document.getElementById("boot-log");
+  log.classList.add("is-dimmed");
+
+  const stage = prepareBootLogo();
+  void stage.offsetWidth;
+  stage.classList.add("is-visible");
+  audio.play("select");
+
+  await sleep(BOOT_LOGO.holdMs ?? 1400);
+
+  stage.classList.remove("is-visible");
+  stage.hidden = true;
+  log.classList.remove("is-dimmed");
+}
+
+function formatGateDisplay(value, maxLen) {
+  const chars = value.split("");
+  while (chars.length < maxLen) chars.push("_");
+  return chars.join(" ");
+}
+
+function runClearanceGate() {
+  return new Promise((resolve) => {
+    const gate = document.getElementById("boot-gate");
+    const display = document.getElementById("gate-display");
+    const status = document.getElementById("gate-status");
+    const cascade = document.getElementById("gate-cascade");
+    const flash = document.getElementById("gate-flash");
+    const pad = gate.querySelector(".gate__pad");
+    const skipBtn = document.getElementById("boot-skip");
+    const maxLen = ACCESS_CODE.length;
+
+    let buffer = "";
+    let locked = false;
+
+    skipBtn.hidden = true;
+    gate.hidden = false;
+    gate.classList.remove("is-unlocked");
+    status.textContent = "";
+    status.className = "gate__status";
+    cascade.hidden = true;
+    cascade.innerHTML = "";
+    display.textContent = formatGateDisplay("", maxLen);
+    pad.querySelectorAll(".gate__key").forEach((k) => {
+      k.disabled = false;
+    });
+
+    revealTopToBottom(gate.querySelector(".gate"));
+
+    const render = () => {
+      display.textContent = formatGateDisplay(buffer, maxLen);
+    };
+
+    const fail = () => {
+      locked = true;
+      status.textContent = "DENIED";
+      status.className = "gate__status gate__status--deny";
+      gate.classList.add("is-denied");
+      audio.play("open");
+      // Keep the wrong code visible briefly, then clear
+      setTimeout(() => {
+        buffer = "";
+        render();
+        status.textContent = "";
+        status.className = "gate__status";
+        gate.classList.remove("is-denied");
+        locked = false;
+      }, 700);
+    };
+
+    const succeed = async () => {
+      locked = true;
+      pad.querySelectorAll(".gate__key").forEach((k) => {
+        k.disabled = true;
+      });
+
+      // Full code stays on the display through the unlock ritual
+      render();
+      status.textContent = "ACCEPTED";
+      status.className = "gate__status gate__status--ok";
+      gate.classList.add("is-unlocked");
+      flash.classList.remove("is-fire");
+      void flash.offsetWidth;
+      flash.classList.add("is-fire");
+      audio.play("unlock");
+
+      await sleep(420);
+
+      cascade.hidden = false;
+      cascade.classList.remove("is-pending");
+      cascade.classList.add("is-shown");
+      const lines = ACCESS_SUCCESS?.lines ?? [];
+      for (const line of lines) {
+        const row = document.createElement("div");
+        row.className = "gate__cascade-line";
+        cascade.appendChild(row);
+        await typeText(row, `> ${line.text}`);
+        await sleep(line.delay ?? 100);
+      }
+
+      await sleep(ACCESS_SUCCESS?.holdMs ?? 700);
+
+      gate.hidden = true;
+      gate.classList.remove("is-unlocked");
+      flash.classList.remove("is-fire");
+      gate.removeEventListener("click", onPadClick);
+      window.removeEventListener("keydown", onKeydown);
+      resolve();
+    };
+
+    const submit = () => {
+      if (locked) return;
+      if (buffer.length < maxLen) return;
+      if (buffer === ACCESS_CODE) succeed();
+      else fail();
+    };
+
+    const pushDigit = (digit) => {
+      if (locked) return;
+      if (buffer.length >= maxLen) return;
+      buffer += digit;
+      status.textContent = "";
+      render();
+      audio.play("click");
+    };
+
+    const clear = () => {
+      if (locked) return;
+      buffer = "";
+      status.textContent = "";
+      render();
+      audio.play("click");
+    };
+
+    const onPadClick = async (e) => {
+      const key = e.target.closest("[data-key]")?.dataset.key;
+      if (!key) return;
+      if (!audio.enabled) {
+        await audio.enable();
+        updateAudioToggle(true);
+      }
+      if (key === "clear") clear();
+      else if (key === "enter") submit();
+      else pushDigit(key);
+    };
+
+    const onKeydown = async (e) => {
+      if (gate.hidden) return;
+      if (!audio.enabled && ((e.key >= "0" && e.key <= "9") || e.key === "Enter")) {
+        await audio.enable();
+        updateAudioToggle(true);
+      }
+      if (e.key >= "0" && e.key <= "9") {
+        e.preventDefault();
+        pushDigit(e.key);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        submit();
+      } else if (e.key === "Backspace" || e.key === "Escape") {
+        e.preventDefault();
+        clear();
+      }
+    };
+
+    gate.addEventListener("click", onPadClick);
+    window.addEventListener("keydown", onKeydown);
+  });
+}
+
+async function enterHub() {
+  const bootScreen = document.getElementById("boot");
+  const hubScreen = document.getElementById("hub");
+  const logoStage = document.getElementById("boot-logo");
+
+  bootScreen.hidden = true;
+  hubScreen.hidden = false;
+  if (logoStage) {
+    logoStage.hidden = true;
+    logoStage.classList.remove("is-visible");
+  }
+  audio.play("select");
+  startChrono();
+
+  const active = document.querySelector(".panel.is-active");
+  if (active) await revealPanel(active);
+}
+
 async function runBoot() {
   const log = document.getElementById("boot-log");
   const skipBtn = document.getElementById("boot-skip");
-  const bootScreen = document.getElementById("boot");
-  const hubScreen = document.getElementById("hub");
 
-  let skipped = false;
+  const unlockAudio = async () => {
+    await audio.enable();
+    updateAudioToggle(true);
+  };
+  document.addEventListener("keydown", () => unlockAudio(), { once: true });
+
+  await runClearanceGate();
+  await unlockAudio();
+
+  const skippedRef = { skipped: false };
   skipBtn.hidden = false;
   skipBtn.addEventListener(
     "click",
     () => {
-      skipped = true;
+      skippedRef.skipped = true;
       audio.play("click");
     },
     { once: true }
   );
 
-  // First interaction path: enable audio on skip or any key during boot
-  const unlockAudio = async () => {
-    await audio.enable();
-    updateAudioToggle(true);
-  };
-  document.addEventListener(
-    "keydown",
-    () => {
-      unlockAudio();
-    },
-    { once: true }
-  );
-  skipBtn.addEventListener("click", unlockAudio, { once: true });
-
   for (const line of BOOT_LINES) {
-    if (skipped) break;
+    if (skippedRef.skipped) break;
     const el = document.createElement("div");
-    el.className = line.cls;
-    el.textContent = `> ${line.text}`;
+    el.className = line.cls || "";
     log.appendChild(el);
     log.scrollTop = log.scrollHeight;
-    audio.play("boot");
-    await sleep(line.delay);
+    await typeText(el, `> ${line.text}`, skippedRef);
+    log.scrollTop = log.scrollHeight;
+    if (!skippedRef.skipped) await sleep(line.delay);
   }
 
-  if (!skipped) await sleep(400);
+  if (!skippedRef.skipped) await sleep(80);
+  skipBtn.hidden = true;
 
-  bootScreen.hidden = true;
-  hubScreen.hidden = false;
-  audio.play("select");
-  startChrono();
+  if (!skippedRef.skipped) {
+    await playBootLogo();
+  }
+
+  await enterHub();
 }
 
-/* ---------- Navigation ---------- */
+/* ==========================================================================
+   NAVIGATION — channel switching
+   ========================================================================== */
 
 function initNav() {
   const items = document.querySelectorAll(".nav-item");
   const panels = document.querySelectorAll(".panel");
   const hint = document.getElementById("footer-hint");
+  let revealing = false;
 
   items.forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
+      if (revealing) return;
       const id = btn.dataset.panel;
       items.forEach((b) => b.classList.toggle("is-active", b === btn));
+
+      let shown = null;
       panels.forEach((panel) => {
         const match = panel.dataset.panel === id;
         panel.hidden = !match;
         panel.classList.toggle("is-active", match);
+        if (match) shown = panel;
       });
+
       hint.textContent = PANEL_HINTS[id] || "";
       audio.play(btn.dataset.sfx || "select");
+
+      if (shown) {
+        revealing = true;
+        await revealPanel(shown);
+        revealing = false;
+      }
     });
   });
 }
 
-/* ---------- Chrono ---------- */
+/* ==========================================================================
+   CHRONO — UTC clock
+   ========================================================================== */
 
 function startChrono() {
   const el = document.getElementById("chrono");
@@ -216,7 +519,9 @@ function startChrono() {
   setInterval(tick, 1000);
 }
 
-/* ---------- Systems / audio UI ---------- */
+/* ==========================================================================
+   DIAGNOSTICS / AUDIO UI
+   ========================================================================== */
 
 function updateAudioToggle(on) {
   const btn = document.getElementById("audio-toggle");
@@ -256,7 +561,6 @@ function initSystems() {
     document.body.classList.toggle("reduce-motion", reduce.checked);
   });
 
-  // Global click SFX for interactive controls
   document.body.addEventListener("click", (e) => {
     const target = e.target.closest("[data-sfx]");
     if (!target || target.classList.contains("nav-item")) return;
@@ -265,7 +569,9 @@ function initSystems() {
   });
 }
 
-/* ---------- Init ---------- */
+/* ==========================================================================
+   INIT
+   ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
   initNav();
