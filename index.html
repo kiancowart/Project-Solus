@@ -3,37 +3,334 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Solus</title>
-
+    <title>LATTICE OS // Cara · G512</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="main.css" />
   </head>
   <body>
+    <div class="crt" aria-hidden="true">
+      <div class="crt__scanlines"></div>
+      <div class="crt__vignette"></div>
+      <div class="crt__flicker"></div>
+    </div>
 
-    <main>
-      <section class="hero">
-        <h1>Welcome to Solus</h1>
-        <p>
-          A quiet starting point for your site. Edit this page and grow it into
-          whatever you need.
+    <!-- Boot sequence -->
+    <section id="boot" class="screen screen--boot" aria-label="System boot">
+      <div class="boot__log" id="boot-log" role="log" aria-live="polite"></div>
+      <button type="button" class="boot__skip" id="boot-skip" hidden>
+        [ SKIP ]
+      </button>
+    </section>
+
+    <!-- Central hub: crashed Khan craft terminal -->
+    <section id="hub" class="screen screen--hub" hidden aria-label="Lattice OS terminal">
+      <header class="terminal-header">
+        <div class="terminal-header__left">
+          <span class="sigil" aria-hidden="true">◈</span>
+          <div class="terminal-header__id">
+            <h1 class="terminal-header__title">LATTICE OS</h1>
+            <p class="terminal-header__bond">
+              FTHFLL · <span class="bond-name">khan-link · solus</span>
+            </p>
+          </div>
+        </div>
+        <div class="terminal-header__meta">
+          <p class="meta-line">
+            <span class="meta-label">CRAFT</span>
+            <span id="craft-id">G512 · CARA</span>
+          </p>
+          <p class="meta-line">
+            <span class="meta-label">HULL</span>
+            <span class="status status--crit" id="hull-status">CRITICAL</span>
+          </p>
+          <p class="meta-line">
+            <span class="meta-label">LOC</span>
+            <span id="node-id">UROS · STURM</span>
+          </p>
+          <p class="meta-line">
+            <span class="meta-label">CHRONO</span>
+            <time id="chrono" datetime="">--:--:--</time>
+          </p>
+        </div>
+      </header>
+
+      <div class="hub-layout">
+        <aside class="nav-rail" aria-label="Primary directories">
+          <p class="nav-rail__label">SHIP CHANNELS</p>
+          <nav class="nav-rail__list">
+            <button
+              type="button"
+              class="nav-item is-active"
+              data-panel="overview"
+              data-sfx="select"
+            >
+              <span class="nav-item__index">01</span>
+              <span class="nav-item__name">STATUS</span>
+            </button>
+            <button
+              type="button"
+              class="nav-item"
+              data-panel="flightlog"
+              data-sfx="select"
+            >
+              <span class="nav-item__index">02</span>
+              <span class="nav-item__name">FLIGHT LOG</span>
+            </button>
+            <button
+              type="button"
+              class="nav-item"
+              data-panel="archives"
+              data-sfx="select"
+            >
+              <span class="nav-item__index">03</span>
+              <span class="nav-item__name">ARCHIVES</span>
+            </button>
+            <button
+              type="button"
+              class="nav-item"
+              data-panel="cartography"
+              data-sfx="select"
+            >
+              <span class="nav-item__index">04</span>
+              <span class="nav-item__name">CARTOGRAPHY</span>
+            </button>
+            <button
+              type="button"
+              class="nav-item"
+              data-panel="diagnostics"
+              data-sfx="select"
+            >
+              <span class="nav-item__index">05</span>
+              <span class="nav-item__name">DIAGNOSTICS</span>
+            </button>
+          </nav>
+
+          <div class="nav-rail__aux">
+            <p class="nav-rail__label nav-rail__label--aux">EXTERNAL</p>
+            <button
+              type="button"
+              class="nav-item nav-item--aux"
+              data-panel="auxiliary"
+              data-sfx="select"
+            >
+              <span class="nav-item__index">AUX</span>
+              <span class="nav-item__name">GUEST CHANNEL</span>
+            </button>
+          </div>
+
+          <div class="nav-rail__footer">
+            <p class="clearance">
+              FAITH-LOCK <span class="clearance__level clearance__level--gold">VEILED</span>
+            </p>
+            <button type="button" class="audio-toggle" id="audio-toggle" data-sfx="click">
+              <span class="audio-toggle__icon" aria-hidden="true">◉</span>
+              <span class="audio-toggle__label">AUDIO: OFF</span>
+            </button>
+          </div>
+        </aside>
+
+        <main class="viewport" id="viewport">
+          <!-- STATUS -->
+          <article class="panel is-active" id="panel-overview" data-panel="overview">
+            <header class="panel__header">
+              <p class="panel__eyebrow">LATTICE OS // HULL TELEMETRY</p>
+              <h2 class="panel__title">Craft Status</h2>
+            </header>
+            <div class="panel__body">
+              <p class="lead">
+                You are interfacing with Cara — a G512 Carapace-class Khan-craft,
+                bonded to Solus. Primary systems are degraded. Imperial relay is
+                unreachable. Local survival takes priority over doctrine — for now.
+              </p>
+              <div class="status-grid" role="list">
+                <div class="status-cell" role="listitem">
+                  <span class="status-cell__label">PROPULSION</span>
+                  <span class="status-cell__value status-cell__value--crit">OFFLINE</span>
+                </div>
+                <div class="status-cell" role="listitem">
+                  <span class="status-cell__label">LIFE SUPPORT</span>
+                  <span class="status-cell__value status-cell__value--warn">PARTIAL</span>
+                </div>
+                <div class="status-cell" role="listitem">
+                  <span class="status-cell__label">KHAN-LINK</span>
+                  <span class="status-cell__value">SOLUS · BOUND</span>
+                </div>
+                <div class="status-cell" role="listitem">
+                  <span class="status-cell__label">EMPIRE SIGNAL</span>
+                  <span class="status-cell__value status-cell__value--crit">NONE</span>
+                </div>
+              </div>
+              <p class="prompt-line">
+                <span class="prompt-line__cursor" aria-hidden="true"></span>
+                Awaiting operator input…
+              </p>
+            </div>
+          </article>
+
+          <!-- FLIGHT LOG (Solus short story) -->
+          <article class="panel" id="panel-flightlog" data-panel="flightlog" hidden>
+            <header class="panel__header">
+              <p class="panel__eyebrow">CHANNEL 02 // PERSONAL RECORD</p>
+              <h2 class="panel__title">Flight Log</h2>
+            </header>
+            <div class="panel__body">
+              <p class="lead">
+                Bonded Khan records, recovered voice fragments, and journal
+                entries written after the crash. This is Solus’s story —
+                told from inside Cara.
+              </p>
+              <ul class="entry-list" id="flightlog-list">
+                <li>
+                  <button type="button" class="entry entry--available" data-sfx="open" disabled>
+                    <span class="entry__tag">ENTRY</span>
+                    <span class="entry__title">Impact — Partial Recover</span>
+                    <span class="entry__meta">DRAFT</span>
+                  </button>
+                </li>
+              </ul>
+              <p class="panel__note">
+                Narrative chapters and audiobook layers will attach here.
+              </p>
+            </div>
+          </article>
+
+          <!-- ARCHIVES (lore) -->
+          <article class="panel" id="panel-archives" data-panel="archives" hidden>
+            <header class="panel__header">
+              <p class="panel__eyebrow">CHANNEL 03 // SHIP MEMORY</p>
+              <h2 class="panel__title">Consecrated Archives</h2>
+            </header>
+            <div class="panel__body">
+              <p class="lead">
+                Doctrine, charts, and Imperial knowledge stored aboard this craft.
+                Some partitions survived the crash. Others did not.
+              </p>
+              <ul class="entry-list" id="archive-list">
+                <li>
+                  <button type="button" class="entry" data-sfx="open" disabled>
+                    <span class="entry__tag">DOCTRINE</span>
+                    <span class="entry__title">The Scarlet Faith</span>
+                    <span class="entry__meta">FILE PENDING</span>
+                  </button>
+                </li>
+                <li>
+                  <button type="button" class="entry" data-sfx="open" disabled>
+                    <span class="entry__tag">ORDER</span>
+                    <span class="entry__title">Scarlet Order of the Veil</span>
+                    <span class="entry__meta">FILE PENDING</span>
+                  </button>
+                </li>
+                <li>
+                  <button type="button" class="entry" data-sfx="open" disabled>
+                    <span class="entry__tag">SCOURGE</span>
+                    <span class="entry__title">Khans — Field Primer</span>
+                    <span class="entry__meta">FILE PENDING</span>
+                  </button>
+                </li>
+              </ul>
+              <p class="panel__note">
+                Archive entries will populate as lore is cleared for this node.
+              </p>
+            </div>
+          </article>
+
+          <!-- CARTOGRAPHY (solar map — future) -->
+          <article class="panel" id="panel-cartography" data-panel="cartography" hidden>
+            <header class="panel__header">
+              <p class="panel__eyebrow">CHANNEL 04 // NAVIGATION</p>
+              <h2 class="panel__title">Cartography</h2>
+            </header>
+            <div class="panel__body">
+              <p class="lead">
+                Stellar charts of The Nine. Parent fix: Uros.
+                Local body: Sturm. Imperial ephemeris may load.
+              </p>
+              <div class="locked-block">
+                <p class="locked-block__sigil" aria-hidden="true">◎</p>
+                <p class="locked-block__text">
+                  STAR CHART MODULE — AWAITING CONSTRUCTION
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <!-- DIAGNOSTICS (settings) -->
+          <article class="panel" id="panel-diagnostics" data-panel="diagnostics" hidden>
+            <header class="panel__header">
+              <p class="panel__eyebrow">CHANNEL 05 // FIDELITY</p>
+              <h2 class="panel__title">Diagnostics</h2>
+            </header>
+            <div class="panel__body">
+              <p class="lead">
+                Interface fidelity and signal gain. Treat these as shipboard
+                controls — not civilian preferences.
+              </p>
+              <form class="systems-form" id="systems-form">
+                <label class="sys-row">
+                  <span class="sys-row__label">Interface SFX</span>
+                  <input type="range" id="sfx-gain" min="0" max="100" value="55" />
+                </label>
+                <label class="sys-row">
+                  <span class="sys-row__label">Ambient Channel</span>
+                  <input type="range" id="amb-gain" min="0" max="100" value="35" disabled />
+                </label>
+                <label class="sys-row">
+                  <span class="sys-row__label">Scanline Intensity</span>
+                  <input type="range" id="scan-intensity" min="0" max="100" value="70" />
+                </label>
+                <label class="sys-row sys-row--check">
+                  <span class="sys-row__label">Reduce Motion</span>
+                  <input type="checkbox" id="reduce-motion" />
+                </label>
+              </form>
+              <p class="panel__note">
+                Music and audiobook playback will route through these channels.
+              </p>
+            </div>
+          </article>
+
+          <!-- AUXILIARY (future campaigns — sectioned off) -->
+          <article class="panel" id="panel-auxiliary" data-panel="auxiliary" hidden>
+            <header class="panel__header">
+              <p class="panel__eyebrow">EXTERNAL // GUEST CLEARANCE</p>
+              <h2 class="panel__title">Guest Channel</h2>
+            </header>
+            <div class="panel__body">
+              <p class="lead">
+                A secondary access lane for operators not bound to this hull.
+                Campaign dossiers and table sessions live here — sealed from
+                Solus’s flight record.
+              </p>
+              <div class="locked-block locked-block--aux">
+                <p class="locked-block__sigil" aria-hidden="true">▣</p>
+                <p class="locked-block__text">
+                  GUEST CHANNEL SEALED — NO ACTIVE ROSTER
+                </p>
+              </div>
+              <p class="panel__note">
+                Future campaigns will appear as discrete guest sessions,
+                separate from the Khan’s story.
+              </p>
+            </div>
+          </article>
+        </main>
+      </div>
+
+      <footer class="terminal-footer">
+        <p class="terminal-footer__left">
+          LATTICE OS · FTHFLL — G512 CARA · HULL UNSTABLE
         </p>
-      </section>
-
-      <section id="about">
-        <h2>About</h2>
-        <p>
-          This is a baseline layout with common building blocks: a header,
-          navigation, headings, paragraphs, and a footer. Use it as a scaffold
-          while you shape the real content.
+        <p class="terminal-footer__right" id="footer-hint">
+          SELECT A CHANNEL TO PROCEED
         </p>
-        <p>
-          Replace these paragraphs with your own copy. Keep the structure, swap
-          the words, and adjust the styles in
-          <code>main.css</code> as you go.
-        </p>
-      </section>
+      </footer>
+    </section>
 
-      </section>
-    </main>
-
+    <script src="main.js" type="module"></script>
   </body>
 </html>

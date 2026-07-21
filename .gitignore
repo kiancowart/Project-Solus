@@ -1,0 +1,8 @@
+# Obsidian vault symlink — read-only reference; never commit vault contents
+lore
+
+# OS / editor noise
+.DS_Store
+*.swp
+
+# Note: `_internal/` is agent/dev reference (kept in git; not linked from the site UI)
