@@ -7,14 +7,22 @@
  * SEQUENCE:  clearance keypad  →  scrolling log  →  Empire logo  →  hub
  *
  * LINE FIELDS:
- *   text  — what appears after "> "
- *   cls   — style class (optional):
- *             ""                 default dim
- *             "boot-line--ok"    scarlet confirm
- *             "boot-line--warn"  bright warning
- *             "boot-line--err"   critical / offline
- *             "boot-line--gold"  sovereign / consecration (sparse)
- *   delay — ms to wait AFTER this line finishes typing
+ *   text         — what appears after "> "
+ *   cls          — style class (optional):
+ *                    ""                  default dim
+ *                    "boot-line--ok"     scarlet confirm
+ *                    "boot-line--warn"   bright warning
+ *                    "boot-line--err"    critical / offline
+ *                    "boot-line--gold"   sovereign / consecration (sparse)
+ *                    "boot-line--vow"    final vow line (stands out before Imago)
+ *                    "boot-line--sec"    section divider
+ *                    "boot-line--id"     identity / bond lines
+ *                    "boot-line--ship"   hull / life-support telemetry
+ *                    "boot-line--link"   lattice / relay / channel
+ *                    "boot-line--nav"    gyro / fix / location
+ *                    "boot-line--mem"    archives / permissions
+ *   delay        — ms to wait AFTER this line finishes typing
+ *   awaitDotsMs  — optional; blink ". .. ..." after typing for that many ms
  *
  * MOTION:
  *   Stiff / Alien-terminal style — typed characters, stepped reveals.
@@ -29,6 +37,14 @@
    CLEARANCE CODE — number pad gate (plain digits only)
    --------------------------------------------------------------------------- */
 export const ACCESS_CODE = "512";
+
+/* ---------------------------------------------------------------------------
+   CLEARANCE EASTER EGGS — special codes (same length as ACCESS_CODE)
+   --------------------------------------------------------------------------- */
+export const GATE_EASTER_EGGS = {
+  "420": { type: "message", text: "YOU ARE NOT FUNNY" },
+  "666": { type: "eyes" },
+};
 
 /* ---------------------------------------------------------------------------
    SUCCESS RITUAL — plays after correct clearance (edit for drama)
@@ -55,6 +71,8 @@ export const MOTION = {
   hitchMs: 20,
   /** ms between panel blocks revealing top → bottom */
   blockStepMs: 45,
+  /** blinking "..." on lines with awaitDotsMs — ms per frame */
+  dotsFrameMs: 280,
 };
 
 /* ---------------------------------------------------------------------------
@@ -71,24 +89,65 @@ export const BOOT_LOGO = {
 
   alt: "Arkhidian Empire — Imago",
 
-  /** How long the logo holds before entering the hub (ms) — hard cut, no fade */
-  holdMs: 700,
+  /** Stepped load-in before the mark is fully visible (ms) */
+  loadMs: 1800,
+
+  /** How many stiff opacity steps during load-in */
+  loadSteps: 6,
+
+  /** How long the fully-visible logo holds before hub (ms) */
+  holdMs: 2400,
 };
 
 /* ---------------------------------------------------------------------------
    BOOT LOG LINES — edit freely
+   Optional: awaitDotsMs — after typing, blink "..." for that many ms (loading hold)
    --------------------------------------------------------------------------- */
 export const BOOT_LINES = [
-  { text: "LATTICE.OS — FTHFLL permissions clarifying...", cls: "boot-line--ok", delay: 40 },
-  { text: "CARAPACE ID > G512 // CARA", cls: "boot-line--ok", delay: 35 },
-  { text: "KHAN ID > S. Raei // SOLUS", cls: "boot-line--ok", delay: 40 },
-  { text: "LATTICE.OS CONNECTION > 62% // LOW INTEGRITY | inactive", cls: "boot-line--err", delay: 35 },
-  { text: "HULL STRUCTURE > 45% // DAMAGED // RESTRICTED OPERATION", cls: "boot-line--err", delay: 30 },
-  { text: "LIFE SUPPORT OPERATION > EMERGENCY OPERATION", cls: "boot-line--warn", delay: 35 },
-  { text: "HIVE RELAY CONTACT... Failed", cls: "boot-line--err", delay: 35 },
-  { text: "GYROSCOPE ARRAY > LIMITED FUNCTIONALITY", cls: "boot-line--warn", delay: 30 },
-  { text: "GRYOSCOPE ARRAY | nav ID > UROS · STURM", cls: "boot-line--warn", delay: 35 },
-  { text: "ARCHIVES... recoverable", cls: "boot-line--ok", delay: 30 },
-  { text: "Guest channel … REPAIRING", cls: "", delay: 25 },
-  { text: "LIMITED ARCHIVE ACCESS | EMERGENCY PERMISSIONS GRANTED", cls: "boot-line--ok", delay: 60 },
+  {
+    text: "[FTHFLL] LATTICE.OS :: permissions clarifying",
+    cls: "boot-line--ok",
+    delay: 40,
+    awaitDotsMs: 2400,
+  },
+  { text: "==== ID_VERIFY =====================================", cls: "boot-line--sec", delay: 28 },
+  { text: "  > craft.query()", cls: "boot-line--id", delay: 18 },
+  { text: '  | id: "G512" // "CARA"', cls: "boot-line--id", delay: 22 },
+  { text: "  | status: 0 OK", cls: "boot-line--ok boot-line--id", delay: 28 },
+  { text: "  > khan.query()", cls: "boot-line--id", delay: 18 },
+  { text: '  | khan: "S.RAEI" // "SOLUS"', cls: "boot-line--id", delay: 22 },
+
+  { text: "==== HULL_TELEMETRY ================================", cls: "boot-line--sec", delay: 28 },
+  { text: "  [HULL] integrity=0.45 [########----]", cls: "boot-line--ship boot-line--err", delay: 28 },
+  { text: "  [HULL] flags=DAMAGED|RESTRICTED_OPERATION", cls: "boot-line--ship boot-line--err", delay: 26 },
+  { text: "  [LIFE] bus=EMERGENCY_OPERATION", cls: "boot-line--ship boot-line--warn", delay: 28 },
+
+  { text: "==== LINK_STACK ====================================", cls: "boot-line--sec", delay: 28 },
+  { text: "  LATTICE.LINK >> handshake()", cls: "boot-line--link", delay: 20 },
+  { text: "  LATTICE.LINK >> integrity=0.62 state=INACTIVE  errno=ELOWLINK", cls: "boot-line--link boot-line--err", delay: 30 },
+  { text: "  HIVE_RELAY   >> ping(0x01)", cls: "boot-line--link", delay: 20 },
+  { text: "  HIVE_RELAY   >> -1 (EHOSTUNREACH)", cls: "boot-line--link boot-line--err", delay: 30 },
+  { text: "  GUEST_CH     >> status()", cls: "boot-line--link", delay: 18 },
+  { text: "  GUEST_CH     >> state=REPAIRING  pending=true", cls: "boot-line--link", delay: 22 },
+
+  { text: "==== NAV_CORE ======================================", cls: "boot-line--sec", delay: 28 },
+  { text: "  GYRO_ARRAY.diag()", cls: "boot-line--nav", delay: 18 },
+  { text: '  GYRO_ARRAY.state = "LIMITED_FUNCTIONALITY"  // WARN', cls: "boot-line--nav boot-line--warn", delay: 26 },
+  { text: "  GYRO_ARRAY.nav.resolve()", cls: "boot-line--nav", delay: 18 },
+  { text: '  GYRO_ARRAY.fix = { body: "UROS.STURM", conf: "PARTIAL" }', cls: "boot-line--nav boot-line--warn", delay: 30 },
+
+  { text: "==== MEMORY / ACCESS ===============================", cls: "boot-line--sec", delay: 28 },
+  { text: "  ARCHIVES.partition_scan()", cls: "boot-line--mem", delay: 18 },
+  { text: "  ARCHIVES.result = RECOVERABLE", cls: "boot-line--mem boot-line--ok", delay: 24 },
+  { text: "  ACCESS.request(LIMITED | EMERG_PERMS)", cls: "boot-line--mem", delay: 18 },
+  { text: "  ACCESS.grant = true", cls: "boot-line--mem boot-line--ok", delay: 40 },
+  { text: "==== SYS_PROBE COMPLETE ============================", cls: "boot-line--sec", delay: 50 },
+
+  { text: "==== RECONSTRUCTION ==========================", cls: "boot-line--sec", delay: 50 },
+  { text: "  CARAPACE.reconstruct()", cls: "boot-line--ok", delay: 18 },
+  { text: "  CARAPACE.result = IN_PROGRESS", cls: "boot-line--ok", delay: 24 },
+  { text: "  CARAPACE.status = IN_PROGRESS", cls: "boot-line--ok", delay: 24 },
+
+  { text: "==== INT_LOAD COMPLETE ============================", cls: "boot-line--sec", delay: 50 },
+  { text: "GIVE YOUR LIFE TO HER", cls: "boot-line--vow", delay: 2800 },
 ];

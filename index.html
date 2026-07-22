@@ -73,7 +73,6 @@
       <div class="boot__gate" id="boot-gate" hidden>
         <div class="gate-flash" id="gate-flash" aria-hidden="true"></div>
         <div class="gate">
-          <p class="gate__label">CLEARANCE</p>
           <div class="gate__display" id="gate-display" aria-live="polite">_ _ _</div>
           <p class="gate__status" id="gate-status"></p>
           <div class="gate__cascade" id="gate-cascade" hidden></div>
@@ -87,9 +86,13 @@
             <button type="button" class="gate__key" data-key="7">7</button>
             <button type="button" class="gate__key" data-key="8">8</button>
             <button type="button" class="gate__key" data-key="9">9</button>
-            <button type="button" class="gate__key gate__key--action" data-key="clear">CLR</button>
+            <button type="button" class="gate__key gate__key--action" data-key="clear" aria-label="Clear">×</button>
             <button type="button" class="gate__key" data-key="0">0</button>
-            <button type="button" class="gate__key gate__key--action" data-key="enter">ENT</button>
+            <button type="button" class="gate__key gate__key--action" data-key="enter" aria-label="Enter">✓</button>
+          </div>
+          <div class="gate__eyes" id="gate-eyes" hidden aria-hidden="true">
+            <img class="gate__face" src="assets/666face.png" alt="" />
+            <p class="gate__face-caption">I WEAR NO MASK</p>
           </div>
         </div>
       </div>
@@ -107,45 +110,34 @@
 
 
       <!-- -----------------------------------------------------------------
-           HUB · HEADER — triad seal, Lattice OS ID, craft meta
+           HUB · HEADER — consolidated identity
            ----------------------------------------------------------------- -->
       <header class="terminal-header">
         <div class="terminal-header__left">
           <div class="triad-seal" aria-hidden="true" title="Imperial Triad">
-            <svg class="triad-seal__mark" viewBox="0 0 48 48" width="44" height="44">
+            <svg class="triad-seal__mark" viewBox="0 0 48 48" width="36" height="36">
               <polygon
                 points="24,4 44,42 4,42"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
+                stroke-width="2.5"
               />
-              <polygon
-                points="24,14 36,38 12,38"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.2"
-                opacity="0.55"
-              />
-              <circle cx="24" cy="28" r="2.2" fill="currentColor" />
             </svg>
           </div>
           <div class="terminal-header__id">
+            <p class="terminal-header__os">LATTICE.OS</p>
+            <p class="terminal-header__bond">FTHFLL — LATTICE-LINK</p>
             <p class="terminal-header__license">
-              CONSECRATED UNDER S.O.V.
-            </p>
-            <p class="terminal-header__bond">
-              FTHFLL · <span class="bond-name">lattice-link · solus</span>
+              CONSECRATED UNDER S.O.V. — PROTECTED UNDER TRIAD DOCTRINE
             </p>
           </div>
         </div>
         <div class="terminal-header__meta">
-          <div class="meta-ids">
-            <p class="meta-ids__os">LATTICE.OS</p>
-            <p class="meta-ids__line">
-              CHRONO <time id="chrono" datetime="">--:--:--</time>
-            </p>
-            <p class="meta-ids__ref">REF 7A-STURM / SN G512-SOLUS-BOUND</p>
-          </div>
+          <p class="meta-ids__line">
+            CHRONO <time id="chrono" datetime="">--:--:--</time>
+          </p>
+          <p class="meta-ids__line">SHIP ID — G512 // "CARA"</p>
+          <p class="meta-ids__line">KHAN ID — S. RAEI // "SOLUS"</p>
         </div>
       </header>
 
@@ -154,103 +146,93 @@
 
 
         <!-- ---------------------------------------------------------------
-             HUB · NAV RAIL — ship channels + guest channel
+             HUB · NAV — boxy channel groups
              --------------------------------------------------------------- -->
         <aside class="nav-rail" aria-label="Primary directories">
-          <p class="nav-rail__label">SHIP CHANNELS</p>
-          <nav class="nav-rail__list">
-            <button
-              type="button"
-              class="nav-item is-active"
-              data-panel="overview"
-              data-sfx="select"
-            >
-              <span class="nav-item__index">01</span>
-              <span class="nav-item__name">STATUS</span>
-            </button>
-            <button
-              type="button"
-              class="nav-item"
-              data-panel="flightlog"
-              data-sfx="select"
-            >
-              <span class="nav-item__index">02</span>
-              <span class="nav-item__name">FLIGHT LOG</span>
-            </button>
-            <button
-              type="button"
-              class="nav-item"
-              data-panel="archives"
-              data-sfx="select"
-            >
-              <span class="nav-item__index">03</span>
-              <span class="nav-item__name">ARCHIVES</span>
-            </button>
-            <button
-              type="button"
-              class="nav-item"
-              data-panel="cartography"
-              data-sfx="select"
-            >
-              <span class="nav-item__index">04</span>
-              <span class="nav-item__name">CARTOGRAPHY</span>
-            </button>
-            <button
-              type="button"
-              class="nav-item"
-              data-panel="diagnostics"
-              data-sfx="select"
-            >
-              <span class="nav-item__index">05</span>
-              <span class="nav-item__name">DIAGNOSTICS</span>
-            </button>
-          </nav>
-
-          <div class="nav-rail__aux">
-            <p class="nav-rail__label nav-rail__label--aux">EXTERNAL</p>
-            <button
-              type="button"
-              class="nav-item nav-item--aux"
-              data-panel="auxiliary"
-              data-sfx="select"
-            >
-              <span class="nav-item__index">AUX</span>
-              <span class="nav-item__name">GUEST CHANNEL</span>
-            </button>
+          <div class="nav-box">
+            <div class="nav-box__head">SHIP CHANNELS</div>
+            <nav class="nav-box__body">
+              <button
+                type="button"
+                class="nav-item is-active"
+                data-panel="overview"
+                data-channel-title="HULL TELEMETRY // CRAFT STATUS"
+                data-sfx="select"
+              >
+                STATUS
+              </button>
+              <button
+                type="button"
+                class="nav-item"
+                data-panel="flightlog"
+                data-channel-title="FLIGHT LOG // PERSONAL RECORD"
+                data-sfx="select"
+              >
+                FLIGHT LOG
+              </button>
+              <button
+                type="button"
+                class="nav-item"
+                data-panel="cartography"
+                data-channel-title="CARTOGRAPHY // STELLAR FIX"
+                data-sfx="select"
+              >
+                SYSTEM CHART
+              </button>
+              <button
+                type="button"
+                class="nav-item"
+                data-panel="diagnostics"
+                data-channel-title="FIDELITY BUS // SIGNAL DIAGNOSTICS"
+                data-sfx="select"
+              >
+                DIAGNOSTICS
+              </button>
+            </nav>
           </div>
 
-          <div class="nav-rail__footer">
-            <p class="clearance">
-              FAITH-LOCK <span class="clearance__level clearance__level--gold">VEILED</span>
-            </p>
-            <button type="button" class="audio-toggle" id="audio-toggle" data-sfx="click">
-              <span class="audio-toggle__icon" aria-hidden="true">◉</span>
-              <span class="audio-toggle__label">AUDIO: OFF</span>
-            </button>
+          <div class="nav-box">
+            <div class="nav-box__head">EXTERNAL DATABASE</div>
+            <nav class="nav-box__body">
+              <button
+                type="button"
+                class="nav-item"
+                data-panel="archives"
+                data-channel-title="ARCHIVES // SHIP MEMORY"
+                data-sfx="select"
+              >
+                ARCHIVES
+              </button>
+              <button
+                type="button"
+                class="nav-item"
+                data-panel="auxiliary"
+                data-channel-title="EXTERNAL // GUEST CHANNEL"
+                data-sfx="select"
+              >
+                GUEST CHANNEL
+              </button>
+            </nav>
           </div>
         </aside>
 
 
         <!-- ---------------------------------------------------------------
-             HUB · VIEWPORT — channel panels
+             HUB · CHANNEL FRAME — banner + viewport
              --------------------------------------------------------------- -->
-        <main class="viewport" id="viewport">
+        <div class="channel-frame">
+          <div class="channel-banner" id="channel-banner" aria-live="polite"></div>
+          <main class="viewport" id="viewport">
 
 
           <!-- =============================================================
                CHANNEL 01 — STATUS
-               Hull telemetry / crash state
                ============================================================= -->
           <article class="panel is-active" id="panel-overview" data-panel="overview">
-            <header class="panel__header">
-              <p class="panel__eyebrow">LATTICE.OS // HULL TELEMETRY</p>
-              <h2 class="panel__title">Craft Status</h2>
-            </header>
             <div class="panel__body">
               <p class="lead">
-                You are interfacing with Cara — a G512 Carapace-class Khan-craft,
-                bonded to Solus. Primary systems are degraded. Imperial relay is
-                unreachable. Local survival takes priority over doctrine — for now.
+                G512 Carapace-class Imperial Khan Ship.
+                Bonded to Khan S. Raei.
               </p>
               <div class="status-grid" role="list">
                 <div class="status-cell" role="listitem">
@@ -300,18 +282,11 @@
 
           <!-- =============================================================
                CHANNEL 02 — FLIGHT LOG
-               Solus short story / personal record
                ============================================================= -->
           <article class="panel" id="panel-flightlog" data-panel="flightlog" hidden>
-            <header class="panel__header">
-              <p class="panel__eyebrow">CHANNEL 02 // PERSONAL RECORD</p>
-              <h2 class="panel__title">Flight Log</h2>
-            </header>
             <div class="panel__body">
               <p class="lead">
-                Bonded Khan records, recovered voice fragments, and journal
-                entries written after the crash. This is Solus’s story —
-                told from inside Cara.
+                Solus’s story.
               </p>
               <p class="loc-line">
                 <span class="loc-line__label">LOC</span>
@@ -335,17 +310,11 @@
 
           <!-- =============================================================
                CHANNEL 03 — ARCHIVES
-               Ship memory / lore
                ============================================================= -->
           <article class="panel" id="panel-archives" data-panel="archives" hidden>
-            <header class="panel__header">
-              <p class="panel__eyebrow">CHANNEL 03 // SHIP MEMORY</p>
-              <h2 class="panel__title">Consecrated Archives</h2>
-            </header>
             <div class="panel__body">
               <p class="lead">
                 Doctrine, charts, and Imperial knowledge stored aboard this craft.
-                Some partitions survived the crash. Others did not.
               </p>
               <ul class="entry-list" id="archive-list">
                 <li>
@@ -371,7 +340,7 @@
                 </li>
               </ul>
               <p class="panel__note">
-                Archive entries will populate as lore is cleared for this node.
+                Archive entries will populate as lore repaired.
               </p>
             </div>
           </article>
@@ -379,17 +348,11 @@
 
           <!-- =============================================================
                CHANNEL 04 — CARTOGRAPHY
-               The Nine / star chart (future)
                ============================================================= -->
           <article class="panel" id="panel-cartography" data-panel="cartography" hidden>
-            <header class="panel__header">
-              <p class="panel__eyebrow">CHANNEL 04 // NAVIGATION</p>
-              <h2 class="panel__title">Cartography</h2>
-            </header>
             <div class="panel__body">
               <p class="lead">
-                Stellar charts of The Nine. Parent fix: Uros.
-                Local body: Sturm. Imperial ephemeris may load.
+                Stellar charts of The Nine.
               </p>
               <div class="locked-block">
                 <p class="locked-block__sigil" aria-hidden="true">△</p>
@@ -403,35 +366,68 @@
 
           <!-- =============================================================
                CHANNEL 05 — DIAGNOSTICS
-               Audio / CRT fidelity controls
                ============================================================= -->
           <article class="panel" id="panel-diagnostics" data-panel="diagnostics" hidden>
-            <header class="panel__header">
-              <p class="panel__eyebrow">CHANNEL 05 // FIDELITY</p>
-              <h2 class="panel__title">Diagnostics</h2>
-            </header>
             <div class="panel__body">
-              <p class="lead">
-                Interface fidelity and signal gain. Treat these as shipboard
-                controls — not civilian preferences.
-              </p>
+              <p class="lead">Internal interface settings.</p>
               <form class="systems-form" id="systems-form">
-                <label class="sys-row">
-                  <span class="sys-row__label">Interface SFX</span>
-                  <input type="range" id="sfx-gain" min="0" max="100" value="55" />
-                </label>
-                <label class="sys-row">
-                  <span class="sys-row__label">Ambient Channel</span>
-                  <input type="range" id="amb-gain" min="0" max="100" value="35" disabled />
-                </label>
-                <label class="sys-row">
-                  <span class="sys-row__label">Scanline Intensity</span>
-                  <input type="range" id="scan-intensity" min="0" max="100" value="70" />
-                </label>
-                <label class="sys-row sys-row--check">
+                <div class="sys-row sys-row--action">
+                  <span class="sys-row__label">Interface Audio</span>
+                  <button type="button" class="sys-toggle" id="audio-toggle" data-sfx="click">
+                    <span class="sys-toggle__label">AUDIO: OFF</span>
+                  </button>
+                </div>
+                <div class="sys-row sys-row--action">
                   <span class="sys-row__label">Reduce Motion</span>
-                  <input type="checkbox" id="reduce-motion" />
-                </label>
+                  <button type="button" class="sys-toggle is-on" id="reduce-motion" data-sfx="click">
+                    <span class="sys-toggle__label">MOTION: ON</span>
+                  </button>
+                </div>
+                <div class="sys-row">
+                  <span class="sys-row__label">Interface SFX</span>
+                  <div
+                    class="fill-bar"
+                    id="sfx-gain"
+                    role="slider"
+                    tabindex="0"
+                    aria-label="Interface SFX"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="55"
+                  >
+                    <div class="fill-bar__fill" style="width: 55%"></div>
+                  </div>
+                </div>
+                <div class="sys-row">
+                  <span class="sys-row__label">Ambient Channel</span>
+                  <div
+                    class="fill-bar is-disabled"
+                    id="amb-gain"
+                    role="slider"
+                    aria-label="Ambient Channel"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="35"
+                    aria-disabled="true"
+                  >
+                    <div class="fill-bar__fill" style="width: 35%"></div>
+                  </div>
+                </div>
+                <div class="sys-row">
+                  <span class="sys-row__label">Scanline Intensity</span>
+                  <div
+                    class="fill-bar"
+                    id="scan-intensity"
+                    role="slider"
+                    tabindex="0"
+                    aria-label="Scanline Intensity"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="100"
+                  >
+                    <div class="fill-bar__fill" style="width: 100%"></div>
+                  </div>
+                </div>
               </form>
               <p class="panel__note">
                 Music and audiobook playback will route through these channels.
@@ -442,18 +438,12 @@
 
           <!-- =============================================================
                CHANNEL AUX — GUEST CHANNEL
-               Future campaigns (sectioned off from Solus’s story)
                ============================================================= -->
           <article class="panel" id="panel-auxiliary" data-panel="auxiliary" hidden>
-            <header class="panel__header">
-              <p class="panel__eyebrow">EXTERNAL // GUEST CLEARANCE</p>
-              <h2 class="panel__title">Guest Channel</h2>
-            </header>
             <div class="panel__body">
               <p class="lead">
                 A secondary access lane for operators not bound to this hull.
-                Campaign dossiers and table sessions live here — sealed from
-                Solus’s flight record.
+                Campaign dossiers and table sessions live here.
               </p>
               <div class="locked-block locked-block--aux">
                 <p class="locked-block__sigil" aria-hidden="true">△</p>
@@ -469,28 +459,9 @@
           </article>
 
 
-        </main>
-      </div>
-
-
-      <!-- -----------------------------------------------------------------
-           HUB · FOOTER — doctrine line + channel hint
-           ----------------------------------------------------------------- -->
-      <footer class="terminal-footer">
-        <div class="terminal-footer__stack">
-          <p class="arch-line arch-line--footer">
-            <span>LATTICE.OS · FTHFLL</span>
-            <span class="arch-line__dash"></span>
-            <span>G512 CARA · HULL UNSTABLE</span>
-          </p>
-          <p class="terminal-footer__patent">
-            PROTECTED UNDER IMPERIAL TRIAD DOCTRINE — VEILED SYSTEMS ONLY
-          </p>
+          </main>
         </div>
-        <p class="terminal-footer__right" id="footer-hint">
-          SELECT A CHANNEL TO PROCEED
-        </p>
-      </footer>
+      </div>
 
 
     </section>
@@ -500,6 +471,6 @@
     <!-- =====================================================================
          SCRIPTS
          ===================================================================== -->
-    <script src="main.js" type="module"></script>
+    <script src="main.js?v=20260722m" type="module"></script>
   </body>
 </html>

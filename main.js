@@ -5,15 +5,16 @@
  * Intro splash COPY lives in: boot-content.js  ← edit text / logo there
  */
 
-import { BOOT_LINES, BOOT_LOGO, ACCESS_CODE, ACCESS_SUCCESS, MOTION } from "./boot-content.js";
+import { BOOT_LINES, BOOT_LOGO, ACCESS_CODE, ACCESS_SUCCESS, MOTION, GATE_EASTER_EGGS } from "./boot-content.js";
 
-const PANEL_HINTS = {
-  overview: "STATUS — HULL CRITICAL",
-  flightlog: "FLIGHT LOG — LOC UROS · STURM",
-  archives: "ARCHIVES — PARTIAL SURVIVAL",
-  cartography: "CARTOGRAPHY — UROS · STURM",
-  diagnostics: "DIAGNOSTICS — FIDELITY CONTROLS",
-  auxiliary: "GUEST CHANNEL — SEALED",
+/** Red channel-banner copy — keyed by nav `data-panel` */
+const CHANNEL_TITLES = {
+  overview: "HULL TELEMETRY // CRAFT STATUS",
+  flightlog: "FLIGHT LOG // PERSONAL RECORD",
+  archives: "ARCHIVES // SHIP MEMORY",
+  cartography: "CARTOGRAPHY // STELLAR FIX",
+  diagnostics: "FIDELITY BUS // SIGNAL DIAGNOSTICS",
+  auxiliary: "EXTERNAL // GUEST CHANNEL",
 };
 
 /* ==========================================================================
@@ -161,6 +162,31 @@ async function typeText(el, fullText, skippedRef = null) {
   }
 }
 
+/** Blink . / .. / ... on a span for durationMs (loading hold) */
+async function blinkBootDots(dotsEl, durationMs, skippedRef = null) {
+  if (!dotsEl || durationMs <= 0) return;
+
+  if (prefersReducedMotion()) {
+    dotsEl.textContent = "...";
+    await sleep(Math.min(durationMs, 400));
+    return;
+  }
+
+  const frames = [".", "..", "..."];
+  const frameMs = MOTION.dotsFrameMs ?? 280;
+  let i = 0;
+  const end = performance.now() + durationMs;
+
+  while (performance.now() < end) {
+    if (skippedRef?.skipped) break;
+    dotsEl.textContent = frames[i % frames.length];
+    i += 1;
+    await sleep(frameMs);
+  }
+
+  if (!skippedRef?.skipped) dotsEl.textContent = "...";
+}
+
 async function revealTopToBottom(container) {
   if (!container) return;
 
@@ -192,9 +218,7 @@ async function revealTopToBottom(container) {
 
 async function revealPanel(panel) {
   panel.classList.add("is-revealing");
-  const header = panel.querySelector(".panel__header");
   const body = panel.querySelector(".panel__body");
-  if (header) await revealTopToBottom(header);
   if (body) await revealTopToBottom(body);
   panel.classList.remove("is-revealing");
 }
@@ -238,12 +262,34 @@ async function playBootLogo() {
 
   const stage = prepareBootLogo();
   void stage.offsetWidth;
-  stage.classList.add("is-visible");
+
+  const loadMs = BOOT_LOGO.loadMs ?? 1200;
+  const steps = Math.max(1, BOOT_LOGO.loadSteps ?? 5);
+  const stepMs = loadMs / steps;
+
+  // Stiff stepped load-in (not a smooth fade)
+  stage.style.opacity = "0";
+  stage.classList.add("is-loading");
   audio.play("select");
+
+  if (prefersReducedMotion()) {
+    stage.style.opacity = "";
+    stage.classList.remove("is-loading");
+    stage.classList.add("is-visible");
+  } else {
+    for (let i = 1; i <= steps; i++) {
+      stage.style.opacity = String(i / steps);
+      await sleep(stepMs);
+    }
+    stage.style.opacity = "";
+    stage.classList.remove("is-loading");
+    stage.classList.add("is-visible");
+  }
 
   await sleep(BOOT_LOGO.holdMs ?? 1400);
 
   stage.classList.remove("is-visible");
+  stage.style.opacity = "";
   stage.hidden = true;
   log.classList.remove("is-dimmed");
 }
@@ -254,7 +300,7 @@ function formatGateDisplay(value, maxLen) {
   return chars.join(" ");
 }
 
-function runClearanceGate() {
+function runClearanceGate(skippedRef) {
   return new Promise((resolve) => {
     const gate = document.getElementById("boot-gate");
     const display = document.getElementById("gate-display");
@@ -262,6 +308,7 @@ function runClearanceGate() {
     const cascade = document.getElementById("gate-cascade");
     const flash = document.getElementById("gate-flash");
     const pad = gate.querySelector(".gate__pad");
+    const eyes = document.getElementById("gate-eyes");
     const skipBtn = document.getElementById("boot-skip");
     const maxLen = ACCESS_CODE.length;
 
@@ -270,11 +317,14 @@ function runClearanceGate() {
 
     skipBtn.hidden = true;
     gate.hidden = false;
-    gate.classList.remove("is-unlocked");
+    gate.classList.remove("is-unlocked", "is-staring");
     status.textContent = "";
     status.className = "gate__status";
     cascade.hidden = true;
     cascade.innerHTML = "";
+    if (eyes) eyes.hidden = true;
+    display.hidden = false;
+    pad.hidden = false;
     display.textContent = formatGateDisplay("", maxLen);
     pad.querySelectorAll(".gate__key").forEach((k) => {
       k.disabled = false;
@@ -286,13 +336,21 @@ function runClearanceGate() {
       display.textContent = formatGateDisplay(buffer, maxLen);
     };
 
-    const fail = () => {
+    const cleanupAndResolve = () => {
+      gate.hidden = true;
+      gate.classList.remove("is-unlocked");
+      flash.classList.remove("is-fire");
+      gate.removeEventListener("click", onPadClick);
+      window.removeEventListener("keydown", onKeydown);
+      resolve();
+    };
+
+    const fail = (message = "DENIED") => {
       locked = true;
-      status.textContent = "DENIED";
+      status.textContent = message;
       status.className = "gate__status gate__status--deny";
       gate.classList.add("is-denied");
       audio.play("open");
-      // Keep the wrong code visible briefly, then clear
       setTimeout(() => {
         buffer = "";
         render();
@@ -301,6 +359,28 @@ function runClearanceGate() {
         gate.classList.remove("is-denied");
         locked = false;
       }, 700);
+    };
+
+    const stare = () => {
+      locked = true;
+      pad.querySelectorAll(".gate__key").forEach((k) => {
+        k.disabled = true;
+      });
+      display.hidden = true;
+      status.textContent = "";
+      status.className = "gate__status";
+      cascade.hidden = true;
+      pad.hidden = true;
+      skipBtn.hidden = true;
+      gate.classList.add("is-staring");
+      if (eyes) {
+        eyes.hidden = false;
+        eyes.setAttribute("aria-hidden", "false");
+      }
+      audio.play("open");
+      gate.removeEventListener("click", onPadClick);
+      window.removeEventListener("keydown", onKeydown);
+      // Intentionally never resolves — refresh required
     };
 
     const succeed = async () => {
@@ -319,35 +399,53 @@ function runClearanceGate() {
       flash.classList.add("is-fire");
       audio.play("unlock");
 
+      // Skip is available immediately — aborts acceptance text + later boot stages
+      skipBtn.hidden = false;
+
       await sleep(420);
+      if (skippedRef.skipped) {
+        cleanupAndResolve();
+        return;
+      }
 
       cascade.hidden = false;
       cascade.classList.remove("is-pending");
       cascade.classList.add("is-shown");
       const lines = ACCESS_SUCCESS?.lines ?? [];
       for (const line of lines) {
+        if (skippedRef.skipped) break;
         const row = document.createElement("div");
         row.className = "gate__cascade-line";
         cascade.appendChild(row);
-        await typeText(row, `> ${line.text}`);
+        await typeText(row, `> ${line.text}`, skippedRef);
+        if (skippedRef.skipped) break;
         await sleep(line.delay ?? 100);
       }
 
-      await sleep(ACCESS_SUCCESS?.holdMs ?? 700);
+      if (!skippedRef.skipped) {
+        await sleep(ACCESS_SUCCESS?.holdMs ?? 700);
+      }
 
-      gate.hidden = true;
-      gate.classList.remove("is-unlocked");
-      flash.classList.remove("is-fire");
-      gate.removeEventListener("click", onPadClick);
-      window.removeEventListener("keydown", onKeydown);
-      resolve();
+      cleanupAndResolve();
     };
 
     const submit = () => {
       if (locked) return;
       if (buffer.length < maxLen) return;
-      if (buffer === ACCESS_CODE) succeed();
-      else fail();
+      if (buffer === ACCESS_CODE) {
+        succeed();
+        return;
+      }
+      const egg = GATE_EASTER_EGGS?.[buffer];
+      if (egg?.type === "eyes") {
+        stare();
+        return;
+      }
+      if (egg?.type === "message") {
+        fail(egg.text || "DENIED");
+        return;
+      }
+      fail();
     };
 
     const pushDigit = (digit) => {
@@ -390,6 +488,8 @@ function runClearanceGate() {
         pushDigit(e.key);
       } else if (e.key === "Enter") {
         e.preventDefault();
+        // After unlock, Enter is handled by the shared skip listener
+        if (locked) return;
         submit();
       } else if (e.key === "Backspace" || e.key === "Escape") {
         e.preventDefault();
@@ -416,6 +516,11 @@ async function enterHub() {
   audio.play("select");
   startChrono();
 
+  const activeBtn = document.querySelector(".nav-item.is-active");
+  if (activeBtn) {
+    await typeChannelBanner(activeBtn.dataset.panel, activeBtn.dataset.channelTitle);
+  }
+
   const active = document.querySelector(".panel.is-active");
   if (active) await revealPanel(active);
 }
@@ -430,19 +535,35 @@ async function runBoot() {
   };
   document.addEventListener("keydown", () => unlockAudio(), { once: true });
 
-  await runClearanceGate();
+  const skippedRef = { skipped: false };
+  skipBtn.hidden = true;
+
+  const triggerSkip = () => {
+    if (skippedRef.skipped || skipBtn.hidden) return;
+    skippedRef.skipped = true;
+    audio.play("click");
+  };
+
+  skipBtn.addEventListener("click", triggerSkip);
+
+  const onSkipKey = (e) => {
+    if (e.key !== "Enter") return;
+    if (skipBtn.hidden || skippedRef.skipped) return;
+    e.preventDefault();
+    triggerSkip();
+  };
+  window.addEventListener("keydown", onSkipKey);
+
+  await runClearanceGate(skippedRef);
   await unlockAudio();
 
-  const skippedRef = { skipped: false };
-  skipBtn.hidden = false;
-  skipBtn.addEventListener(
-    "click",
-    () => {
-      skippedRef.skipped = true;
-      audio.play("click");
-    },
-    { once: true }
-  );
+  // Skipped during acceptance → jump straight to hub
+  if (skippedRef.skipped) {
+    window.removeEventListener("keydown", onSkipKey);
+    skipBtn.hidden = true;
+    await enterHub();
+    return;
+  }
 
   for (const line of BOOT_LINES) {
     if (skippedRef.skipped) break;
@@ -451,10 +572,17 @@ async function runBoot() {
     log.appendChild(el);
     log.scrollTop = log.scrollHeight;
     await typeText(el, `> ${line.text}`, skippedRef);
+    if (line.awaitDotsMs && !skippedRef.skipped) {
+      const dots = document.createElement("span");
+      dots.className = "boot-dots";
+      el.appendChild(dots);
+      await blinkBootDots(dots, line.awaitDotsMs, skippedRef);
+    }
     log.scrollTop = log.scrollHeight;
     if (!skippedRef.skipped) await sleep(line.delay);
   }
 
+  window.removeEventListener("keydown", onSkipKey);
   if (!skippedRef.skipped) await sleep(80);
   skipBtn.hidden = true;
 
@@ -466,38 +594,61 @@ async function runBoot() {
 }
 
 /* ==========================================================================
-   NAVIGATION — channel switching
+   NAVIGATION — channel switching + typed banner title
    ========================================================================== */
 
+/** Cancels an in-flight banner typewriter when a new channel is selected */
+let bannerTypeAbort = { skipped: true };
+
+async function typeChannelBanner(panelId, titleOverride) {
+  const banner = document.getElementById("channel-banner");
+  if (!banner) return;
+
+  const title = titleOverride || CHANNEL_TITLES[panelId] || "";
+  bannerTypeAbort.skipped = true;
+  const skippedRef = { skipped: false };
+  bannerTypeAbort = skippedRef;
+
+  banner.textContent = "";
+  await typeText(banner, title, skippedRef);
+}
+
 function initNav() {
-  const items = document.querySelectorAll(".nav-item");
+  const rail = document.querySelector(".nav-rail");
   const panels = document.querySelectorAll(".panel");
-  const hint = document.getElementById("footer-hint");
+  if (!rail) return;
+
   let revealing = false;
 
-  items.forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (revealing) return;
-      const id = btn.dataset.panel;
-      items.forEach((b) => b.classList.toggle("is-active", b === btn));
+  rail.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".nav-item");
+    if (!btn || !rail.contains(btn)) return;
+    if (revealing) return;
 
-      let shown = null;
-      panels.forEach((panel) => {
-        const match = panel.dataset.panel === id;
-        panel.hidden = !match;
-        panel.classList.toggle("is-active", match);
-        if (match) shown = panel;
-      });
+    const id = btn.dataset.panel;
+    if (!id) return;
 
-      hint.textContent = PANEL_HINTS[id] || "";
-      audio.play(btn.dataset.sfx || "select");
-
-      if (shown) {
-        revealing = true;
-        await revealPanel(shown);
-        revealing = false;
-      }
+    rail.querySelectorAll(".nav-item").forEach((b) => {
+      b.classList.toggle("is-active", b === btn);
     });
+
+    let shown = null;
+    panels.forEach((panel) => {
+      const match = panel.dataset.panel === id;
+      panel.hidden = !match;
+      panel.classList.toggle("is-active", match);
+      if (match) shown = panel;
+    });
+
+    audio.play(btn.dataset.sfx || "select");
+
+    revealing = true;
+    try {
+      await typeChannelBanner(id, btn.dataset.channelTitle);
+      if (shown) await revealPanel(shown);
+    } finally {
+      revealing = false;
+    }
   });
 }
 
@@ -525,17 +676,82 @@ function startChrono() {
 
 function updateAudioToggle(on) {
   const btn = document.getElementById("audio-toggle");
-  const label = btn.querySelector(".audio-toggle__label");
+  if (!btn) return;
+  const label = btn.querySelector(".sys-toggle__label");
   btn.classList.toggle("is-on", on);
-  label.textContent = on ? "AUDIO: ON" : "AUDIO: OFF";
+  if (label) label.textContent = on ? "AUDIO: ON" : "AUDIO: OFF";
+}
+
+function updateMotionToggle(reduced) {
+  const btn = document.getElementById("reduce-motion");
+  if (!btn) return;
+  const label = btn.querySelector(".sys-toggle__label");
+  /* Filled when motion is ON (not reduced); hollow when OFF */
+  btn.classList.toggle("is-on", !reduced);
+  if (label) label.textContent = reduced ? "MOTION: OFF" : "MOTION: ON";
+  document.body.classList.toggle("reduce-motion", reduced);
+}
+
+function setFillBarValue(bar, value) {
+  const v = Math.max(0, Math.min(100, Math.round(value)));
+  const fill = bar.querySelector(".fill-bar__fill");
+  if (fill) fill.style.width = `${v}%`;
+  bar.setAttribute("aria-valuenow", String(v));
+  bar.dataset.value = String(v);
+  return v;
+}
+
+function readFillBarValue(bar) {
+  return Number(bar.dataset.value ?? bar.getAttribute("aria-valuenow") ?? 0);
+}
+
+function valueFromPointer(bar, clientX) {
+  const rect = bar.getBoundingClientRect();
+  if (rect.width <= 0) return 0;
+  return ((clientX - rect.left) / rect.width) * 100;
+}
+
+function bindFillBar(bar, onChange) {
+  if (!bar || bar.classList.contains("is-disabled")) return;
+
+  const apply = (clientX) => {
+    const v = setFillBarValue(bar, valueFromPointer(bar, clientX));
+    onChange(v);
+  };
+
+  bar.addEventListener("pointerdown", (e) => {
+    if (e.button != null && e.button !== 0) return;
+    e.preventDefault();
+    bar.setPointerCapture(e.pointerId);
+    apply(e.clientX);
+  });
+
+  bar.addEventListener("pointermove", (e) => {
+    if (!bar.hasPointerCapture(e.pointerId)) return;
+    apply(e.clientX);
+  });
+
+  bar.addEventListener("keydown", (e) => {
+    let next = readFillBarValue(bar);
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") next -= 5;
+    else if (e.key === "ArrowRight" || e.key === "ArrowUp") next += 5;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = 100;
+    else return;
+    e.preventDefault();
+    const v = setFillBarValue(bar, next);
+    onChange(v);
+  });
 }
 
 function initSystems() {
+  const form = document.getElementById("systems-form");
   const audioBtn = document.getElementById("audio-toggle");
+  const motionBtn = document.getElementById("reduce-motion");
   const sfxGain = document.getElementById("sfx-gain");
   const scan = document.getElementById("scan-intensity");
-  const reduce = document.getElementById("reduce-motion");
 
+  form?.addEventListener("submit", (e) => e.preventDefault());
   audioBtn.addEventListener("click", async () => {
     if (audio.enabled) {
       audio.disable();
@@ -547,24 +763,30 @@ function initSystems() {
     }
   });
 
-  sfxGain.addEventListener("input", () => {
-    audio.setSfxGain(Number(sfxGain.value) / 100);
+  motionBtn.addEventListener("click", () => {
+    updateMotionToggle(!document.body.classList.contains("reduce-motion"));
   });
-  audio.setSfxGain(Number(sfxGain.value) / 100);
 
-  scan.addEventListener("input", () => {
-    const v = Number(scan.value) / 100;
+  bindFillBar(sfxGain, (v) => {
+    audio.setSfxGain(v / 100);
+  });
+  audio.setSfxGain(readFillBarValue(sfxGain) / 100);
+
+  bindFillBar(scan, (v) => {
+    document.documentElement.style.setProperty(
+      "--scan-opacity",
+      String(0.04 + (v / 100) * 0.18)
+    );
+  });
+  {
+    const v = readFillBarValue(scan) / 100;
     document.documentElement.style.setProperty("--scan-opacity", String(0.04 + v * 0.18));
-  });
-
-  reduce.addEventListener("change", () => {
-    document.body.classList.toggle("reduce-motion", reduce.checked);
-  });
+  }
 
   document.body.addEventListener("click", (e) => {
     const target = e.target.closest("[data-sfx]");
     if (!target || target.classList.contains("nav-item")) return;
-    if (target.id === "audio-toggle") return;
+    if (target.id === "audio-toggle" || target.id === "reduce-motion") return;
     audio.play(target.dataset.sfx || "click");
   });
 }
