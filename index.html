@@ -35,7 +35,7 @@
 
       <!-- -----------------------------------------------------------------
            BOOT · EMPIRE LOGO (Imago) — after scrolling text
-           Drop SVG/PNG at assets/empire-imago.svg and set BOOT_LOGO.src
+           Asset: assets/images/IMAGO.svg  (BOOT_LOGO.src in boot-content.js)
            ----------------------------------------------------------------- -->
       <div class="boot__logo" id="boot-logo" hidden>
         <div class="boot__logo-frame">
@@ -48,19 +48,19 @@
           <div class="boot__logo-placeholder" id="boot-logo-placeholder" aria-hidden="true">
             <svg class="boot__logo-triad" viewBox="0 0 120 120" width="120" height="120">
               <polygon
-                points="60,8 112,108 8,108"
+                points="60,112 112,12 8,12"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2.5"
               />
               <polygon
-                points="60,32 94,100 26,100"
+                points="60,88 94,20 26,20"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.5"
                 opacity="0.55"
               />
-              <circle cx="60" cy="72" r="5" fill="currentColor" />
+              <circle cx="60" cy="48" r="5" fill="currentColor" />
             </svg>
             <p class="boot__logo-caption">IMAGO · AWAITING MARK</p>
           </div>
@@ -91,14 +91,14 @@
             <button type="button" class="gate__key gate__key--action" data-key="enter" aria-label="Enter">✓</button>
           </div>
           <div class="gate__eyes" id="gate-eyes" hidden aria-hidden="true">
-            <img class="gate__face" src="assets/666face.png" alt="" />
+            <img class="gate__face" src="assets/images/666face.png" alt="" />
             <p class="gate__face-caption">I WEAR NO MASK</p>
           </div>
         </div>
       </div>
 
-      <button type="button" class="boot__skip" id="boot-skip" hidden>
-        [ SKIP ]
+      <button type="button" class="boot__skip" id="boot-skip" hidden aria-label="Continue">
+        &gt;
       </button>
     </section>
 
@@ -114,16 +114,21 @@
            ----------------------------------------------------------------- -->
       <header class="terminal-header">
         <div class="terminal-header__left">
-          <div class="triad-seal" aria-hidden="true" title="Imperial Triad">
-            <svg class="triad-seal__mark" viewBox="0 0 48 48" width="36" height="36">
-              <polygon
-                points="24,4 44,42 4,42"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              />
-            </svg>
-          </div>
+          <button
+            type="button"
+            class="imago-mark"
+            title="Return to clearance"
+            aria-label="Return to clearance keypad"
+            data-sfx="select"
+          >
+            <img
+              class="imago-mark__img"
+              src="assets/images/IMAGO.svg"
+              alt=""
+              width="44"
+              height="44"
+            />
+          </button>
           <div class="terminal-header__id">
             <p class="terminal-header__os">LATTICE.OS</p>
             <p class="terminal-header__bond">FTHFLL — LATTICE-LINK</p>
@@ -228,50 +233,159 @@
           <!-- =============================================================
                CHANNEL 01 — STATUS
                ============================================================= -->
-          <article class="panel is-active" id="panel-overview" data-panel="overview">
+          <article class="panel panel--hull is-active" id="panel-overview" data-panel="overview">
             <div class="panel__body">
               <p class="lead">
-                G512 Carapace-class Imperial Khan Ship.
-                Bonded to Khan S. Raei.
+                Hull Condition Monitor — structural feed from Cara’s strain net.
               </p>
-              <div class="status-grid" role="list">
-                <div class="status-cell" role="listitem">
-                  <span class="status-cell__label">HULL</span>
-                  <span class="status-cell__value status-cell__value--crit" id="hull-status">CRITICAL</span>
+
+              <div class="hull-mon" aria-label="Hull stress monitoring display">
+                <header class="hull-mon__head">
+                  <span class="hull-mon__title">HM · LIVE</span>
+                  <span class="hull-mon__meta">G512-CARA // FTHFLL</span>
+                  <span class="hull-mon__stamp hull-mon__stamp--crit">LIMIT EXCEEDED</span>
+                </header>
+
+                <div class="hull-mon__main">
+                  <div class="hull-mon__schematic" aria-hidden="true">
+                    <svg class="hull-schematic" viewBox="0 0 320 90" role="img">
+                      <!-- Deck / keel profile -->
+                      <path
+                        class="hull-schematic__body"
+                        d="M12 48 L48 28 L260 28 L300 42 L300 58 L260 72 L48 72 L12 52 Z"
+                      />
+                      <path class="hull-schematic__keel" d="M48 72 L260 72" />
+                      <path class="hull-schematic__deck" d="M48 28 L260 28" />
+                      <!-- Station markers (ABS-style long-base gauge sites) -->
+                      <g class="hull-schematic__station hull-schematic__station--ok">
+                        <circle cx="70" cy="50" r="3.2" />
+                        <text x="70" y="18">FWD</text>
+                      </g>
+                      <g class="hull-schematic__station hull-schematic__station--fault">
+                        <circle cx="150" cy="36" r="3.2" />
+                        <text x="150" y="18">MID·P</text>
+                      </g>
+                      <g class="hull-schematic__station hull-schematic__station--fault">
+                        <circle cx="150" cy="64" r="3.2" />
+                        <text x="150" y="86">MID·S</text>
+                      </g>
+                      <g class="hull-schematic__station hull-schematic__station--warn">
+                        <circle cx="240" cy="50" r="3.2" />
+                        <text x="240" y="18">AFT</text>
+                      </g>
+                      <!-- Fracture cue -->
+                      <path class="hull-schematic__crack" d="M142 30 L158 48 L146 70" />
+                    </svg>
+                    <p class="hull-mon__legend">
+                      STRAIN GAUGES · LONG-BASE · 4 STATIONS
+                    </p>
+                  </div>
+
+                  <div class="hull-mon__loads">
+                    <p class="hull-mon__section">HULL GIRDER LOAD // % OF ALLOWABLE (0–200 SCALE)</p>
+                    <div class="hull-bar">
+                      <span class="hull-bar__label">FWD BM</span>
+                      <div class="hull-bar__track" aria-hidden="true">
+                        <span class="hull-bar__zone hull-bar__zone--warn"></span>
+                        <span class="hull-bar__limit" title="100% design limit"></span>
+                        <span class="hull-bar__fill hull-bar__fill--warn" style="width: 39%"></span>
+                      </div>
+                      <span class="hull-bar__val">78%</span>
+                    </div>
+                    <div class="hull-bar">
+                      <span class="hull-bar__label">MID BM</span>
+                      <div class="hull-bar__track" aria-hidden="true">
+                        <span class="hull-bar__zone hull-bar__zone--warn"></span>
+                        <span class="hull-bar__limit" title="100% design limit"></span>
+                        <span class="hull-bar__fill hull-bar__fill--crit" style="width: 94.5%"></span>
+                      </div>
+                      <span class="hull-bar__val hull-bar__val--crit">189%</span>
+                    </div>
+                    <div class="hull-bar">
+                      <span class="hull-bar__label">AFT BM</span>
+                      <div class="hull-bar__track" aria-hidden="true">
+                        <span class="hull-bar__zone hull-bar__zone--warn"></span>
+                        <span class="hull-bar__limit" title="100% design limit"></span>
+                        <span class="hull-bar__fill hull-bar__fill--crit" style="width: 70.5%"></span>
+                      </div>
+                      <span class="hull-bar__val hull-bar__val--crit">141%</span>
+                    </div>
+                    <div class="hull-bar">
+                      <span class="hull-bar__label">TORSION</span>
+                      <div class="hull-bar__track" aria-hidden="true">
+                        <span class="hull-bar__zone hull-bar__zone--warn"></span>
+                        <span class="hull-bar__limit" title="100% design limit"></span>
+                        <span class="hull-bar__fill hull-bar__fill--warn" style="width: 46%"></span>
+                      </div>
+                      <span class="hull-bar__val">92%</span>
+                    </div>
+                    <p class="hull-mon__note">
+                      Scale to 200% allowable. Limit mark @ 100%. Warn ≥ 80%.
+                    </p>
+                  </div>
                 </div>
-                <div class="status-cell" role="listitem">
-                  <span class="status-cell__label">PROPULSION</span>
-                  <span class="status-cell__value status-cell__value--crit">OFFLINE</span>
+
+                <div class="hull-mon__motion">
+                  <p class="hull-mon__section">MOTION FLUCTUATION</p>
+                  <div class="hull-motion">
+                    <div class="hull-motion__cell">
+                      <span class="hull-motion__k">PITCH</span>
+                      <span class="hull-motion__v">+04.2°</span>
+                      <span class="hull-motion__s">HOLD</span>
+                    </div>
+                    <div class="hull-motion__cell">
+                      <span class="hull-motion__k">ROLL</span>
+                      <span class="hull-motion__v">−11.8°</span>
+                      <span class="hull-motion__s hull-motion__s--warn">BIAS</span>
+                    </div>
+                    <div class="hull-motion__cell">
+                      <span class="hull-motion__k">HEAVE</span>
+                      <span class="hull-motion__v">0.00 g</span>
+                      <span class="hull-motion__s">GROUNDED</span>
+                    </div>
+                    <div class="hull-motion__cell">
+                      <span class="hull-motion__k">FATIGUE</span>
+                      <span class="hull-motion__v">ACCEL.</span>
+                      <span class="hull-motion__s hull-motion__s--crit">EVENT</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="status-cell" role="listitem">
-                  <span class="status-cell__label">LIFE SUPPORT</span>
-                  <span class="status-cell__value status-cell__value--warn">PARTIAL</span>
+
+                <div class="hull-mon__alarms" role="status">
+                  <p class="hull-alarm">
+                    <span class="hull-alarm__tag">ALM</span>
+                    MIDSHIP GIRDER — BENDING MOMENT ABOVE DESIGN LIMIT
+                  </p>
+                  <p class="hull-alarm">
+                    <span class="hull-alarm__tag">ALM</span>
+                    STRUCTURAL CONTINUITY LOSS — MID·P / MID·S
+                  </p>
+                  <p class="hull-alarm hull-alarm--dim">
+                    <span class="hull-alarm__tag">ADV</span>
+                    RESTRICTED OPERATION — DO NOT LOAD / DO NOT FLEX
+                  </p>
                 </div>
-                <div class="status-cell" role="listitem">
-                  <span class="status-cell__label">LATTICE-LINK</span>
-                  <span class="status-cell__value">SOLUS · BOUND</span>
-                </div>
-                <div class="status-cell" role="listitem">
-                  <span class="status-cell__label">EMPIRE SIGNAL</span>
-                  <span class="status-cell__value status-cell__value--crit">NONE</span>
+
+                <div class="hull-mon__aux">
+                  <div class="hull-aux">
+                    <span class="hull-aux__k">PROPULSION</span>
+                    <span class="hull-aux__v hull-aux__v--crit">OFFLINE</span>
+                  </div>
+                  <div class="hull-aux">
+                    <span class="hull-aux__k">LIFE SUPPORT</span>
+                    <span class="hull-aux__v hull-aux__v--warn">PARTIAL</span>
+                  </div>
+                  <div class="hull-aux">
+                    <span class="hull-aux__k">LATTICE-LINK</span>
+                    <span class="hull-aux__v">SOLUS · BOUND</span>
+                  </div>
+                  <div class="hull-aux">
+                    <span class="hull-aux__k">EMPIRE SIGNAL</span>
+                    <span class="hull-aux__v hull-aux__v--crit">NONE</span>
+                  </div>
                 </div>
               </div>
-              <div class="arch-lines" aria-hidden="true">
-                <p class="arch-line">
-                  <span>TRIAD FRAMEWORK</span>
-                  <span class="arch-line__dash"></span>
-                  <span>EMPRESS · S.O.V. · SCOURGE</span>
-                </p>
-                <p class="arch-line">
-                  <span>HULL INTEGRATION</span>
-                  <span class="arch-line__dash"></span>
-                  <span>ACT (G512-CARA / FTHFLL)</span>
-                </p>
-              </div>
-              <p class="warn-strip">
-                <span class="warn-strip__mark" aria-hidden="true">△</span>
-                Uncontrolled Ascendancy results in recursion, chaos, and suffering.
-              </p>
+
               <p class="prompt-line">
                 <span class="prompt-line__cursor" aria-hidden="true"></span>
                 Awaiting operator input…
@@ -349,16 +463,14 @@
           <!-- =============================================================
                CHANNEL 04 — CARTOGRAPHY
                ============================================================= -->
-          <article class="panel" id="panel-cartography" data-panel="cartography" hidden>
+          <article class="panel panel--chart" id="panel-cartography" data-panel="cartography" hidden>
             <div class="panel__body">
-              <p class="lead">
-                Stellar charts of The Nine.
-              </p>
-              <div class="locked-block">
-                <p class="locked-block__sigil" aria-hidden="true">△</p>
-                <p class="locked-block__text">
-                  STAR CHART MODULE — AWAITING CONSTRUCTION
-                </p>
+              <p class="lead">Stellar charts of The Nine.</p>
+              <div class="chart">
+                <div class="chart__map" id="chart-map" aria-label="Orbital map of The Nine"></div>
+                <aside class="chart__readout" id="chart-readout" aria-live="polite">
+                  <p class="chart__idle">SELECT ORBITAL BODY</p>
+                </aside>
               </div>
             </div>
           </article>
@@ -399,18 +511,18 @@
                   </div>
                 </div>
                 <div class="sys-row">
-                  <span class="sys-row__label">Ambient Channel</span>
+                  <span class="sys-row__label">Music</span>
                   <div
-                    class="fill-bar is-disabled"
-                    id="amb-gain"
+                    class="fill-bar"
+                    id="music-gain"
                     role="slider"
-                    aria-label="Ambient Channel"
+                    tabindex="0"
+                    aria-label="Music"
                     aria-valuemin="0"
                     aria-valuemax="100"
-                    aria-valuenow="35"
-                    aria-disabled="true"
+                    aria-valuenow="15"
                   >
-                    <div class="fill-bar__fill" style="width: 35%"></div>
+                    <div class="fill-bar__fill" style="width: 15%"></div>
                   </div>
                 </div>
                 <div class="sys-row">
@@ -446,7 +558,7 @@
                 Campaign dossiers and table sessions live here.
               </p>
               <div class="locked-block locked-block--aux">
-                <p class="locked-block__sigil" aria-hidden="true">△</p>
+                <p class="locked-block__sigil" aria-hidden="true">▽</p>
                 <p class="locked-block__text">
                   GUEST CHANNEL SEALED — NO ACTIVE ROSTER
                 </p>
@@ -469,8 +581,38 @@
 
 
     <!-- =====================================================================
+         WHISPER — corner ARG terminal
+         ===================================================================== -->
+    <div class="whisper" id="whisper" hidden>
+      <button
+        type="button"
+        class="whisper__tab"
+        id="whisper-tab"
+        aria-label="Open whisper channel"
+        aria-expanded="false"
+        aria-controls="whisper-panel"
+      ></button>
+      <div class="whisper__panel" id="whisper-panel" hidden>
+        <div class="whisper__head" id="whisper-head">Kharon-Celeste</div>
+        <div class="whisper__log" id="whisper-log" role="log" aria-live="polite"></div>
+        <form class="whisper__form" id="whisper-form">
+          <span class="whisper__prompt" aria-hidden="true">&gt;</span>
+          <input
+            class="whisper__input"
+            id="whisper-input"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Whisper input"
+          />
+        </form>
+      </div>
+    </div>
+
+
+    <!-- =====================================================================
          SCRIPTS
          ===================================================================== -->
-    <script src="main.js?v=20260722m" type="module"></script>
+    <script src="main.js?v=20260722ak" type="module"></script>
   </body>
 </html>

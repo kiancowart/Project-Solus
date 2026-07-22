@@ -12,7 +12,7 @@ The website **is** the terminal of **Cara** — a **G512 Carapace-class** Arkhid
 
 - **Setting:** Crashed on **Sturm**, a moon of **Uros** (ex-Saturn; ex-Zezura; Belt War). Former **Nivian** territory flavor. Splinter space.
 - **Story (Flight Log):** Solus scavenges/repairs to escape; Western/cowboy survival arc; faith in the Empire tested; ends choosing to stay and protect locals (destination beat — not yet written).
-- **Tone:** Scarlet faith tech, damaged systems, no Empire relay. UI: pure black void, neon scarlet phosphor CRT, oppressive negative space. **Triangle (△)** = Imperial Triad (Empress · S.O.V. · Scourge). Gold only for Veiled / sovereign / Guest Channel.
+- **Tone:** Scarlet faith tech, damaged systems, no Empire relay. UI: pure black void, neon scarlet phosphor CRT, oppressive negative space. **Triangle (▽)** = Imperial Triad (Empress · S.O.V. · Scourge). Gold only for Veiled / sovereign / Guest Channel.
 - **Campaigns:** Live under **Guest Channel (AUX)** — sealed from Solus’s flight record; not the main path.
 
 ### Locked names
@@ -172,9 +172,9 @@ Timeline after 3 AE · M.A.G. / Tagmata / ships / weapons · Hunter’s Assoc ·
 
 | Channel | Purpose |
 |---------|---------|
-| Status | Hull telemetry / crash state |
+| Status | Hull Condition Monitor (HSMS-style stress / motion / alarms) |
 | Flight Log | Solus short story |
 | Archives | Lore from ship memory |
-| Cartography | The Nine map (future) |
+| Cartography | The Nine orbital chart · Sturm fix |
 | Diagnostics | Audio / CRT settings |
 | Guest Channel | Future campaigns (sectioned off) |

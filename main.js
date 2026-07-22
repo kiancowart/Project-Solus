@@ -5,7 +5,7 @@
  * Intro splash COPY lives in: boot-content.js  ← edit text / logo there
  */
 
-import { BOOT_LINES, BOOT_LOGO, ACCESS_CODE, ACCESS_SUCCESS, MOTION, GATE_EASTER_EGGS } from "./boot-content.js";
+import { BOOT_LINES, BOOT_LOGO, ACCESS_CODE, ACCESS_SUCCESS, MOTION, GATE_EASTER_EGGS, WHISPER, SOUNDTRACK, SYSTEM_CHART } from "./boot-content.js";
 
 /** Red channel-banner copy — keyed by nav `data-panel` */
 const CHANNEL_TITLES = {
@@ -26,6 +26,11 @@ class TerminalAudio {
     this.ctx = null;
     this.enabled = false;
     this.sfxGain = 0.55;
+    this.musicGain = Math.max(0, Math.min(1, SOUNDTRACK?.volume ?? 0.15));
+    this.soundtrack = null;
+    this.musicGainNode = null;
+    this.soundtrackStarted = false;
+    this.soundtrackRouted = false;
   }
 
   async ensure() {
@@ -40,14 +45,131 @@ class TerminalAudio {
   async enable() {
     await this.ensure();
     this.enabled = true;
+    this.#syncSoundtrack();
   }
 
   disable() {
     this.enabled = false;
+    this.#syncSoundtrack();
   }
 
   setSfxGain(normalized) {
     this.sfxGain = Math.max(0, Math.min(1, normalized));
+  }
+
+  setMusicGain(normalized) {
+    this.musicGain = Math.max(0, Math.min(1, normalized));
+    this.#syncSoundtrack();
+  }
+
+  /** Start looping clearance soundtrack once (idempotent). */
+  async startSoundtrack() {
+    const src = SOUNDTRACK?.src;
+    if (!src || this.soundtrackStarted) return;
+
+    await this.ensure();
+    if (!this.soundtrack) {
+      const el = new Audio(src);
+      el.loop = SOUNDTRACK.loop !== false;
+      el.preload = "auto";
+      this.soundtrack = el;
+    }
+
+    this.#routeSoundtrackThroughCrush();
+    this.soundtrackStarted = true;
+    this.#syncSoundtrack();
+    try {
+      await this.soundtrack.play();
+    } catch {
+      // Autoplay may still block; next enable()/gesture retries via #syncSoundtrack
+      this.soundtrackStarted = false;
+    }
+  }
+
+  /** Bitcrush + band-limit chain for a crushed terminal radio feel. */
+  #routeSoundtrackThroughCrush() {
+    if (!this.soundtrack || !this.ctx || this.soundtrackRouted) return;
+
+    const crush = SOUNDTRACK?.crush ?? {};
+    const drive = crush.drive ?? 1.35;
+    const bits = crush.bits ?? 9;
+    const hpHz = crush.highpassHz ?? 60;
+    const lpHz = crush.lowpassHz ?? 7000;
+
+    const source = this.ctx.createMediaElementSource(this.soundtrack);
+
+    const pre = this.ctx.createGain();
+    pre.gain.value = drive;
+
+    const shaper = this.ctx.createWaveShaper();
+    shaper.curve = this.#makeCrushCurve(bits, 1.35);
+    shaper.oversample = "2x";
+
+    const highpass = this.ctx.createBiquadFilter();
+    highpass.type = "highpass";
+    highpass.frequency.value = hpHz;
+    highpass.Q.value = 0.5;
+
+    const lowpass = this.ctx.createBiquadFilter();
+    lowpass.type = "lowpass";
+    lowpass.frequency.value = lpHz;
+    lowpass.Q.value = 0.6;
+
+    const comp = this.ctx.createDynamicsCompressor();
+    comp.threshold.value = -18;
+    comp.knee.value = 18;
+    comp.ratio.value = 3;
+    comp.attack.value = 0.01;
+    comp.release.value = 0.25;
+
+    const makeup = this.ctx.createGain();
+    makeup.gain.value = 1.05;
+
+    this.musicGainNode = this.ctx.createGain();
+    this.musicGainNode.gain.value = 0;
+
+    source
+      .connect(pre)
+      .connect(shaper)
+      .connect(highpass)
+      .connect(lowpass)
+      .connect(comp)
+      .connect(makeup)
+      .connect(this.musicGainNode)
+      .connect(this.ctx.destination);
+
+    this.soundtrack.volume = 1;
+    this.soundtrackRouted = true;
+  }
+
+  /** Stepped + soft-clip curve — low bit depth grit without a worklet. */
+  #makeCrushCurve(bits = 5, softClip = 2.2) {
+    const n = 2048;
+    const curve = new Float32Array(n);
+    const steps = Math.max(2, Math.pow(2, bits) - 1);
+    for (let i = 0; i < n; i++) {
+      const x = (i * 2) / (n - 1) - 1;
+      const driven = Math.tanh(x * softClip);
+      curve[i] = Math.round(driven * steps) / steps;
+    }
+    return curve;
+  }
+
+  #syncSoundtrack() {
+    if (!this.soundtrack) return;
+
+    const level = this.enabled ? this.musicGain : 0;
+    if (this.musicGainNode) {
+      this.musicGainNode.gain.value = level;
+    } else {
+      this.soundtrack.volume = level;
+    }
+
+    if (this.enabled && this.soundtrackStarted && this.soundtrack.paused) {
+      this.soundtrack.play().catch(() => {});
+    } else if (!this.enabled && !this.soundtrack.paused) {
+      this.soundtrack.pause();
+    }
   }
 
   play(type = "click") {
@@ -130,6 +252,15 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Pace factor for boot-only timings (< 1 = faster). */
+function bootPace() {
+  return MOTION.bootPace ?? 1;
+}
+
+function bootMs(ms) {
+  return Math.max(0, Math.round(Number(ms) * bootPace()));
+}
+
 function prefersReducedMotion() {
   return (
     document.body.classList.contains("reduce-motion") ||
@@ -137,24 +268,27 @@ function prefersReducedMotion() {
   );
 }
 
-async function typeText(el, fullText, skippedRef = null) {
+async function typeText(el, fullText, skippedRef = null, onTick = null, pace = 1) {
   if (prefersReducedMotion()) {
     el.textContent = fullText;
+    onTick?.();
     return;
   }
 
-  const typeMs = MOTION.typeMs ?? 22;
+  const typeMs = (MOTION.typeMs ?? 22) * pace;
   const hitchEvery = MOTION.hitchEvery ?? 7;
-  const hitchMs = MOTION.hitchMs ?? 55;
+  const hitchMs = (MOTION.hitchMs ?? 55) * pace;
   let out = "";
 
   for (let i = 0; i < fullText.length; i++) {
     if (skippedRef?.skipped) {
       el.textContent = fullText;
+      onTick?.();
       return;
     }
     out += fullText[i];
     el.textContent = out;
+    onTick?.();
     if (i % 8 === 0) audio.play("boot");
     let wait = typeMs;
     if (hitchEvery > 0 && i > 0 && i % hitchEvery === 0) wait += hitchMs;
@@ -263,7 +397,7 @@ async function playBootLogo() {
   const stage = prepareBootLogo();
   void stage.offsetWidth;
 
-  const loadMs = BOOT_LOGO.loadMs ?? 1200;
+  const loadMs = bootMs(BOOT_LOGO.loadMs ?? 1200);
   const steps = Math.max(1, BOOT_LOGO.loadSteps ?? 5);
   const stepMs = loadMs / steps;
 
@@ -286,7 +420,7 @@ async function playBootLogo() {
     stage.classList.add("is-visible");
   }
 
-  await sleep(BOOT_LOGO.holdMs ?? 1400);
+  await sleep(bootMs(BOOT_LOGO.holdMs ?? 1400));
 
   stage.classList.remove("is-visible");
   stage.style.opacity = "";
@@ -318,6 +452,7 @@ function runClearanceGate(skippedRef) {
     skipBtn.hidden = true;
     gate.hidden = false;
     gate.classList.remove("is-unlocked", "is-staring");
+    setWhisperPadVisible(true);
     status.textContent = "";
     status.className = "gate__status";
     cascade.hidden = true;
@@ -337,6 +472,7 @@ function runClearanceGate(skippedRef) {
     };
 
     const cleanupAndResolve = () => {
+      setWhisperPadVisible(false);
       gate.hidden = true;
       gate.classList.remove("is-unlocked");
       flash.classList.remove("is-fire");
@@ -362,6 +498,7 @@ function runClearanceGate(skippedRef) {
     };
 
     const stare = () => {
+      setWhisperPadVisible(false);
       locked = true;
       pad.querySelectorAll(".gate__key").forEach((k) => {
         k.disabled = true;
@@ -384,6 +521,7 @@ function runClearanceGate(skippedRef) {
     };
 
     const succeed = async () => {
+      setWhisperPadVisible(false);
       locked = true;
       pad.querySelectorAll(".gate__key").forEach((k) => {
         k.disabled = true;
@@ -398,11 +536,12 @@ function runClearanceGate(skippedRef) {
       void flash.offsetWidth;
       flash.classList.add("is-fire");
       audio.play("unlock");
+      void audio.startSoundtrack();
 
       // Skip is available immediately — aborts acceptance text + later boot stages
       skipBtn.hidden = false;
 
-      await sleep(420);
+      await sleep(bootMs(420));
       if (skippedRef.skipped) {
         cleanupAndResolve();
         return;
@@ -412,18 +551,19 @@ function runClearanceGate(skippedRef) {
       cascade.classList.remove("is-pending");
       cascade.classList.add("is-shown");
       const lines = ACCESS_SUCCESS?.lines ?? [];
+      const pace = bootPace();
       for (const line of lines) {
         if (skippedRef.skipped) break;
         const row = document.createElement("div");
         row.className = "gate__cascade-line";
         cascade.appendChild(row);
-        await typeText(row, `> ${line.text}`, skippedRef);
+        await typeText(row, `> ${line.text}`, skippedRef, null, pace);
         if (skippedRef.skipped) break;
-        await sleep(line.delay ?? 100);
+        await sleep(bootMs(line.delay ?? 100));
       }
 
       if (!skippedRef.skipped) {
-        await sleep(ACCESS_SUCCESS?.holdMs ?? 700);
+        await sleep(bootMs(ACCESS_SUCCESS?.holdMs ?? 700));
       }
 
       cleanupAndResolve();
@@ -479,6 +619,7 @@ function runClearanceGate(skippedRef) {
 
     const onKeydown = async (e) => {
       if (gate.hidden) return;
+      if (e.target.closest?.("#whisper")) return;
       if (!audio.enabled && ((e.key >= "0" && e.key <= "9") || e.key === "Enter")) {
         await audio.enable();
         updateAudioToggle(true);
@@ -511,7 +652,8 @@ async function enterHub() {
   hubScreen.hidden = false;
   if (logoStage) {
     logoStage.hidden = true;
-    logoStage.classList.remove("is-visible");
+    logoStage.classList.remove("is-visible", "is-loading");
+    logoStage.style.opacity = "";
   }
   audio.play("select");
   startChrono();
@@ -523,6 +665,68 @@ async function enterHub() {
 
   const active = document.querySelector(".panel.is-active");
   if (active) await revealPanel(active);
+}
+
+/** Leave hub and reopen the clearance keypad; success returns to hub */
+async function returnToClearance() {
+  const bootScreen = document.getElementById("boot");
+  const hubScreen = document.getElementById("hub");
+  const log = document.getElementById("boot-log");
+  const skipBtn = document.getElementById("boot-skip");
+  const logoStage = document.getElementById("boot-logo");
+
+  hubScreen.hidden = true;
+  bootScreen.hidden = false;
+  log.innerHTML = "";
+  log.classList.remove("is-dimmed");
+  skipBtn.hidden = true;
+  if (logoStage) {
+    logoStage.hidden = true;
+    logoStage.classList.remove("is-visible", "is-loading");
+    logoStage.style.opacity = "";
+  }
+
+  const skippedRef = { skipped: false };
+
+  const triggerSkip = () => {
+    if (skippedRef.skipped || skipBtn.hidden) return;
+    skippedRef.skipped = true;
+    audio.play("click");
+  };
+
+  skipBtn.addEventListener("click", triggerSkip, { once: true });
+  const onSkipKey = (e) => {
+    if (e.key !== "Enter") return;
+    if (e.target.closest?.("#whisper")) return;
+    if (skipBtn.hidden || skippedRef.skipped) return;
+    e.preventDefault();
+    triggerSkip();
+  };
+  window.addEventListener("keydown", onSkipKey);
+
+  await runClearanceGate(skippedRef);
+
+  window.removeEventListener("keydown", onSkipKey);
+  skipBtn.hidden = true;
+  await enterHub();
+}
+
+function initImagoReturn() {
+  const mark = document.querySelector(".imago-mark");
+  if (!mark) return;
+
+  let busy = false;
+  mark.addEventListener("click", async () => {
+    if (busy) return;
+    const hub = document.getElementById("hub");
+    if (!hub || hub.hidden) return;
+    busy = true;
+    try {
+      await returnToClearance();
+    } finally {
+      busy = false;
+    }
+  });
 }
 
 async function runBoot() {
@@ -548,6 +752,7 @@ async function runBoot() {
 
   const onSkipKey = (e) => {
     if (e.key !== "Enter") return;
+    if (e.target.closest?.("#whisper")) return;
     if (skipBtn.hidden || skippedRef.skipped) return;
     e.preventDefault();
     triggerSkip();
@@ -565,25 +770,31 @@ async function runBoot() {
     return;
   }
 
+  const stickLog = () => {
+    log.scrollTop = log.scrollHeight;
+  };
+
+  const pace = bootPace();
   for (const line of BOOT_LINES) {
     if (skippedRef.skipped) break;
     const el = document.createElement("div");
     el.className = line.cls || "";
     log.appendChild(el);
-    log.scrollTop = log.scrollHeight;
-    await typeText(el, `> ${line.text}`, skippedRef);
+    stickLog();
+    await typeText(el, `> ${line.text}`, skippedRef, stickLog, pace);
     if (line.awaitDotsMs && !skippedRef.skipped) {
       const dots = document.createElement("span");
       dots.className = "boot-dots";
       el.appendChild(dots);
-      await blinkBootDots(dots, line.awaitDotsMs, skippedRef);
+      await blinkBootDots(dots, bootMs(line.awaitDotsMs), skippedRef);
+      stickLog();
     }
-    log.scrollTop = log.scrollHeight;
-    if (!skippedRef.skipped) await sleep(line.delay);
+    stickLog();
+    if (!skippedRef.skipped) await sleep(bootMs(line.delay));
   }
 
   window.removeEventListener("keydown", onSkipKey);
-  if (!skippedRef.skipped) await sleep(80);
+  if (!skippedRef.skipped) await sleep(bootMs(80));
   skipBtn.hidden = true;
 
   if (!skippedRef.skipped) {
@@ -658,6 +869,8 @@ function initNav() {
 
 function startChrono() {
   const el = document.getElementById("chrono");
+  if (!el || el.dataset.running === "1") return;
+  el.dataset.running = "1";
   const tick = () => {
     const now = new Date();
     const h = String(now.getUTCHours()).padStart(2, "0");
@@ -749,6 +962,7 @@ function initSystems() {
   const audioBtn = document.getElementById("audio-toggle");
   const motionBtn = document.getElementById("reduce-motion");
   const sfxGain = document.getElementById("sfx-gain");
+  const musicGain = document.getElementById("music-gain");
   const scan = document.getElementById("scan-intensity");
 
   form?.addEventListener("submit", (e) => e.preventDefault());
@@ -772,6 +986,11 @@ function initSystems() {
   });
   audio.setSfxGain(readFillBarValue(sfxGain) / 100);
 
+  bindFillBar(musicGain, (v) => {
+    audio.setMusicGain(v / 100);
+  });
+  audio.setMusicGain(readFillBarValue(musicGain) / 100);
+
   bindFillBar(scan, (v) => {
     document.documentElement.style.setProperty(
       "--scan-opacity",
@@ -787,16 +1006,706 @@ function initSystems() {
     const target = e.target.closest("[data-sfx]");
     if (!target || target.classList.contains("nav-item")) return;
     if (target.id === "audio-toggle" || target.id === "reduce-motion") return;
+    if (target.classList.contains("imago-mark")) return;
     audio.play(target.dataset.sfx || "click");
   });
 }
 
 /* ==========================================================================
-   INIT
+   WHISPER — Kharon-Celeste corner ARG (pad screen only)
    ========================================================================== */
+
+/** Shown only while the clearance number pad is active */
+let whisperPadControl = {
+  show() {},
+  hide() {},
+};
+
+function setWhisperPadVisible(on) {
+  if (on) whisperPadControl.show();
+  else whisperPadControl.hide();
+}
+
+function initWhisper() {
+  const root = document.getElementById("whisper");
+  const tab = document.getElementById("whisper-tab");
+  const panel = document.getElementById("whisper-panel");
+  const head = document.getElementById("whisper-head");
+  const log = document.getElementById("whisper-log");
+  const form = document.getElementById("whisper-form");
+  const input = document.getElementById("whisper-input");
+  if (!root || !tab || !panel || !log || !form || !input) return;
+
+  root.hidden = true;
+
+  if (head && WHISPER?.title) head.textContent = WHISPER.title;
+
+  const steps = WHISPER?.steps ?? [];
+  const deny = WHISPER?.deny ?? "DENIED";
+  const farewell = WHISPER?.farewell ?? [
+    "I'm done with you now. I just wanna watch you delve into hell.",
+    "Don't make me repeat myself.",
+    "Fine.",
+  ];
+  let step = 0;
+  let open = false;
+  let done = false;
+  let busy = false;
+  let farewellIndex = 0;
+  let lastBot = null; // { text, cls, grid? }
+
+  /** Letters/digits + spacing only; symbols act as spaces. Case-insensitive. */
+  const normalizeAnswer = (raw) =>
+    String(raw ?? "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim()
+      .replace(/\s+/g, " ");
+
+  const formatSudoku = (grid) => {
+    const cell = (n) => (n ? String(n) : "·");
+    const rowLine = (row) =>
+      [0, 3, 6]
+        .map((b) => row.slice(b, b + 3).map(cell).join(" "))
+        .join(" │ ");
+    const band = (i) =>
+      [0, 1, 2].map((r) => rowLine(grid[i + r])).join("\n");
+    const sep = "──────┼───────┼──────";
+    return [band(0), sep, band(3), sep, band(6)].join("\n");
+  };
+
+  const stick = () => {
+    log.scrollTop = log.scrollHeight;
+  };
+
+  const typeLine = async (text, cls = "", { record = true } = {}) => {
+    const line = document.createElement("div");
+    line.className = `whisper__line${cls ? ` ${cls}` : ""}`;
+    log.appendChild(line);
+    stick();
+    await typeText(line, text, null, stick);
+    stick();
+    if (record && !text.startsWith("> ")) {
+      lastBot = { text, cls, grid: null };
+    }
+  };
+
+  const showGrid = (grid, { record = true } = {}) => {
+    const text = formatSudoku(grid);
+    const line = document.createElement("pre");
+    line.className = "whisper__line whisper__sudoku whisper__line--prompt";
+    line.textContent = text;
+    log.appendChild(line);
+    stick();
+    if (record) {
+      lastBot = { text, cls: "whisper__line--prompt", grid };
+    }
+  };
+
+  /** Prompt line + optional sudoku (grid dumps instantly). */
+  const showStepPrompt = async (stepObj, { record = true } = {}) => {
+    if (stepObj?.prompt) {
+      await typeLine(stepObj.prompt, "whisper__line--prompt", {
+        record: !stepObj.grid && record,
+      });
+    }
+    if (stepObj?.grid) {
+      showGrid(stepObj.grid, { record });
+    }
+  };
+
+  const matchesAny = (raw, list = []) => {
+    const n = normalizeAnswer(raw);
+    return list.some((a) => normalizeAnswer(a) === n);
+  };
+
+  const isIdentityAsk = (raw) => matchesAny(raw, WHISPER?.identity?.match ?? ["who are you"]);
+
+  const hasForbiddenName = (raw) => {
+    const word = normalizeAnswer(WHISPER?.forbiddenName?.word ?? "Kian");
+    if (!word) return false;
+    return normalizeAnswer(raw)
+      .split(" ")
+      .some((token) => token === word);
+  };
+
+  const repeatLastBot = async () => {
+    if (!lastBot) return;
+    if (lastBot.grid) {
+      showGrid(lastBot.grid, { record: false });
+      return;
+    }
+    await typeLine(lastBot.text, lastBot.cls || "whisper__line--prompt", {
+      record: false,
+    });
+  };
+
+  const setBusy = (on) => {
+    busy = on;
+    input.disabled = on;
+  };
+
+  const askCurrent = async () => {
+    if (done || step >= steps.length) return;
+    setBusy(true);
+    try {
+      await showStepPrompt(steps[step]);
+    } finally {
+      setBusy(false);
+      if (open) input.focus();
+    }
+  };
+
+  const openPanel = async () => {
+    if (busy || root.hidden) return;
+    open = true;
+    panel.hidden = false;
+    tab.setAttribute("aria-expanded", "true");
+    root.classList.add("is-open");
+    audio.play("select");
+    if (!log.childElementCount) await askCurrent();
+    else input.focus();
+  };
+
+  const closePanel = ({ silent = false } = {}) => {
+    open = false;
+    panel.hidden = true;
+    tab.setAttribute("aria-expanded", "false");
+    root.classList.remove("is-open");
+    if (!silent) audio.play("click");
+  };
+
+  whisperPadControl = {
+    show() {
+      root.hidden = false;
+    },
+    hide() {
+      closePanel({ silent: true });
+      root.hidden = true;
+    },
+  };
+
+  tab.addEventListener("click", () => {
+    if (root.hidden) return;
+    if (open) closePanel();
+    else openPanel();
+  });
+
+  // Keep keypad / skip from seeing whisper keystrokes
+  root.addEventListener("keydown", (e) => e.stopPropagation());
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (busy) return;
+
+    const raw = input.value.trim();
+    input.value = "";
+    if (!raw) return;
+
+    setBusy(true);
+    try {
+      await typeLine(`> ${raw}`, "", { record: false });
+
+      // Name forbid — works at any point (before other interrupts)
+      if (hasForbiddenName(raw)) {
+        const reply = WHISPER?.forbiddenName?.reply ?? "Don't say that name.";
+        audio.play("select");
+        await typeLine(reply, "whisper__line--prompt", { record: false });
+        await repeatLastBot();
+        return;
+      }
+
+      // Identity interrupt — works at any point
+      if (isIdentityAsk(raw)) {
+        const reply = WHISPER?.identity?.reply ?? "Your guide.";
+        audio.play("select");
+        await typeLine(reply, "whisper__line--prompt", { record: false });
+        await repeatLastBot();
+        return;
+      }
+
+      // After the riddle is solved — escalate dismissals
+      if (done || step >= steps.length) {
+        const idx = Math.min(farewellIndex, farewell.length - 1);
+        farewellIndex = Math.min(farewellIndex + 1, farewell.length - 1);
+        audio.play("open");
+        await typeLine(farewell[idx], "whisper__line--deny");
+        return;
+      }
+
+      const current = steps[step];
+      const accepted = matchesAny(raw, current.accept ?? []);
+      const soft = current.softReject;
+      const softHit = soft && matchesAny(raw, soft.match ?? []);
+
+      if (accepted) {
+        audio.play("select");
+        if (current.success) {
+          await typeLine(current.success, "whisper__line--ok");
+        }
+        step += 1;
+        if (step >= steps.length) {
+          done = true;
+          return;
+        }
+        await showStepPrompt(steps[step]);
+        return;
+      }
+
+      if (softHit) {
+        audio.play("open");
+        await typeLine(soft.text, "whisper__line--deny");
+        return;
+      }
+
+      audio.play("open");
+      await typeLine(deny, "whisper__line--deny");
+      await showStepPrompt(current);
+    } finally {
+      setBusy(false);
+      if (open) input.focus();
+    }
+  });
+}
+
+/* ==========================================================================
+   CARTOGRAPHY — The Nine orbital chart
+   ========================================================================== */
+
+function polarToXY(cx, cy, r, angleDeg) {
+  const a = (angleDeg * Math.PI) / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+
+function initCartography() {
+  const mapHost = document.getElementById("chart-map");
+  const readout = document.getElementById("chart-readout");
+  if (!mapHost || !readout || !SYSTEM_CHART) return;
+
+  const bodies = SYSTEM_CHART.bodies ?? [];
+  const sturm = SYSTEM_CHART.sturm;
+  const idle = SYSTEM_CHART.idle ?? "SELECT ORBITAL BODY";
+  const errorText = SYSTEM_CHART.error ?? "GYROSCOPIC DATA SYNC ERROR";
+
+  const vb = 520;
+  const cx = vb / 2;
+  const cy = vb / 2;
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${vb} ${vb}`);
+  svg.setAttribute("class", "chart-svg");
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "The Nine");
+
+  const add = (tag, attrs = {}, parent = svg) => {
+    const el = document.createElementNS(svgNS, tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+    parent.appendChild(el);
+    return el;
+  };
+
+  for (let i = 0; i < 28; i++) {
+    add("circle", {
+      class: "chart-svg__star",
+      cx: 20 + ((i * 97) % (vb - 40)),
+      cy: 18 + ((i * 53) % (vb - 36)),
+      r: i % 5 === 0 ? 1.1 : 0.55,
+    });
+  }
+
+  for (const body of bodies) {
+    add("circle", {
+      class: "chart-svg__orbit",
+      cx,
+      cy,
+      r: body.r,
+      fill: "none",
+    });
+  }
+
+  add("circle", { class: "chart-svg__sun", cx, cy, r: 8 });
+
+  let stopWire = null;
+  let selectedId = null;
+  let selectedG = null;
+
+  const fitSelectBox = (g) => {
+    const content = g.querySelector(".chart-svg__content");
+    const box = g.querySelector(".chart-svg__box");
+    if (!content || !box) return;
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    const include = (x0, y0, x1, y1) => {
+      minX = Math.min(minX, x0);
+      minY = Math.min(minY, y0);
+      maxX = Math.max(maxX, x1);
+      maxY = Math.max(maxY, y1);
+    };
+
+    content.querySelectorAll("circle").forEach((c) => {
+      const r = Number(c.getAttribute("r") || 0);
+      const x = Number(c.getAttribute("cx") || 0);
+      const y = Number(c.getAttribute("cy") || 0);
+      include(x - r, y - r, x + r, y + r);
+    });
+
+    content.querySelectorAll("text").forEach((t) => {
+      const x = Number(t.getAttribute("x") || 0);
+      const y = Number(t.getAttribute("y") || 0);
+      const fs = Number.parseFloat(getComputedStyle(t).fontSize) || 8;
+      let w = 0;
+      try {
+        w = t.getComputedTextLength();
+      } catch {
+        w = (t.textContent || "").length * fs * 0.62;
+      }
+      if (!w) w = (t.textContent || "").length * fs * 0.62;
+      const anchor = t.getAttribute("text-anchor") || "start";
+      let x0 = x;
+      let x1 = x + w;
+      if (anchor === "middle") {
+        x0 = x - w / 2;
+        x1 = x + w / 2;
+      } else if (anchor === "end") {
+        x0 = x - w;
+        x1 = x;
+      }
+      include(x0, y - fs * 0.9, x1, y + fs * 0.3);
+    });
+
+    if (!Number.isFinite(minX)) return;
+
+    const padLeft = 3.5;
+    const padRight = 6.5;
+    const padY = 2.5;
+    box.setAttribute("x", String(minX - padLeft));
+    box.setAttribute("y", String(minY - padY));
+    box.setAttribute("width", String(maxX - minX + padLeft + padRight));
+    box.setAttribute("height", String(maxY - minY + padY * 2));
+  };
+
+  const clearSelection = () => {
+    if (selectedG) selectedG.classList.remove("is-selected");
+    selectedId = null;
+    selectedG = null;
+  };
+
+  const showIdle = () => {
+    if (stopWire) {
+      stopWire();
+      stopWire = null;
+    }
+    readout.innerHTML = `<p class="chart__idle">${idle}</p>`;
+  };
+
+  const showError = () => {
+    audio.play("open");
+    if (stopWire) {
+      stopWire();
+      stopWire = null;
+    }
+    readout.innerHTML = `<p class="chart__error">${errorText}</p>`;
+  };
+
+  const showSturm = () => {
+    audio.play("select");
+    if (stopWire) {
+      stopWire();
+      stopWire = null;
+    }
+    readout.innerHTML = `
+      <div class="chart-sturm">
+        <div class="wire-globe" aria-hidden="true">
+          <svg class="wire-globe__svg" viewBox="0 0 100 100">
+            <circle class="wire-globe__rim" cx="50" cy="50" r="44" fill="none" />
+            <g class="wire-globe__lats"></g>
+            <g class="wire-globe__lons"></g>
+          </svg>
+          <div class="wire-globe__scan"></div>
+        </div>
+        <p class="chart-sturm__name">${sturm.name}</p>
+        <p class="chart-sturm__meta">UROS · LOCAL FIX · ▽</p>
+        <p class="chart-sturm__blurb">${sturm.blurb ?? ""}</p>
+      </div>`;
+    const globeSvg = readout.querySelector(".wire-globe__svg");
+    if (globeSvg) stopWire = startWireGlobe(globeSvg);
+  };
+
+  const toggleSelect = (id, g, onSelect) => {
+    if (selectedId === id) {
+      clearSelection();
+      showIdle();
+      return;
+    }
+    clearSelection();
+    selectedId = id;
+    selectedG = g;
+    g.classList.add("is-selected");
+    onSelect();
+  };
+
+  const sunHit = add("circle", { class: "chart-svg__hit", cx, cy, r: 14 });
+  sunHit.addEventListener("click", () => {
+    // Primary is not a labeled body — always error, no sticky box
+    clearSelection();
+    showError();
+  });
+
+  const movers = [];
+
+  const bindBody = (g, id, onSelect) => {
+    g.style.cursor = "pointer";
+    const activate = () => toggleSelect(id, g, onSelect);
+    g.addEventListener("click", activate);
+    g.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        activate();
+      }
+    });
+  };
+
+  bodies.forEach((body) => {
+    const g = add("g", {
+      class: "chart-svg__body",
+      tabindex: "0",
+      role: "button",
+      "aria-label": body.name,
+    });
+    g.dataset.body = body.id;
+    const { x, y } = polarToXY(cx, cy, body.r, body.angle);
+
+    add("rect", { class: "chart-svg__box", x: 0, y: 0, width: 1, height: 1 }, g);
+    add("circle", { class: "chart-svg__hit", cx: 0, cy: 0, r: Math.max(12, body.size + 8) }, g);
+    const content = add("g", { class: "chart-svg__content" }, g);
+    add("circle", { class: "chart-svg__dot", cx: 0, cy: 0, r: body.size }, content);
+    const label = add("text", { class: "chart-svg__label", x: body.size + 4, y: 2.5 }, content);
+    label.textContent = body.name;
+    g.setAttribute("transform", `translate(${x} ${y})`);
+    bindBody(g, body.id, showError);
+
+    movers.push({
+      g,
+      r: body.r,
+      angle: body.angle,
+      speed: 4.5 / Math.sqrt(body.r),
+      id: body.id,
+    });
+  });
+
+  let sturmMover = null;
+  if (sturm) {
+    const g = add("g", {
+      class: "chart-svg__sturm",
+      tabindex: "0",
+      role: "button",
+      "aria-label": `${sturm.name}, current location`,
+    });
+    g.dataset.body = "sturm";
+
+    const parent = bodies.find((b) => b.id === sturm.parent);
+    const urosXY = parent ? polarToXY(cx, cy, parent.r, parent.angle) : { x: cx, y: cy };
+    const sturmXY = polarToXY(urosXY.x, urosXY.y, sturm.offset ?? 16, sturm.angle ?? 0);
+
+    add("rect", { class: "chart-svg__box", x: 0, y: 0, width: 1, height: 1 }, g);
+    add("circle", { class: "chart-svg__hit", cx: 0, cy: 0, r: 14 }, g);
+    const content = add("g", { class: "chart-svg__content" }, g);
+    const mark = add("text", { class: "chart-svg__mark", x: 0, y: 4, "text-anchor": "middle" }, content);
+    mark.textContent = "▽";
+    const label = add("text", { class: "chart-svg__label chart-svg__label--sturm", x: 8, y: 3 }, content);
+    label.textContent = sturm.name;
+    g.setAttribute("transform", `translate(${sturmXY.x} ${sturmXY.y})`);
+    bindBody(g, "sturm", showSturm);
+
+    sturmMover = {
+      g,
+      parentId: sturm.parent,
+      offset: sturm.offset ?? 16,
+      angle: sturm.angle ?? 0,
+      speed: 18,
+    };
+  }
+
+  mapHost.replaceChildren(svg);
+  // Boxes need layout after mount (getComputedTextLength / fonts)
+  const refitAll = () => {
+    svg.querySelectorAll(".chart-svg__body, .chart-svg__sturm").forEach((g) => fitSelectBox(g));
+  };
+  refitAll();
+  requestAnimationFrame(refitAll);
+  if (document.fonts?.ready) document.fonts.ready.then(refitAll);
+
+  showIdle();
+
+  if (!prefersReducedMotion()) {
+    let last = performance.now();
+    const tick = (now) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      let uros = null;
+      for (const m of movers) {
+        m.angle += m.speed * dt;
+        const { x, y } = polarToXY(cx, cy, m.r, m.angle);
+        m.g.setAttribute("transform", `translate(${x} ${y})`);
+        if (m.id === "uros") uros = { x, y };
+      }
+
+      if (sturmMover) {
+        sturmMover.angle += sturmMover.speed * dt;
+        if (!uros) {
+          const parent = movers.find((m) => m.id === sturmMover.parentId);
+          if (parent) uros = polarToXY(cx, cy, parent.r, parent.angle);
+        }
+        if (uros) {
+          const s = polarToXY(uros.x, uros.y, sturmMover.offset, sturmMover.angle);
+          sturmMover.g.setAttribute("transform", `translate(${s.x} ${s.y})`);
+        }
+      }
+
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+}
+
+/**
+ * 2D wireframe globe with sphere-projected (bowed) latitudes & longitudes.
+ * Meridians sweep L→R; poles remapped onto the rim circle.
+ */
+function startWireGlobe(svg) {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const lats = svg.querySelector(".wire-globe__lats");
+  const lons = svg.querySelector(".wire-globe__lons");
+  if (!lats || !lons) return () => {};
+
+  const cx = 50;
+  const cy = 50;
+  const R = 44;
+  const tilt = 0.42;
+  const cosT = Math.cos(tilt);
+  const sinT = Math.sin(tilt);
+  // Stretch Y so tilted poles land on the outer circle
+  const yScale = 1 / cosT;
+  const latCount = 5;
+  const lonCount = 7;
+  const samples = 32;
+
+  const project = (lon, lat) => {
+    const cl = Math.cos(lat);
+    const x = R * cl * Math.sin(lon);
+    const y = R * Math.sin(lat);
+    const z = R * cl * Math.cos(lon);
+    const yt = y * cosT - z * sinT;
+    const zt = y * sinT + z * cosT;
+    return { x: cx + x, y: cy + yt * yScale, z: zt };
+  };
+
+  const pathFromPoints = (pts) => {
+    if (pts.length < 2) return "";
+    let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
+    for (let i = 1; i < pts.length; i++) {
+      d += ` L ${pts[i].x.toFixed(2)} ${pts[i].y.toFixed(2)}`;
+    }
+    return d;
+  };
+
+  // Clip grid to the rim so stretch never spills outside the sphere
+  let clip = svg.querySelector("#wire-globe-clip");
+  if (!clip) {
+    const defs = document.createElementNS(svgNS, "defs");
+    clip = document.createElementNS(svgNS, "clipPath");
+    clip.setAttribute("id", "wire-globe-clip");
+    const clipCircle = document.createElementNS(svgNS, "circle");
+    clipCircle.setAttribute("cx", String(cx));
+    clipCircle.setAttribute("cy", String(cy));
+    clipCircle.setAttribute("r", String(R));
+    clip.appendChild(clipCircle);
+    defs.appendChild(clip);
+    svg.insertBefore(defs, svg.firstChild);
+  }
+  lats.setAttribute("clip-path", "url(#wire-globe-clip)");
+  lons.setAttribute("clip-path", "url(#wire-globe-clip)");
+
+  for (let i = 1; i < latCount; i++) {
+    const lat = -Math.PI / 2 + (Math.PI * i) / latCount;
+    const pts = [];
+    for (let s = 0; s <= samples; s++) {
+      const lon = -Math.PI / 2 + (Math.PI * s) / samples;
+      pts.push(project(lon, lat));
+    }
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute("class", "wire-globe__lat");
+    path.setAttribute("d", pathFromPoints(pts));
+    path.setAttribute("fill", "none");
+    lats.appendChild(path);
+  }
+
+  const lonPaths = [];
+  for (let i = 0; i < lonCount; i++) {
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute("class", "wire-globe__lon");
+    path.setAttribute("fill", "none");
+    lons.appendChild(path);
+    lonPaths.push(path);
+  }
+
+  const setMeridian = (path, lon, opacity) => {
+    const pts = [];
+    for (let s = 0; s <= samples; s++) {
+      const lat = -Math.PI / 2 + (Math.PI * s) / samples;
+      pts.push(project(lon, lat));
+    }
+    path.setAttribute("d", pathFromPoints(pts));
+    path.setAttribute("opacity", String(opacity));
+  };
+
+  let raf = 0;
+  let alive = true;
+  const t0 = performance.now();
+  const periodMs = 11000; // slower spin
+
+  const draw = (now) => {
+    if (!alive) return;
+    const phase = ((now - t0) % periodMs) / periodMs;
+    for (let i = 0; i < lonCount; i++) {
+      let u = phase + i / lonCount;
+      u -= Math.floor(u);
+      const lon = -Math.PI / 2 + Math.PI * u;
+      const edge = Math.abs(u - 0.5) * 2;
+      const opacity = 0.35 + 0.65 * (1 - edge * 0.55);
+      setMeridian(lonPaths[i], lon, opacity);
+    }
+    raf = requestAnimationFrame(draw);
+  };
+
+  if (prefersReducedMotion()) {
+    for (let i = 0; i < lonCount; i++) {
+      const u = (i + 0.5) / lonCount;
+      const lon = -Math.PI / 2 + Math.PI * u;
+      setMeridian(lonPaths[i], lon, 0.75);
+    }
+    return () => {};
+  }
+
+  raf = requestAnimationFrame(draw);
+  return () => {
+    alive = false;
+    cancelAnimationFrame(raf);
+  };
+}
+
 
 document.addEventListener("DOMContentLoaded", () => {
   initNav();
   initSystems();
+  initImagoReturn();
+  initWhisper();
+  initCartography();
   runBoot();
 });
