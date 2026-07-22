@@ -1,5 +1,5 @@
 /**
- * LATTICE OS — G512 Carapace (Cara), bonded: Solus
+ * LATTICE.OS — G512 Carapace (Cara), bonded: Solus
  * Boot playback, navigation, CRT fidelity, and interface audio.
  *
  * Intro splash COPY lives in: boot-content.js  ← edit text / logo there
@@ -8,8 +8,8 @@
 import { BOOT_LINES, BOOT_LOGO, ACCESS_CODE, ACCESS_SUCCESS, MOTION } from "./boot-content.js";
 
 const PANEL_HINTS = {
-  overview: "HULL TELEMETRY — CRITICAL · G512 CARA",
-  flightlog: "FLIGHT LOG — PERSONAL RECORD",
+  overview: "STATUS — HULL CRITICAL",
+  flightlog: "FLIGHT LOG — LOC UROS · STURM",
   archives: "ARCHIVES — PARTIAL SURVIVAL",
   cartography: "CARTOGRAPHY — UROS · STURM",
   diagnostics: "DIAGNOSTICS — FIDELITY CONTROLS",

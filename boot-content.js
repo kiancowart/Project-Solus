@@ -37,8 +37,8 @@ export const ACCESS_SUCCESS = {
   /** Typed lines after ACCEPTED — top to bottom, stiff teletype */
   lines: [
     { text: "CLEARANCE VERIFIED", delay: 120 },
-    { text: "TRIAD AUTHORITY · ACKNOWLEDGED", delay: 140 },
-    { text: "LATTICE CHANNEL · UNSEALING", delay: 180 },
+    { text: "ACCESS TO LATTICE.OS GRANTED", delay: 140 },
+    { text: "GLORY TO HER AND HER EMPIRE", delay: 180 },
   ],
   /** Hold on final beat before boot log starts (ms) */
   holdMs: 700,
@@ -79,16 +79,16 @@ export const BOOT_LOGO = {
    BOOT LOG LINES — edit freely
    --------------------------------------------------------------------------- */
 export const BOOT_LINES = [
-  { text: "LATTICE OS — FTHFLL resuscitating…", cls: "boot-line--ok", delay: 40 },
-  { text: "Scarlet Order of the Veil · consecrated craftware", cls: "boot-line--gold", delay: 40 },
-  { text: "Craft ID … G512 Carapace-class · CARA", cls: "boot-line--ok", delay: 35 },
-  { text: "Khan-link handshake … SOLUS · BOUND", cls: "boot-line--ok", delay: 40 },
-  { text: "WARNING: hull integrity critical", cls: "boot-line--err", delay: 35 },
-  { text: "Propulsion lattice … OFFLINE", cls: "boot-line--err", delay: 30 },
-  { text: "Life support … partial / recycling", cls: "boot-line--warn", delay: 35 },
-  { text: "Imperial relay … NO SIGNAL", cls: "boot-line--err", delay: 35 },
-  { text: "Nav fix … Uros · Sturm", cls: "boot-line--warn", delay: 30 },
-  { text: "Flight log partition … recoverable", cls: "boot-line--ok", delay: 30 },
-  { text: "Guest channel … sealed", cls: "", delay: 25 },
-  { text: "Operator session opened aboard Cara.", cls: "boot-line--ok", delay: 60 },
+  { text: "LATTICE.OS — FTHFLL permissions clarifying...", cls: "boot-line--ok", delay: 40 },
+  { text: "CARAPACE ID > G512 // CARA", cls: "boot-line--ok", delay: 35 },
+  { text: "KHAN ID > S. Raei // SOLUS", cls: "boot-line--ok", delay: 40 },
+  { text: "LATTICE.OS CONNECTION > 62% // LOW INTEGRITY | inactive", cls: "boot-line--err", delay: 35 },
+  { text: "HULL STRUCTURE > 45% // DAMAGED // RESTRICTED OPERATION", cls: "boot-line--err", delay: 30 },
+  { text: "LIFE SUPPORT OPERATION > EMERGENCY OPERATION", cls: "boot-line--warn", delay: 35 },
+  { text: "HIVE RELAY CONTACT... Failed", cls: "boot-line--err", delay: 35 },
+  { text: "GYROSCOPE ARRAY > LIMITED FUNCTIONALITY", cls: "boot-line--warn", delay: 30 },
+  { text: "GRYOSCOPE ARRAY | nav ID > UROS · STURM", cls: "boot-line--warn", delay: 35 },
+  { text: "ARCHIVES... recoverable", cls: "boot-line--ok", delay: 30 },
+  { text: "Guest channel … REPAIRING", cls: "", delay: 25 },
+  { text: "LIMITED ARCHIVE ACCESS | EMERGENCY PERMISSIONS GRANTED", cls: "boot-line--ok", delay: 60 },
 ];

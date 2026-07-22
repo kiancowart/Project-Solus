@@ -21,7 +21,8 @@ The website **is** the terminal of **Cara** — a **G512 Carapace-class** Arkhid
 |-------|------|-------|
 | Ship OS | **Lattice OS** | S.O.V. craftware |
 | Kernel | **FTHFLL** (Faithfull) | Compact kernel designation |
-| Bonded pilot line | `khan-link · solus` | Solus = the Khan |
+| Bonded pilot line | `lattice-link · solus` | Solus = the Khan |
+| Ship OS | **LATTICE.OS** | always dotted |
 | Ship class / model | **G512 Carapace Class** | G = Generation |
 | Ship (familiar) | **Cara** (Ka-ra) | What Solus calls her |
 | Sidearm class | **KSP** | Khan Specialised Pistol |
