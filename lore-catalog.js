@@ -1,11 +1,14 @@
 /**
- * Auto-generated lore catalog (metadata only).
- * Source: lore/ → Obsidian vault. Bodies are not shipped; Archives shows Recovery pending.
+ * Auto-generated lore catalog.
+ * Source: lore/ → Obsidian vault.
+ * Bodies ship ONLY for notes under Player Facing/; all other entries are metadata.
+ * Archives shows Recovery pending for sealed hits.
  * Regenerate: node scripts/build-lore-catalog.js
  */
 export const LORE_CATALOG = {
   "generated": "2026-07-23",
-  "count": 141,
+  "count": 144,
+  "recoveredCount": 3,
   "entries": [
     {
       "id": "lore-001",
@@ -15,7 +18,8 @@ export const LORE_CATALOG = {
       "trail": [
         "Abilities"
       ],
-      "search": "ascendancy or paracausality abilities/ascendancy or paracausality.md abilities ascendancy or paracausality"
+      "search": "ascendancy or paracausality abilities/ascendancy or paracausality.md",
+      "recovered": false
     },
     {
       "id": "lore-002",
@@ -26,7 +30,8 @@ export const LORE_CATALOG = {
         "Factions",
         "Arkhidian Empire"
       ],
-      "search": "arkhidian empire factions/arkhidian empire/arkhidian empire.md factions arkhidian empire"
+      "search": "arkhidian empire factions/arkhidian empire/arkhidian empire.md",
+      "recovered": false
     },
     {
       "id": "lore-003",
@@ -38,7 +43,8 @@ export const LORE_CATALOG = {
         "Arkhidian Empire",
         "Government"
       ],
-      "search": "red empress factions/arkhidian empire/government/red empress.md factions arkhidian empire government red empress"
+      "search": "red empress factions/arkhidian empire/government/red empress.md",
+      "recovered": false
     },
     {
       "id": "lore-004",
@@ -51,7 +57,8 @@ export const LORE_CATALOG = {
         "Government",
         "Scarlet Order of the Veil"
       ],
-      "search": "kharon units factions/arkhidian empire/government/scarlet order of the veil/kharon units.md factions arkhidian empire government scarlet order of the veil kharon units"
+      "search": "kharon units factions/arkhidian empire/government/scarlet order of the veil/kharon units.md",
+      "recovered": false
     },
     {
       "id": "lore-005",
@@ -64,7 +71,8 @@ export const LORE_CATALOG = {
         "Government",
         "Scarlet Order of the Veil"
       ],
-      "search": "scarlet order of the veil factions/arkhidian empire/government/scarlet order of the veil/scarlet order of the veil.md factions arkhidian empire government scarlet order of the veil"
+      "search": "scarlet order of the veil factions/arkhidian empire/government/scarlet order of the veil/scarlet order of the veil.md",
+      "recovered": false
     },
     {
       "id": "lore-006",
@@ -77,7 +85,8 @@ export const LORE_CATALOG = {
         "Government",
         "Scarlet Order of the Veil"
       ],
-      "search": "shapers factions/arkhidian empire/government/scarlet order of the veil/shapers.md factions arkhidian empire government scarlet order of the veil shapers"
+      "search": "shapers factions/arkhidian empire/government/scarlet order of the veil/shapers.md",
+      "recovered": false
     },
     {
       "id": "lore-007",
@@ -90,7 +99,8 @@ export const LORE_CATALOG = {
         "Government",
         "The Scourge"
       ],
-      "search": "apiaries factions/arkhidian empire/government/the scourge/apiaries.md factions arkhidian empire government the scourge apiaries"
+      "search": "apiaries factions/arkhidian empire/government/the scourge/apiaries.md",
+      "recovered": false
     },
     {
       "id": "lore-008",
@@ -103,7 +113,8 @@ export const LORE_CATALOG = {
         "Government",
         "The Scourge"
       ],
-      "search": "khans factions/arkhidian empire/government/the scourge/khans.md factions arkhidian empire government the scourge khans"
+      "search": "khans factions/arkhidian empire/government/the scourge/khans.md",
+      "recovered": false
     },
     {
       "id": "lore-009",
@@ -116,7 +127,8 @@ export const LORE_CATALOG = {
         "Government",
         "The Scourge"
       ],
-      "search": "the scourge factions/arkhidian empire/government/the scourge/the scourge.md factions arkhidian empire government the scourge"
+      "search": "the scourge factions/arkhidian empire/government/the scourge/the scourge.md",
+      "recovered": false
     },
     {
       "id": "lore-010",
@@ -127,7 +139,8 @@ export const LORE_CATALOG = {
         "Factions",
         "Arkhidian Empire"
       ],
-      "search": "history factions/arkhidian empire/history.md factions arkhidian empire history"
+      "search": "history factions/arkhidian empire/history.md",
+      "recovered": false
     },
     {
       "id": "lore-011",
@@ -139,7 +152,8 @@ export const LORE_CATALOG = {
         "Arkhidian Empire",
         "Technology"
       ],
-      "search": "m.a.g. engines factions/arkhidian empire/technology/m.a.g. engines.md factions arkhidian empire technology m.a.g. engines"
+      "search": "m.a.g. engines factions/arkhidian empire/technology/m.a.g. engines.md",
+      "recovered": false
     },
     {
       "id": "lore-012",
@@ -151,7 +165,8 @@ export const LORE_CATALOG = {
         "Arkhidian Empire",
         "Technology"
       ],
-      "search": "tagmata factions/arkhidian empire/technology/tagmata.md factions arkhidian empire technology tagmata"
+      "search": "tagmata factions/arkhidian empire/technology/tagmata.md",
+      "recovered": false
     },
     {
       "id": "lore-013",
@@ -164,7 +179,8 @@ export const LORE_CATALOG = {
         "Technology",
         "Vehicles"
       ],
-      "search": "scourge ships factions/arkhidian empire/technology/vehicles/scourge ships.md factions arkhidian empire technology vehicles scourge ships"
+      "search": "scourge ships factions/arkhidian empire/technology/vehicles/scourge ships.md",
+      "recovered": false
     },
     {
       "id": "lore-014",
@@ -177,7 +193,8 @@ export const LORE_CATALOG = {
         "Technology",
         "Weapons"
       ],
-      "search": "khan factions/arkhidian empire/technology/weapons/khan.md factions arkhidian empire technology weapons khan"
+      "search": "khan factions/arkhidian empire/technology/weapons/khan.md",
+      "recovered": false
     },
     {
       "id": "lore-015",
@@ -187,7 +204,8 @@ export const LORE_CATALOG = {
       "trail": [
         "Factions"
       ],
-      "search": "splinter nations factions/splinter nations.md factions splinter nations"
+      "search": "splinter nations factions/splinter nations.md",
+      "recovered": false
     },
     {
       "id": "lore-016",
@@ -198,7 +216,8 @@ export const LORE_CATALOG = {
         "Factions",
         "Yu'Nivia United Front"
       ],
-      "search": "history factions/yu'nivia united front/history.md factions yu'nivia united front history"
+      "search": "history factions/yu'nivia united front/history.md",
+      "recovered": false
     },
     {
       "id": "lore-017",
@@ -209,7 +228,8 @@ export const LORE_CATALOG = {
         "Factions",
         "Yu'Nivia United Front"
       ],
-      "search": "yu'nivia united front factions/yu'nivia united front/yu'nivia united front.md factions yu'nivia united front"
+      "search": "yu'nivia united front factions/yu'nivia united front/yu'nivia united front.md",
+      "recovered": false
     },
     {
       "id": "lore-018",
@@ -217,7 +237,8 @@ export const LORE_CATALOG = {
       "path": "History.md",
       "category": "Root",
       "trail": [],
-      "search": "history history.md history"
+      "search": "history history.md",
+      "recovered": false
     },
     {
       "id": "lore-019",
@@ -229,7 +250,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Animal Life"
       ],
-      "search": "ahshriah beetle planets/deshret/animal life/ahshriah beetle.md planets deshret animal life ahshriah beetle"
+      "search": "ahshriah beetle planets/deshret/animal life/ahshriah beetle.md",
+      "recovered": false
     },
     {
       "id": "lore-020",
@@ -241,7 +263,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Animal Life"
       ],
-      "search": "animal life planets/deshret/animal life/animal life.md planets deshret animal life"
+      "search": "animal life planets/deshret/animal life/animal life.md",
+      "recovered": false
     },
     {
       "id": "lore-021",
@@ -253,7 +276,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Animal Life"
       ],
-      "search": "khanniri planets/deshret/animal life/khanniri.md planets deshret animal life khanniri"
+      "search": "khanniri planets/deshret/animal life/khanniri.md",
+      "recovered": false
     },
     {
       "id": "lore-022",
@@ -265,7 +289,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Animal Life"
       ],
-      "search": "nashka planets/deshret/animal life/nashka.md planets deshret animal life nashka"
+      "search": "nashka planets/deshret/animal life/nashka.md",
+      "recovered": false
     },
     {
       "id": "lore-023",
@@ -277,7 +302,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Animal Life"
       ],
-      "search": "snare snake planets/deshret/animal life/snare snake.md planets deshret animal life snare snake"
+      "search": "snare snake planets/deshret/animal life/snare snake.md",
+      "recovered": false
     },
     {
       "id": "lore-024",
@@ -288,7 +314,8 @@ export const LORE_CATALOG = {
         "Planets",
         "Deshret"
       ],
-      "search": "deshret planets/deshret/deshret.md planets deshret"
+      "search": "deshret planets/deshret/deshret.md",
+      "recovered": false
     },
     {
       "id": "lore-025",
@@ -299,7 +326,8 @@ export const LORE_CATALOG = {
         "Planets",
         "Deshret"
       ],
-      "search": "environment planets/deshret/environment.md planets deshret environment"
+      "search": "environment planets/deshret/environment.md",
+      "recovered": false
     },
     {
       "id": "lore-026",
@@ -310,7 +338,8 @@ export const LORE_CATALOG = {
         "Planets",
         "Deshret"
       ],
-      "search": "history planets/deshret/history.md planets deshret history"
+      "search": "history planets/deshret/history.md",
+      "recovered": false
     },
     {
       "id": "lore-027",
@@ -321,7 +350,8 @@ export const LORE_CATALOG = {
         "Planets",
         "Deshret"
       ],
-      "search": "infrastructure planets/deshret/infrastructure.md planets deshret infrastructure"
+      "search": "infrastructure planets/deshret/infrastructure.md",
+      "recovered": false
     },
     {
       "id": "lore-028",
@@ -333,7 +363,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Locations of Note"
       ],
-      "search": "ahrai black stone forest planets/deshret/locations of note/ahrai black stone forest.md planets deshret locations of note ahrai black stone forest"
+      "search": "ahrai black stone forest planets/deshret/locations of note/ahrai black stone forest.md",
+      "recovered": false
     },
     {
       "id": "lore-029",
@@ -345,7 +376,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Locations of Note"
       ],
-      "search": "the embrace planets/deshret/locations of note/the embrace.md planets deshret locations of note the embrace"
+      "search": "the embrace planets/deshret/locations of note/the embrace.md",
+      "recovered": false
     },
     {
       "id": "lore-030",
@@ -357,7 +389,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Moons"
       ],
-      "search": "deru planets/deshret/moons/deru.md planets deshret moons deru"
+      "search": "deru planets/deshret/moons/deru.md",
+      "recovered": false
     },
     {
       "id": "lore-031",
@@ -369,7 +402,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Moons"
       ],
-      "search": "kaph planets/deshret/moons/kaph.md planets deshret moons kaph"
+      "search": "kaph planets/deshret/moons/kaph.md",
+      "recovered": false
     },
     {
       "id": "lore-032",
@@ -380,7 +414,8 @@ export const LORE_CATALOG = {
         "Planets",
         "Deshret"
       ],
-      "search": "oceans planets/deshret/oceans.md planets deshret oceans"
+      "search": "oceans planets/deshret/oceans.md",
+      "recovered": false
     },
     {
       "id": "lore-033",
@@ -392,7 +427,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Plant Life"
       ],
-      "search": "ahrai trees planets/deshret/plant life/ahrai trees.md planets deshret plant life ahrai trees"
+      "search": "ahrai trees planets/deshret/plant life/ahrai trees.md",
+      "recovered": false
     },
     {
       "id": "lore-034",
@@ -404,7 +440,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Plant Life"
       ],
-      "search": "auja planets/deshret/plant life/auja.md planets deshret plant life auja"
+      "search": "auja planets/deshret/plant life/auja.md",
+      "recovered": false
     },
     {
       "id": "lore-035",
@@ -416,7 +453,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Plant Life"
       ],
-      "search": "nakih trees planets/deshret/plant life/nakih trees.md planets deshret plant life nakih trees"
+      "search": "nakih trees planets/deshret/plant life/nakih trees.md",
+      "recovered": false
     },
     {
       "id": "lore-036",
@@ -428,7 +466,8 @@ export const LORE_CATALOG = {
         "Deshret",
         "Plant Life"
       ],
-      "search": "plant life planets/deshret/plant life/plant life.md planets deshret plant life"
+      "search": "plant life planets/deshret/plant life/plant life.md",
+      "recovered": false
     },
     {
       "id": "lore-037",
@@ -439,7 +478,8 @@ export const LORE_CATALOG = {
         "Planets",
         "Deshret"
       ],
-      "search": "society planets/deshret/society.md planets deshret society"
+      "search": "society planets/deshret/society.md",
+      "recovered": false
     },
     {
       "id": "lore-038",
@@ -449,7 +489,8 @@ export const LORE_CATALOG = {
       "trail": [
         "Planets"
       ],
-      "search": "haider planets/haider.md planets haider"
+      "search": "haider planets/haider.md",
+      "recovered": false
     },
     {
       "id": "lore-039",
@@ -459,7 +500,8 @@ export const LORE_CATALOG = {
       "trail": [
         "Planets"
       ],
-      "search": "heixin planets/heixin.md planets heixin"
+      "search": "heixin planets/heixin.md",
+      "recovered": false
     },
     {
       "id": "lore-040",
@@ -469,7 +511,8 @@ export const LORE_CATALOG = {
       "trail": [
         "Planets"
       ],
-      "search": "ikeph planets/ikeph.md planets ikeph"
+      "search": "ikeph planets/ikeph.md",
+      "recovered": false
     },
     {
       "id": "lore-041",
@@ -479,7 +522,8 @@ export const LORE_CATALOG = {
       "trail": [
         "Planets"
       ],
-      "search": "qamor planets/qamor.md planets qamor"
+      "search": "qamor planets/qamor.md",
+      "recovered": false
     },
     {
       "id": "lore-042",
@@ -489,7 +533,8 @@ export const LORE_CATALOG = {
       "trail": [
         "Planets"
       ],
-      "search": "teavicta planets/teavicta.md planets teavicta"
+      "search": "teavicta planets/teavicta.md",
+      "recovered": false
     },
     {
       "id": "lore-043",
@@ -500,7 +545,8 @@ export const LORE_CATALOG = {
         "Planets",
         "Terra"
       ],
-      "search": "environment planets/terra/environment.md planets terra environment"
+      "search": "environment planets/terra/environment.md",
+      "recovered": false
     },
     {
       "id": "lore-044",
@@ -511,7 +557,8 @@ export const LORE_CATALOG = {
         "Planets",
         "Terra"
       ],
-      "search": "history planets/terra/history.md planets terra history"
+      "search": "history planets/terra/history.md",
+      "recovered": false
     },
     {
       "id": "lore-045",
@@ -525,7 +572,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Abilities"
       ],
-      "search": "h.e.x. planets/terra/locations/simulacrum/abilities/h.e.x..md planets terra locations simulacrum abilities h.e.x."
+      "search": "h.e.x. planets/terra/locations/simulacrum/abilities/h.e.x..md",
+      "recovered": false
     },
     {
       "id": "lore-046",
@@ -539,7 +587,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Areas"
       ],
-      "search": "capital district planets/terra/locations/simulacrum/areas/capital district.md planets terra locations simulacrum areas capital district"
+      "search": "capital district planets/terra/locations/simulacrum/areas/capital district.md",
+      "recovered": false
     },
     {
       "id": "lore-047",
@@ -553,7 +602,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Areas"
       ],
-      "search": "district 1 planets/terra/locations/simulacrum/areas/district 1.md planets terra locations simulacrum areas district 1"
+      "search": "district 1 planets/terra/locations/simulacrum/areas/district 1.md",
+      "recovered": false
     },
     {
       "id": "lore-048",
@@ -567,7 +617,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Areas"
       ],
-      "search": "district 2 planets/terra/locations/simulacrum/areas/district 2.md planets terra locations simulacrum areas district 2"
+      "search": "district 2 planets/terra/locations/simulacrum/areas/district 2.md",
+      "recovered": false
     },
     {
       "id": "lore-049",
@@ -581,7 +632,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Areas"
       ],
-      "search": "district 3 planets/terra/locations/simulacrum/areas/district 3.md planets terra locations simulacrum areas district 3"
+      "search": "district 3 planets/terra/locations/simulacrum/areas/district 3.md",
+      "recovered": false
     },
     {
       "id": "lore-050",
@@ -595,7 +647,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Areas"
       ],
-      "search": "district 4 planets/terra/locations/simulacrum/areas/district 4.md planets terra locations simulacrum areas district 4"
+      "search": "district 4 planets/terra/locations/simulacrum/areas/district 4.md",
+      "recovered": false
     },
     {
       "id": "lore-051",
@@ -609,7 +662,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Areas"
       ],
-      "search": "the womb planets/terra/locations/simulacrum/areas/the womb.md planets terra locations simulacrum areas the womb"
+      "search": "the womb planets/terra/locations/simulacrum/areas/the womb.md",
+      "recovered": false
     },
     {
       "id": "lore-052",
@@ -624,7 +678,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Current Accord"
       ],
-      "search": "7 planets/terra/locations/simulacrum/characters/current accord/7.md planets terra locations simulacrum characters current accord 7"
+      "search": "7 planets/terra/locations/simulacrum/characters/current accord/7.md",
+      "recovered": false
     },
     {
       "id": "lore-053",
@@ -639,7 +694,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Current Accord"
       ],
-      "search": "demiurge planets/terra/locations/simulacrum/characters/current accord/demiurge.md planets terra locations simulacrum characters current accord demiurge"
+      "search": "demiurge planets/terra/locations/simulacrum/characters/current accord/demiurge.md",
+      "recovered": false
     },
     {
       "id": "lore-054",
@@ -654,7 +710,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Current Accord"
       ],
-      "search": "hades planets/terra/locations/simulacrum/characters/current accord/hades.md planets terra locations simulacrum characters current accord hades"
+      "search": "hades planets/terra/locations/simulacrum/characters/current accord/hades.md",
+      "recovered": false
     },
     {
       "id": "lore-055",
@@ -669,7 +726,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Current Accord"
       ],
-      "search": "rosanante planets/terra/locations/simulacrum/characters/current accord/rosanante.md planets terra locations simulacrum characters current accord rosanante"
+      "search": "rosanante planets/terra/locations/simulacrum/characters/current accord/rosanante.md",
+      "recovered": false
     },
     {
       "id": "lore-056",
@@ -684,7 +742,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Current Accord"
       ],
-      "search": "yantei planets/terra/locations/simulacrum/characters/current accord/yantei.md planets terra locations simulacrum characters current accord yantei"
+      "search": "yantei planets/terra/locations/simulacrum/characters/current accord/yantei.md",
+      "recovered": false
     },
     {
       "id": "lore-057",
@@ -699,7 +758,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Current H.H."
       ],
-      "search": "goliath planets/terra/locations/simulacrum/characters/current h.h./goliath.md planets terra locations simulacrum characters current h.h. goliath"
+      "search": "goliath planets/terra/locations/simulacrum/characters/current h.h./goliath.md",
+      "recovered": false
     },
     {
       "id": "lore-058",
@@ -714,7 +774,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Current H.H."
       ],
-      "search": "leviathan planets/terra/locations/simulacrum/characters/current h.h./leviathan.md planets terra locations simulacrum characters current h.h. leviathan"
+      "search": "leviathan planets/terra/locations/simulacrum/characters/current h.h./leviathan.md",
+      "recovered": false
     },
     {
       "id": "lore-059",
@@ -729,7 +790,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Current H.H."
       ],
-      "search": "telos planets/terra/locations/simulacrum/characters/current h.h./telos.md planets terra locations simulacrum characters current h.h. telos"
+      "search": "telos planets/terra/locations/simulacrum/characters/current h.h./telos.md",
+      "recovered": false
     },
     {
       "id": "lore-060",
@@ -744,7 +806,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Current H.H."
       ],
-      "search": "uriel planets/terra/locations/simulacrum/characters/current h.h./uriel.md planets terra locations simulacrum characters current h.h. uriel"
+      "search": "uriel planets/terra/locations/simulacrum/characters/current h.h./uriel.md",
+      "recovered": false
     },
     {
       "id": "lore-061",
@@ -759,7 +822,8 @@ export const LORE_CATALOG = {
         "Characters",
         "EX Accord"
       ],
-      "search": "haden kess planets/terra/locations/simulacrum/characters/ex accord/haden kess.md planets terra locations simulacrum characters ex accord haden kess"
+      "search": "haden kess planets/terra/locations/simulacrum/characters/ex accord/haden kess.md",
+      "recovered": false
     },
     {
       "id": "lore-062",
@@ -774,7 +838,8 @@ export const LORE_CATALOG = {
         "Characters",
         "EX H.H."
       ],
-      "search": "ranos planets/terra/locations/simulacrum/characters/ex h.h./ranos.md planets terra locations simulacrum characters ex h.h. ranos"
+      "search": "ranos planets/terra/locations/simulacrum/characters/ex h.h./ranos.md",
+      "recovered": false
     },
     {
       "id": "lore-063",
@@ -789,7 +854,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Historic Figures"
       ],
-      "search": "atom la a’shun planets/terra/locations/simulacrum/characters/historic figures/atom la a’shun.md planets terra locations simulacrum characters historic figures atom la a’shun"
+      "search": "atom la a’shun planets/terra/locations/simulacrum/characters/historic figures/atom la a’shun.md",
+      "recovered": false
     },
     {
       "id": "lore-064",
@@ -804,7 +870,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Misc NPCs"
       ],
-      "search": "jericho d. suave planets/terra/locations/simulacrum/characters/misc npcs/jericho d. suave.md planets terra locations simulacrum characters misc npcs jericho d. suave"
+      "search": "jericho d. suave planets/terra/locations/simulacrum/characters/misc npcs/jericho d. suave.md",
+      "recovered": false
     },
     {
       "id": "lore-065",
@@ -819,7 +886,8 @@ export const LORE_CATALOG = {
         "Characters",
         "Player Characters"
       ],
-      "search": "mo3 planets/terra/locations/simulacrum/characters/player characters/mo3.md planets terra locations simulacrum characters player mo3"
+      "search": "mo3 planets/terra/locations/simulacrum/characters/player characters/mo3.md",
+      "recovered": false
     },
     {
       "id": "lore-066",
@@ -833,7 +901,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "brute planets/terra/locations/simulacrum/classes/brute (barbarian).md planets terra locations simulacrum classes brute (barbarian)"
+      "search": "brute planets/terra/locations/simulacrum/classes/brute (barbarian).md",
+      "recovered": false
     },
     {
       "id": "lore-067",
@@ -847,7 +916,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "gearhead planets/terra/locations/simulacrum/classes/gearhead (sorcer).md planets terra locations simulacrum classes gearhead (sorcer)"
+      "search": "gearhead planets/terra/locations/simulacrum/classes/gearhead (sorcer).md",
+      "recovered": false
     },
     {
       "id": "lore-068",
@@ -861,7 +931,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "knight planets/terra/locations/simulacrum/classes/knight (paladin).md planets terra locations simulacrum classes knight (paladin)"
+      "search": "knight planets/terra/locations/simulacrum/classes/knight (paladin).md",
+      "recovered": false
     },
     {
       "id": "lore-069",
@@ -875,7 +946,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "machinist planets/terra/locations/simulacrum/classes/machinist ().md planets terra locations simulacrum classes machinist ()"
+      "search": "machinist planets/terra/locations/simulacrum/classes/machinist ().md",
+      "recovered": false
     },
     {
       "id": "lore-070",
@@ -889,7 +961,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "pugilist planets/terra/locations/simulacrum/classes/pugilist (monk).md planets terra locations simulacrum classes pugilist (monk)"
+      "search": "pugilist planets/terra/locations/simulacrum/classes/pugilist (monk).md",
+      "recovered": false
     },
     {
       "id": "lore-071",
@@ -903,7 +976,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "reaver planets/terra/locations/simulacrum/classes/reaver (rouge).md planets terra locations simulacrum classes reaver (rouge)"
+      "search": "reaver planets/terra/locations/simulacrum/classes/reaver (rouge).md",
+      "recovered": false
     },
     {
       "id": "lore-072",
@@ -917,7 +991,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "sentry planets/terra/locations/simulacrum/classes/sentry (ranger).md planets terra locations simulacrum classes sentry (ranger)"
+      "search": "sentry planets/terra/locations/simulacrum/classes/sentry (ranger).md",
+      "recovered": false
     },
     {
       "id": "lore-073",
@@ -931,7 +1006,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "servant planets/terra/locations/simulacrum/classes/servant (warlock).md planets terra locations simulacrum classes servant (warlock)"
+      "search": "servant planets/terra/locations/simulacrum/classes/servant (warlock).md",
+      "recovered": false
     },
     {
       "id": "lore-074",
@@ -945,7 +1021,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "shaper planets/terra/locations/simulacrum/classes/shaper (druid).md planets terra locations simulacrum classes shaper (druid)"
+      "search": "shaper planets/terra/locations/simulacrum/classes/shaper (druid).md",
+      "recovered": false
     },
     {
       "id": "lore-075",
@@ -959,7 +1036,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "technocrat planets/terra/locations/simulacrum/classes/technocrat (wizard).md planets terra locations simulacrum classes technocrat (wizard)"
+      "search": "technocrat planets/terra/locations/simulacrum/classes/technocrat (wizard).md",
+      "recovered": false
     },
     {
       "id": "lore-076",
@@ -973,7 +1051,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "tunecaster planets/terra/locations/simulacrum/classes/tunecaster (bard).md planets terra locations simulacrum classes tunecaster (bard)"
+      "search": "tunecaster planets/terra/locations/simulacrum/classes/tunecaster (bard).md",
+      "recovered": false
     },
     {
       "id": "lore-077",
@@ -987,7 +1066,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "vicar planets/terra/locations/simulacrum/classes/vicar (cleric).md planets terra locations simulacrum classes vicar (cleric)"
+      "search": "vicar planets/terra/locations/simulacrum/classes/vicar (cleric).md",
+      "recovered": false
     },
     {
       "id": "lore-078",
@@ -1001,7 +1081,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Classes"
       ],
-      "search": "warrior planets/terra/locations/simulacrum/classes/warrior (fighter).md planets terra locations simulacrum classes warrior (fighter)"
+      "search": "warrior planets/terra/locations/simulacrum/classes/warrior (fighter).md",
+      "recovered": false
     },
     {
       "id": "lore-079",
@@ -1015,7 +1096,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Creatures"
       ],
-      "search": "organic beasts planets/terra/locations/simulacrum/creatures/organic beasts.md planets terra locations simulacrum creatures organic beasts"
+      "search": "organic beasts planets/terra/locations/simulacrum/creatures/organic beasts.md",
+      "recovered": false
     },
     {
       "id": "lore-080",
@@ -1030,7 +1112,8 @@ export const LORE_CATALOG = {
         "Creatures",
         "SiM"
       ],
-      "search": "nr-u planets/terra/locations/simulacrum/creatures/sim/nr-u.md planets terra locations simulacrum creatures sim nr u"
+      "search": "nr-u planets/terra/locations/simulacrum/creatures/sim/nr-u.md",
+      "recovered": false
     },
     {
       "id": "lore-081",
@@ -1045,7 +1128,8 @@ export const LORE_CATALOG = {
         "Creatures",
         "SiM"
       ],
-      "search": "replica beast planets/terra/locations/simulacrum/creatures/sim/replica beast.md planets terra locations simulacrum creatures sim replica beast"
+      "search": "replica beast planets/terra/locations/simulacrum/creatures/sim/replica beast.md",
+      "recovered": false
     },
     {
       "id": "lore-082",
@@ -1060,7 +1144,8 @@ export const LORE_CATALOG = {
         "Creatures",
         "SiM"
       ],
-      "search": "sim planets/terra/locations/simulacrum/creatures/sim/sim.md planets terra locations simulacrum creatures sim"
+      "search": "sim planets/terra/locations/simulacrum/creatures/sim/sim.md",
+      "recovered": false
     },
     {
       "id": "lore-083",
@@ -1074,7 +1159,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Events and Holidays"
       ],
-      "search": "activation planets/terra/locations/simulacrum/events and holidays/activation.md planets terra locations simulacrum events and holidays activation"
+      "search": "activation planets/terra/locations/simulacrum/events and holidays/activation.md",
+      "recovered": false
     },
     {
       "id": "lore-084",
@@ -1088,7 +1174,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Events and Holidays"
       ],
-      "search": "frost phase planets/terra/locations/simulacrum/events and holidays/frost phase.md planets terra locations simulacrum events and holidays frost phase"
+      "search": "frost phase planets/terra/locations/simulacrum/events and holidays/frost phase.md",
+      "recovered": false
     },
     {
       "id": "lore-085",
@@ -1102,7 +1189,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Events and Holidays"
       ],
-      "search": "mist phase planets/terra/locations/simulacrum/events and holidays/mist phase.md planets terra locations simulacrum events and holidays mist phase"
+      "search": "mist phase planets/terra/locations/simulacrum/events and holidays/mist phase.md",
+      "recovered": false
     },
     {
       "id": "lore-086",
@@ -1116,7 +1204,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Events and Holidays"
       ],
-      "search": "reboot day planets/terra/locations/simulacrum/events and holidays/reboot day.md planets terra locations simulacrum events and holidays reboot day"
+      "search": "reboot day planets/terra/locations/simulacrum/events and holidays/reboot day.md",
+      "recovered": false
     },
     {
       "id": "lore-087",
@@ -1130,7 +1219,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Events and Holidays"
       ],
-      "search": "stormfair planets/terra/locations/simulacrum/events and holidays/stormfair.md planets terra locations simulacrum events and holidays stormfair"
+      "search": "stormfair planets/terra/locations/simulacrum/events and holidays/stormfair.md",
+      "recovered": false
     },
     {
       "id": "lore-088",
@@ -1144,7 +1234,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Events and Holidays"
       ],
-      "search": "unity planets/terra/locations/simulacrum/events and holidays/unity.md planets terra locations simulacrum events and holidays unity"
+      "search": "unity planets/terra/locations/simulacrum/events and holidays/unity.md",
+      "recovered": false
     },
     {
       "id": "lore-089",
@@ -1157,7 +1248,8 @@ export const LORE_CATALOG = {
         "Locations",
         "Simulacrum"
       ],
-      "search": "history planets/terra/locations/simulacrum/history.md planets terra locations simulacrum history"
+      "search": "history planets/terra/locations/simulacrum/history.md",
+      "recovered": false
     },
     {
       "id": "lore-090",
@@ -1170,7 +1262,8 @@ export const LORE_CATALOG = {
         "Locations",
         "Simulacrum"
       ],
-      "search": "infrastructure and environment planets/terra/locations/simulacrum/infrastructure and environment.md planets terra locations simulacrum infrastructure and environment"
+      "search": "infrastructure and environment planets/terra/locations/simulacrum/infrastructure and environment.md",
+      "recovered": false
     },
     {
       "id": "lore-091",
@@ -1184,7 +1277,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Objects"
       ],
-      "search": "keys planets/terra/locations/simulacrum/objects/keys.md planets terra locations simulacrum objects keys"
+      "search": "keys planets/terra/locations/simulacrum/objects/keys.md",
+      "recovered": false
     },
     {
       "id": "lore-092",
@@ -1198,7 +1292,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Objects"
       ],
-      "search": "n.r.s planets/terra/locations/simulacrum/objects/n.r.s.md planets terra locations simulacrum objects n.r.s"
+      "search": "n.r.s planets/terra/locations/simulacrum/objects/n.r.s.md",
+      "recovered": false
     },
     {
       "id": "lore-093",
@@ -1212,7 +1307,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Objects"
       ],
-      "search": "plants planets/terra/locations/simulacrum/objects/plants.md planets terra locations simulacrum objects plants"
+      "search": "plants planets/terra/locations/simulacrum/objects/plants.md",
+      "recovered": false
     },
     {
       "id": "lore-094",
@@ -1226,7 +1322,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Objects"
       ],
-      "search": "synthetic skin planets/terra/locations/simulacrum/objects/synthetic skin.md planets terra locations simulacrum objects synthetic skin"
+      "search": "synthetic skin planets/terra/locations/simulacrum/objects/synthetic skin.md",
+      "recovered": false
     },
     {
       "id": "lore-095",
@@ -1240,7 +1337,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Objects"
       ],
-      "search": "val planets/terra/locations/simulacrum/objects/val.md planets terra locations simulacrum objects val"
+      "search": "val planets/terra/locations/simulacrum/objects/val.md",
+      "recovered": false
     },
     {
       "id": "lore-096",
@@ -1256,7 +1354,8 @@ export const LORE_CATALOG = {
         "Criminal Entities",
         "Clusters"
       ],
-      "search": "clusters planets/terra/locations/simulacrum/organizations/criminal entities/clusters/clusters.md planets terra locations simulacrum organizations criminal entities clusters"
+      "search": "clusters planets/terra/locations/simulacrum/organizations/criminal entities/clusters/clusters.md",
+      "recovered": false
     },
     {
       "id": "lore-097",
@@ -1272,7 +1371,8 @@ export const LORE_CATALOG = {
         "Criminal Entities",
         "Clusters"
       ],
-      "search": "the troupe planets/terra/locations/simulacrum/organizations/criminal entities/clusters/the troupe.md planets terra locations simulacrum organizations criminal entities clusters the troupe"
+      "search": "the troupe planets/terra/locations/simulacrum/organizations/criminal entities/clusters/the troupe.md",
+      "recovered": false
     },
     {
       "id": "lore-098",
@@ -1287,7 +1387,8 @@ export const LORE_CATALOG = {
         "Organizations",
         "Criminal Entities"
       ],
-      "search": "insurgence planets/terra/locations/simulacrum/organizations/criminal entities/insurgence.md planets terra locations simulacrum organizations criminal entities insurgence"
+      "search": "insurgence planets/terra/locations/simulacrum/organizations/criminal entities/insurgence.md",
+      "recovered": false
     },
     {
       "id": "lore-099",
@@ -1302,7 +1403,8 @@ export const LORE_CATALOG = {
         "Organizations",
         "Criminal Entities"
       ],
-      "search": "xinos planets/terra/locations/simulacrum/organizations/criminal entities/xinos.md planets terra locations simulacrum organizations criminal entities xinos"
+      "search": "xinos planets/terra/locations/simulacrum/organizations/criminal entities/xinos.md",
+      "recovered": false
     },
     {
       "id": "lore-100",
@@ -1317,7 +1419,8 @@ export const LORE_CATALOG = {
         "Organizations",
         "Official Organizations"
       ],
-      "search": "hunter’s association planets/terra/locations/simulacrum/organizations/official organizations/hunter’s association.md planets terra locations simulacrum organizations official hunter’s association"
+      "search": "hunter’s association planets/terra/locations/simulacrum/organizations/official organizations/hunter’s association.md",
+      "recovered": false
     },
     {
       "id": "lore-101",
@@ -1332,7 +1435,8 @@ export const LORE_CATALOG = {
         "Organizations",
         "Official Organizations"
       ],
-      "search": "mega electronic company planets/terra/locations/simulacrum/organizations/official organizations/mega electronic company.md planets terra locations simulacrum organizations official mega electronic company"
+      "search": "mega electronic company planets/terra/locations/simulacrum/organizations/official organizations/mega electronic company.md",
+      "recovered": false
     },
     {
       "id": "lore-102",
@@ -1348,7 +1452,8 @@ export const LORE_CATALOG = {
         "Official Organizations",
         "The Accord"
       ],
-      "search": "the accord planets/terra/locations/simulacrum/organizations/official organizations/the accord/the accord.md planets terra locations simulacrum organizations official the accord"
+      "search": "the accord planets/terra/locations/simulacrum/organizations/official organizations/the accord/the accord.md",
+      "recovered": false
     },
     {
       "id": "lore-103",
@@ -1364,7 +1469,8 @@ export const LORE_CATALOG = {
         "Official Organizations",
         "The Accord"
       ],
-      "search": "the signets planets/terra/locations/simulacrum/organizations/official organizations/the accord/the signets.md planets terra locations simulacrum organizations official the accord signets"
+      "search": "the signets planets/terra/locations/simulacrum/organizations/official organizations/the accord/the signets.md",
+      "recovered": false
     },
     {
       "id": "lore-104",
@@ -1379,7 +1485,8 @@ export const LORE_CATALOG = {
         "Organizations",
         "Religious Orgnaizations"
       ],
-      "search": "cult of flesh planets/terra/locations/simulacrum/organizations/religious orgnaizations/cult of flesh.md planets terra locations simulacrum organizations religious orgnaizations cult of flesh"
+      "search": "cult of flesh planets/terra/locations/simulacrum/organizations/religious orgnaizations/cult of flesh.md",
+      "recovered": false
     },
     {
       "id": "lore-105",
@@ -1394,7 +1501,8 @@ export const LORE_CATALOG = {
         "Organizations",
         "Religious Orgnaizations"
       ],
-      "search": "makhetanian church planets/terra/locations/simulacrum/organizations/religious orgnaizations/makhetanian church.md planets terra locations simulacrum organizations religious orgnaizations makhetanian church"
+      "search": "makhetanian church planets/terra/locations/simulacrum/organizations/religious orgnaizations/makhetanian church.md",
+      "recovered": false
     },
     {
       "id": "lore-106",
@@ -1409,7 +1517,8 @@ export const LORE_CATALOG = {
         "Organizations",
         "Religious Orgnaizations"
       ],
-      "search": "scions of atom planets/terra/locations/simulacrum/organizations/religious orgnaizations/scions of atom.md planets terra locations simulacrum organizations religious orgnaizations scions of atom"
+      "search": "scions of atom planets/terra/locations/simulacrum/organizations/religious orgnaizations/scions of atom.md",
+      "recovered": false
     },
     {
       "id": "lore-107",
@@ -1424,7 +1533,8 @@ export const LORE_CATALOG = {
         "Organizations",
         "Religious Orgnaizations"
       ],
-      "search": "the hasidian church planets/terra/locations/simulacrum/organizations/religious orgnaizations/the hasidian church.md planets terra locations simulacrum organizations religious orgnaizations the hasidian church"
+      "search": "the hasidian church planets/terra/locations/simulacrum/organizations/religious orgnaizations/the hasidian church.md",
+      "recovered": false
     },
     {
       "id": "lore-108",
@@ -1438,7 +1548,8 @@ export const LORE_CATALOG = {
         "Simulacrum",
         "Races"
       ],
-      "search": "abeldam planets/terra/locations/simulacrum/races/abeldam.md planets terra locations simulacrum races abeldam"
+      "search": "abeldam planets/terra/locations/simulacrum/races/abeldam.md",
+      "recovered": false
     },
     {
       "id": "lore-109",
@@ -1453,7 +1564,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "adept planets/terra/locations/simulacrum/races/e.m. machines/adept (goblins).md planets terra locations simulacrum races e.m. machines adept (goblins)"
+      "search": "adept planets/terra/locations/simulacrum/races/e.m. machines/adept (goblins).md",
+      "recovered": false
     },
     {
       "id": "lore-110",
@@ -1468,7 +1580,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "alter planets/terra/locations/simulacrum/races/e.m. machines/alter (shifters).md planets terra locations simulacrum races e.m. machines alter (shifters)"
+      "search": "alter planets/terra/locations/simulacrum/races/e.m. machines/alter (shifters).md",
+      "recovered": false
     },
     {
       "id": "lore-111",
@@ -1483,7 +1596,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "apex planets/terra/locations/simulacrum/races/e.m. machines/apex (minotaur).md planets terra locations simulacrum races e.m. machines apex (minotaur)"
+      "search": "apex planets/terra/locations/simulacrum/races/e.m. machines/apex (minotaur).md",
+      "recovered": false
     },
     {
       "id": "lore-112",
@@ -1498,7 +1612,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "cherubim planets/terra/locations/simulacrum/races/e.m. machines/cherubim (owlin).md planets terra locations simulacrum races e.m. machines cherubim (owlin)"
+      "search": "cherubim planets/terra/locations/simulacrum/races/e.m. machines/cherubim (owlin).md",
+      "recovered": false
     },
     {
       "id": "lore-113",
@@ -1513,7 +1628,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "dynamo planets/terra/locations/simulacrum/races/e.m. machines/dynamo (dragonborn).md planets terra locations simulacrum races e.m. machines dynamo (dragonborn)"
+      "search": "dynamo planets/terra/locations/simulacrum/races/e.m. machines/dynamo (dragonborn).md",
+      "recovered": false
     },
     {
       "id": "lore-114",
@@ -1528,7 +1644,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "e.m. machines planets/terra/locations/simulacrum/races/e.m. machines/e.m. machines.md planets terra locations simulacrum races e.m. machines"
+      "search": "e.m. machines planets/terra/locations/simulacrum/races/e.m. machines/e.m. machines.md",
+      "recovered": false
     },
     {
       "id": "lore-115",
@@ -1543,7 +1660,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "grave planets/terra/locations/simulacrum/races/e.m. machines/grave (tieflings).md planets terra locations simulacrum races e.m. machines grave (tieflings)"
+      "search": "grave planets/terra/locations/simulacrum/races/e.m. machines/grave (tieflings).md",
+      "recovered": false
     },
     {
       "id": "lore-116",
@@ -1558,7 +1676,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "malkin planets/terra/locations/simulacrum/races/e.m. machines/malkin (tabaxi).md planets terra locations simulacrum races e.m. machines malkin (tabaxi)"
+      "search": "malkin planets/terra/locations/simulacrum/races/e.m. machines/malkin (tabaxi).md",
+      "recovered": false
     },
     {
       "id": "lore-117",
@@ -1573,7 +1692,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "omega planets/terra/locations/simulacrum/races/e.m. machines/omega (orcs).md planets terra locations simulacrum races e.m. machines omega (orcs)"
+      "search": "omega planets/terra/locations/simulacrum/races/e.m. machines/omega (orcs).md",
+      "recovered": false
     },
     {
       "id": "lore-118",
@@ -1588,7 +1708,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "prime planets/terra/locations/simulacrum/races/e.m. machines/prime (humans).md planets terra locations simulacrum races e.m. machines prime (humans)"
+      "search": "prime planets/terra/locations/simulacrum/races/e.m. machines/prime (humans).md",
+      "recovered": false
     },
     {
       "id": "lore-119",
@@ -1603,7 +1724,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "rake planets/terra/locations/simulacrum/races/e.m. machines/rake (half-elfs).md planets terra locations simulacrum races e.m. machines rake (half elfs)"
+      "search": "rake planets/terra/locations/simulacrum/races/e.m. machines/rake (half-elfs).md",
+      "recovered": false
     },
     {
       "id": "lore-120",
@@ -1618,7 +1740,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "rig planets/terra/locations/simulacrum/races/e.m. machines/rig (dwarfs).md planets terra locations simulacrum races e.m. machines rig (dwarfs)"
+      "search": "rig planets/terra/locations/simulacrum/races/e.m. machines/rig (dwarfs).md",
+      "recovered": false
     },
     {
       "id": "lore-121",
@@ -1633,7 +1756,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "seraphim planets/terra/locations/simulacrum/races/e.m. machines/seraphim ().md planets terra locations simulacrum races e.m. machines seraphim ()"
+      "search": "seraphim planets/terra/locations/simulacrum/races/e.m. machines/seraphim ().md",
+      "recovered": false
     },
     {
       "id": "lore-122",
@@ -1648,7 +1772,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "slant planets/terra/locations/simulacrum/races/e.m. machines/slant (elves).md planets terra locations simulacrum races e.m. machines slant (elves)"
+      "search": "slant planets/terra/locations/simulacrum/races/e.m. machines/slant (elves).md",
+      "recovered": false
     },
     {
       "id": "lore-123",
@@ -1663,7 +1788,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "spurn planets/terra/locations/simulacrum/races/e.m. machines/spurn (gnomes).md planets terra locations simulacrum races e.m. machines spurn (gnomes)"
+      "search": "spurn planets/terra/locations/simulacrum/races/e.m. machines/spurn (gnomes).md",
+      "recovered": false
     },
     {
       "id": "lore-124",
@@ -1678,7 +1804,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "tempest planets/terra/locations/simulacrum/races/e.m. machines/tempest (goliaths).md planets terra locations simulacrum races e.m. machines tempest (goliaths)"
+      "search": "tempest planets/terra/locations/simulacrum/races/e.m. machines/tempest (goliaths).md",
+      "recovered": false
     },
     {
       "id": "lore-125",
@@ -1693,7 +1820,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "throne planets/terra/locations/simulacrum/races/e.m. machines/throne (aasimar).md planets terra locations simulacrum races e.m. machines throne (aasimar)"
+      "search": "throne planets/terra/locations/simulacrum/races/e.m. machines/throne (aasimar).md",
+      "recovered": false
     },
     {
       "id": "lore-126",
@@ -1708,7 +1836,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "ultra planets/terra/locations/simulacrum/races/e.m. machines/ultra (half-orc).md planets terra locations simulacrum races e.m. machines ultra (half orc)"
+      "search": "ultra planets/terra/locations/simulacrum/races/e.m. machines/ultra (half-orc).md",
+      "recovered": false
     },
     {
       "id": "lore-127",
@@ -1723,7 +1852,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "vert planets/terra/locations/simulacrum/races/e.m. machines/vert (halflings).md planets terra locations simulacrum races e.m. machines vert (halflings)"
+      "search": "vert planets/terra/locations/simulacrum/races/e.m. machines/vert (halflings).md",
+      "recovered": false
     },
     {
       "id": "lore-128",
@@ -1738,7 +1868,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "xerox planets/terra/locations/simulacrum/races/e.m. machines/xerox (kenku).md planets terra locations simulacrum races e.m. machines xerox (kenku)"
+      "search": "xerox planets/terra/locations/simulacrum/races/e.m. machines/xerox (kenku).md",
+      "recovered": false
     },
     {
       "id": "lore-129",
@@ -1753,7 +1884,8 @@ export const LORE_CATALOG = {
         "Races",
         "E.M. Machines"
       ],
-      "search": "zenith planets/terra/locations/simulacrum/races/e.m. machines/zenith (genasi).md planets terra locations simulacrum races e.m. machines zenith (genasi)"
+      "search": "zenith planets/terra/locations/simulacrum/races/e.m. machines/zenith (genasi).md",
+      "recovered": false
     },
     {
       "id": "lore-130",
@@ -1766,7 +1898,8 @@ export const LORE_CATALOG = {
         "Locations",
         "Simulacrum"
       ],
-      "search": "simulacrum planets/terra/locations/simulacrum/simulacrum.md planets terra locations simulacrum"
+      "search": "simulacrum planets/terra/locations/simulacrum/simulacrum.md",
+      "recovered": false
     },
     {
       "id": "lore-131",
@@ -1779,7 +1912,8 @@ export const LORE_CATALOG = {
         "Locations",
         "Simulacrum"
       ],
-      "search": "society planets/terra/locations/simulacrum/society.md planets terra locations simulacrum society"
+      "search": "society planets/terra/locations/simulacrum/society.md",
+      "recovered": false
     },
     {
       "id": "lore-132",
@@ -1792,7 +1926,8 @@ export const LORE_CATALOG = {
         "Locations",
         "Valhalla"
       ],
-      "search": "history planets/terra/locations/valhalla/history.md planets terra locations valhalla history"
+      "search": "history planets/terra/locations/valhalla/history.md",
+      "recovered": false
     },
     {
       "id": "lore-133",
@@ -1805,7 +1940,8 @@ export const LORE_CATALOG = {
         "Locations",
         "Valhalla"
       ],
-      "search": "infrastructure and environment planets/terra/locations/valhalla/infrastructure and environment.md planets terra locations valhalla infrastructure and environment"
+      "search": "infrastructure and environment planets/terra/locations/valhalla/infrastructure and environment.md",
+      "recovered": false
     },
     {
       "id": "lore-134",
@@ -1818,7 +1954,8 @@ export const LORE_CATALOG = {
         "Locations",
         "Valhalla"
       ],
-      "search": "population planets/terra/locations/valhalla/population.md planets terra locations valhalla population"
+      "search": "population planets/terra/locations/valhalla/population.md",
+      "recovered": false
     },
     {
       "id": "lore-135",
@@ -1831,7 +1968,8 @@ export const LORE_CATALOG = {
         "Locations",
         "Valhalla"
       ],
-      "search": "society planets/terra/locations/valhalla/society.md planets terra locations valhalla society"
+      "search": "society planets/terra/locations/valhalla/society.md",
+      "recovered": false
     },
     {
       "id": "lore-136",
@@ -1844,7 +1982,8 @@ export const LORE_CATALOG = {
         "Locations",
         "Valhalla"
       ],
-      "search": "valhalla planets/terra/locations/valhalla/valhalla.md planets terra locations valhalla"
+      "search": "valhalla planets/terra/locations/valhalla/valhalla.md",
+      "recovered": false
     },
     {
       "id": "lore-137",
@@ -1855,7 +1994,8 @@ export const LORE_CATALOG = {
         "Planets",
         "Terra"
       ],
-      "search": "terra planets/terra/terra.md planets terra"
+      "search": "terra planets/terra/terra.md",
+      "recovered": false
     },
     {
       "id": "lore-138",
@@ -1865,7 +2005,8 @@ export const LORE_CATALOG = {
       "trail": [
         "Planets"
       ],
-      "search": "uros planets/uros.md planets uros"
+      "search": "uros planets/uros.md",
+      "recovered": false
     },
     {
       "id": "lore-139",
@@ -1875,23 +2016,62 @@ export const LORE_CATALOG = {
       "trail": [
         "Planets"
       ],
-      "search": "vol planets/vol.md planets vol"
+      "search": "vol planets/vol.md",
+      "recovered": false
     },
     {
       "id": "lore-140",
+      "title": "Khans",
+      "path": "Player Facing/Khans.md",
+      "category": "Player Facing",
+      "trail": [
+        "Player Facing"
+      ],
+      "search": "khans player facing/khans.md # khans\n\nelite pilot caste within the arkhidian **scourge**. ship-bonded; generation marks on craft (g###) and sidearms (ksp-###) age gear and place soldiers in time.\n\na khan’s familiar ship-name is not the hull designation. ritual and body modification bind pilot to craft. unauthorized lattice access is heresy — and occasionally a joke, if you ask the wrong shaper.\n\n> player digest — solus / cara specifics live in flight log when partitions recover.",
+      "recovered": true,
+      "body": "# Khans\n\nElite pilot caste within the Arkhidian **Scourge**. Ship-bonded; generation marks on craft (G###) and sidearms (KSP-###) age gear and place soldiers in time.\n\nA Khan’s familiar ship-name is not the hull designation. Ritual and body modification bind pilot to craft. Unauthorized Lattice access is heresy — and occasionally a joke, if you ask the wrong Shaper.\n\n> Player digest — Solus / Cara specifics live in Flight Log when partitions recover."
+    },
+    {
+      "id": "lore-141",
+      "title": "Sturm",
+      "path": "Player Facing/Sturm.md",
+      "category": "Player Facing",
+      "trail": [
+        "Player Facing"
+      ],
+      "search": "sturm player facing/sturm.md # sturm\n\nsplinter-nation moon of **uros**. contested belt history; now home to generations of nivian rebels, arkhidian outcasts, and locals born under neither banner.\n\nsurface: deserts interrupted by failed crusade woodland and water. empire relay is dead here. expect salvage economies, distrust of khans, and weather that does not care about vows.\n\n> player digest — expand as the table learns more. full vault notes remain gm-only.",
+      "recovered": true,
+      "body": "# Sturm\n\nSplinter-Nation moon of **Uros**. Contested belt history; now home to generations of Nivian rebels, Arkhidian outcasts, and locals born under neither banner.\n\nSurface: deserts interrupted by failed crusade woodland and water. Empire relay is dead here. Expect salvage economies, distrust of Khans, and weather that does not care about vows.\n\n> Player digest — expand as the table learns more. Full vault notes remain GM-only."
+    },
+    {
+      "id": "lore-142",
+      "title": "The Nine",
+      "path": "Player Facing/The Nine.md",
+      "category": "Player Facing",
+      "trail": [
+        "Player Facing"
+      ],
+      "search": "the nine player facing/the nine.md # the nine\n\npost-exodus solar system of inhabited worlds and moons. two great powers dominate the known lanes:\n\n- **arkhidian empire** — theocratic collectivism under the red empress; s.o.v. clergy; scourge military (khans among them).\n- **yu'nivia united front** — secular paracausality lineages on the outer ice giants.\n\nbetween and beyond them: **splinter nations** — moons and belts where authority frays. sturm is one such place.\n\n> player digest — titles elsewhere in archives may still read recovery pending until revealed at the table.",
+      "recovered": true,
+      "body": "# The Nine\n\nPost-Exodus solar system of inhabited worlds and moons. Two great powers dominate the known lanes:\n\n- **Arkhidian Empire** — theocratic collectivism under the Red Empress; S.O.V. clergy; Scourge military (Khans among them).\n- **Yu'Nivia United Front** — secular Paracausality lineages on the outer ice giants.\n\nBetween and beyond them: **Splinter Nations** — moons and belts where authority frays. Sturm is one such place.\n\n> Player digest — titles elsewhere in Archives may still read Recovery pending until revealed at the table."
+    },
+    {
+      "id": "lore-143",
       "title": "Races and Ethnicities",
       "path": "Races and Ethnicities.md",
       "category": "Root",
       "trail": [],
-      "search": "races and ethnicities races and ethnicities.md races and ethnicities"
+      "search": "races and ethnicities races and ethnicities.md",
+      "recovered": false
     },
     {
-      "id": "lore-141",
+      "id": "lore-144",
       "title": "Timeline",
       "path": "Timeline.md",
       "category": "Root",
       "trail": [],
-      "search": "timeline timeline.md timeline"
+      "search": "timeline timeline.md",
+      "recovered": false
     }
   ]
 };

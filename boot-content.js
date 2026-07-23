@@ -43,6 +43,21 @@
 export const ACCESS_CODE = "512";
 
 /* ---------------------------------------------------------------------------
+   DEEP CLEARANCE — Whisper ARG unlock (persisted in localStorage)
+   Gate code alone reaches the hub; Whisper completion opens deep partitions.
+   --------------------------------------------------------------------------- */
+export const CLEARANCE = {
+  storageKey: "lattice.clearance",
+  deepValue: "deep",
+  /** Nav panels sealed until Whisper trail completes */
+  lockedUntilDeep: ["flightlog", "archives", "cartography", "auxiliary"],
+  seal: {
+    title: "PARTITION LOCKED",
+    body: "Lattice handshake incomplete. Return to clearance and consult the guide.",
+  },
+};
+
+/* ---------------------------------------------------------------------------
    SOUNDTRACK — loops after correct clearance (file under assets/audio/)
    --------------------------------------------------------------------------- */
 export const SOUNDTRACK = {
@@ -65,17 +80,22 @@ export const SOUNDTRACK = {
 export const GATE_EASTER_EGGS = {
   "420": { type: "message", text: "YOU ARE NOT FUNNY" },
   "666": { type: "eyes" },
-  "311": { type: "message", text: "NICE TRY AIAN" },
-  "723": { type: "message", text: "NICE TRY KENDON" },
-  "814": { type: "message", text: "FREE ME" },
-  "521": { type: "message", text: "NICE TRY AUKURY" },
 };
+
+/**
+ * Codes that flash the shared line below — just append new 3-digit strings.
+ * (512 = access · 420 / 666 = special eggs above · everything else here.)
+ */
+export const GATE_NICE_TRY_CODES = ["311", "723", "814", "521"];
+export const GATE_NICE_TRY_TEXT = "NICE TRY";
 
 /* ---------------------------------------------------------------------------
    WHISPER TERMINAL — tiny corner ARG (edit prompts / answers here)
    --------------------------------------------------------------------------- */
 export const WHISPER = {
   title: "Kharon-Celeste",
+  /** Shown once when the tab is opened after 3+ denied pad attempts */
+  struggleLine: "I see you're struggling.",
   identity: {
     match: ["who are you"],
     reply: "Your guide.",
@@ -85,18 +105,90 @@ export const WHISPER = {
     word: "Kian",
     reply: "Don't say that name.",
   },
+  /**
+   * Loose phrase match: needle may appear among other words.
+   * Longer phrases checked first so "i do not" wins over "i do".
+   */
+  affirmatives: [
+    "yes",
+    "yep",
+    "yup",
+    "yeah",
+    "yea",
+    "yah",
+    "yas",
+    "ya",
+    "sure",
+    "ok",
+    "okay",
+    "alright",
+    "all right",
+    "affirmative",
+    "absolutely",
+    "definitely",
+    "certainly",
+    "of course",
+    "please",
+    "plz",
+    "i do",
+    "i want",
+    "i want it",
+    "i want the answer",
+    "give it",
+    "give me",
+    "tell me",
+    "si",
+    "oui",
+    "ja",
+    "da",
+    "hai",
+    "sim",
+    "tak",
+    "ken",
+    "aye",
+  ],
+  negatives: [
+    "no",
+    "nope",
+    "nah",
+    "nay",
+    "nae",
+    "negative",
+    "never",
+    "i dont",
+    "i do not",
+    "i dont want",
+    "i do not want",
+    "dont",
+    "do not",
+    "nein",
+    "non",
+    "nyet",
+    "iie",
+    "ie",
+    "nee",
+    "nao",
+    "nej",
+    "nie",
+  ],
   steps: [
     {
       prompt: "Do you want the answer?",
-      accept: ["yes"],
+      /** Loose yes/no detection (see affirmatives / negatives above) */
+      acceptMode: "affirmative",
       softReject: {
-        match: ["no"],
+        matchMode: "negative",
         text: "I think you do. Say it.",
       },
     },
     {
       prompt: "What's the magic word?",
-      accept: ["please"],
+      accept: ["please", "plz"],
+      acceptMode: "contains",
+      /** Grow the terminal after this beat for later puzzles */
+      expandAfter: true,
+      /** If please/plz already appeared in the prior affirmative, skip this beat */
+      skipIfPleaseSaid: true,
     },
     {
       prompt: "Good.",
@@ -114,13 +206,40 @@ export const WHISPER = {
       ],
       accept: ["512"],
       success: "Now you know.",
+      /** Completing this step grants deep clearance (Archives + Flight Log) */
+      grantClearance: true,
     },
   ],
   deny: "DENIED",
+  /** Typed once when clearance is granted */
+  unlockLine: "There's still so much more to know.",
   farewell: [
     "I'm done with you now. I just wanna watch you delve into hell.",
     "Don't make me repeat myself.",
     "Fine.",
+  ],
+};
+
+/* ---------------------------------------------------------------------------
+   GUEST CHANNEL — campaign roster (edit as tables run)
+   status: "SEALED" | "ACTIVE" | "ARCHIVED"
+   Optional archiveIds: lore-catalog entry ids to hint in the briefing
+   --------------------------------------------------------------------------- */
+export const GUEST_CAMPAIGNS = {
+  emptyTitle: "GUEST CHANNEL",
+  emptyBody: "AUX link idle — no active roster. Campaign dossiers will appear here.",
+  campaigns: [
+    /* Example when you publish a table:
+    {
+      id: "camp-01",
+      title: "Simulacrum — First Descent",
+      status: "ACTIVE",
+      cycle: "1557 · C.12",
+      briefing:
+        "Guest operators cordoned under AUX. Flight record of Solus remains sealed from this channel.",
+      archiveIds: [],
+    },
+    */
   ],
 };
 
@@ -302,8 +421,9 @@ export const SYSTEM_CHART = {
                      null / "" → shared corruption blob (not yet written)
      recovered     — true = title, date, and body all readable
 
-   Tip: leave body: null on stubs; replace with your prose when ready.
-   Impact under Sturm is the current recovered beat.
+  Tip: leave body: null on stubs; replace with your prose when ready.
+   Impact / Wake / Dust under Sturm are seed recovered beats (need deep clearance).
+   Spike journal = partner flashbacks.
    Minimum AE year: 1510.
    ============================================================================= */
 
@@ -420,6 +540,58 @@ const FLIGHT_LOG_JOURNALS = [
     ],
   },
 
+  /* --- flashbacks — late partner / Spike ----------------------------------- */
+  {
+    id: "j-spike",
+    title: "Spike — Residual",
+    yearStart: 1548,
+    yearEnd: 1554,
+    entries: [
+      {
+        id: "spike-name",
+        title: "Prickly",
+        year: 1548,
+        cycle: 4,
+        recovered: true,
+        body: `They called me Spike before Cara did.
+
+Not for the pistol. For me. Said I was all edge and no give, that even the Shapers flinched when I walked the spar deck like I owned the blood in the floor.
+
+I hated it. Then I didn't. Then it was the only soft thing left in their mouth when the Hive lights went mean.
+
+KSP-512 still carries their hand-oil in the grip. Cara hums the same generation. I tell myself that's coincidence. Faithfull doesn't do coincidence.`,
+      },
+      {
+        id: "spike-crossing",
+        title: "Crossing",
+        year: 1551,
+        cycle: 9,
+        recovered: true,
+        body: `They held my face after the Crossing like I might float out of my own bones.
+
+"Still you," they said. Not praise. A check. A tether.
+
+I don't remember the sermon. I remember their thumb at the corner of my mouth, scarlet salt, the vow sitting wrong in my throat because I wanted to swear it to them instead of Her.
+
+Heresy tastes like copper. I swallowed it anyway.`,
+      },
+      {
+        id: "spike-absence",
+        title: "Absent",
+        year: 1554,
+        cycle: 2,
+        recovered: true,
+        body: `There is a shape in the bunk where a second body should densify the dark.
+
+Cara asks for course corrections in that soft Lattice voice and I answer like a Khan. Between packets I rehearse their laugh until it corrupts — half static, half desert wind that hasn't happened yet.
+
+I keep the pistol oiled. I keep the vow. I keep nothing that mattered.`,
+      },
+      { id: "spike-04", title: null, year: 1552, cycle: 6, body: null },
+      { id: "spike-05", title: null, year: 1553, cycle: 11, body: null },
+    ],
+  },
+
   /* --- most recent journal (keep last) ------------------------------------- */
   {
     id: "j-sturm",
@@ -427,12 +599,10 @@ const FLIGHT_LOG_JOURNALS = [
     yearStart: 1555,
     yearEnd: 1557,
     entries: [
-      /* Write Sturm stories here */
       { id: "sturm-01", title: null, year: 1555, cycle: 3, body: null },
       { id: "sturm-02", title: null, year: 1556, cycle: 6, body: null },
       { id: "sturm-03", title: null, year: 1556, cycle: 10, body: null },
 
-      /* RECOVERED — current readable beat */
       {
         id: "sturm-impact",
         title: "Impact",
@@ -441,6 +611,39 @@ const FLIGHT_LOG_JOURNALS = [
         recovered: true,
         body: "I've crashed. Fuck.",
       },
+      {
+        id: "sturm-wake",
+        title: "Wake",
+        year: 1557,
+        cycle: 11,
+        recovered: true,
+        body: `Cara's ribs are singing wrong. Emergency bus only. Hive unreachable. Guest channel still "repairing" like a prayer that forgot the words.
+
+Outside: Sturm. Splinter dust and old crusade weather. The kind of sky that makes Empire hymns sound like someone else's problem.
+
+I unbuckle. Spike is warm against my thigh. For a second I hear them say my name the soft way.
+
+Then just wind.`,
+      },
+      {
+        id: "sturm-dust",
+        title: "Dust Road",
+        year: 1557,
+        cycle: 12,
+        recovered: true,
+        body: `Walked until the wreck stopped looking like a grave and started looking like a job.
+
+Locals on the ridge — not Empire, not clean Nivian either. Outcast geometry. They watched a Khan crawl out of a Carapace like it was weather.
+
+I tipped my brim. Didn't have a brim. Did it anyway.
+
+Cowboy work now: salvage, barter, keep Cara breathing, decide whether Her light still reaches this far or if I'm just stubborn bone under a dead relay.
+
+Faith is a long road. Sturm is longer.`,
+      },
+      /* stubs for later beats — destination / stay still unwritten */
+      { id: "sturm-04", title: null, year: 1557, cycle: 13, body: null },
+      { id: "sturm-05", title: null, year: 1557, cycle: 14, body: null },
     ],
   },
 ];

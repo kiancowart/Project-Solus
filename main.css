@@ -334,6 +334,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.92);
+  overflow: visible;
 }
 
 .boot__gate[hidden] {
@@ -409,6 +410,7 @@ button:disabled {
   flex-direction: column;
   align-items: stretch;
   gap: 0.4rem;
+  overflow: visible;
 }
 
 .gate__display {
@@ -588,18 +590,19 @@ button:disabled {
 }
 
 /* ==========================================================================
-   WHISPER — corner ARG terminal
+   WHISPER — Kharon-Celeste (pad-right ARG terminal)
    ========================================================================== */
 
 .whisper {
-  position: fixed;
-  right: 0.75rem;
-  bottom: 0.75rem;
-  z-index: 40;
+  position: absolute;
+  left: calc(100% + 0.65rem);
+  top: 0;
+  z-index: 5;
   display: flex;
-  flex-direction: column-reverse;
-  align-items: flex-end;
-  gap: 0.4rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  width: 0.85rem;
 }
 
 .whisper[hidden] {
@@ -610,30 +613,94 @@ button:disabled {
   width: 0.85rem;
   height: 0.85rem;
   padding: 0;
-  border: 1px solid var(--phosphor-dim);
+  border: 1px solid rgba(255, 61, 40, 0.35);
   background: #000;
   cursor: pointer;
-  opacity: 0.55;
-  transition: opacity 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+  opacity: 0.28;
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.whisper__tab[data-heat="1"] {
+  opacity: 0.45;
+  border-color: rgba(255, 61, 40, 0.4);
+}
+
+.whisper__tab[data-heat="2"] {
+  opacity: 0.7;
+  border-color: rgba(255, 61, 40, 0.65);
+}
+
+.whisper__tab[data-heat="3"] {
+  opacity: 1;
+  border-color: var(--phosphor);
+  background: rgba(255, 61, 40, 0.15);
+  box-shadow: 0 0 8px rgba(255, 61, 40, 0.45);
+  animation: whisper-tab-blink 1.05s steps(2, end) infinite;
 }
 
 .whisper__tab:hover,
-.whisper__tab:focus-visible,
-.whisper.is-open .whisper__tab {
+.whisper__tab:focus-visible {
   opacity: 1;
   border-color: var(--phosphor);
   outline: none;
 }
 
 .whisper.is-open .whisper__tab {
+  outline: none;
   background: var(--phosphor);
+  border-color: var(--phosphor);
+  opacity: 1;
+  animation: none;
+}
+
+@keyframes whisper-tab-blink {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(255, 61, 40, 0.55);
+  }
+  50% {
+    opacity: 0.28;
+    box-shadow: none;
+  }
 }
 
 .whisper__panel {
-  width: min(22rem, calc(100vw - 1.5rem));
+  position: absolute;
+  left: 0;
+  top: 1.35rem;
+  z-index: 8;
+  width: min(18rem, calc(100vw - 2rem));
+  /* Explicit height so vertical expand animates (max-height alone won't grow empty space) */
+  height: 14rem;
+  max-height: 14rem;
   border: 1px solid var(--phosphor);
   background: #000;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform-origin: top left;
+  transition:
+    width 1.85s cubic-bezier(0.22, 0.61, 0.36, 1),
+    height 2.15s cubic-bezier(0.22, 0.61, 0.36, 1),
+    max-height 2.15s cubic-bezier(0.22, 0.61, 0.36, 1),
+    box-shadow 1.2s ease;
+}
+
+/* Phase 1 — widen for the puzzle board */
+.whisper.is-expanded-x .whisper__panel {
+  width: min(36rem, calc(100vw - 2.5rem));
+  box-shadow: 0 0 18px rgba(255, 61, 40, 0.22);
+}
+
+/* Phase 2 — grow tall enough for the sudoku */
+.whisper.is-expanded-y .whisper__panel {
+  height: min(34rem, 68vh);
+  max-height: min(34rem, 68vh);
 }
 
 .whisper__panel[hidden] {
@@ -641,6 +708,7 @@ button:disabled {
 }
 
 .whisper__head {
+  flex-shrink: 0;
   padding: 0.4rem 0.6rem;
   background: var(--phosphor);
   color: #000;
@@ -652,7 +720,8 @@ button:disabled {
 }
 
 .whisper__log {
-  max-height: 16rem;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   margin: 0;
   padding: 0.55rem 0.6rem 0.35rem;
@@ -669,16 +738,72 @@ button:disabled {
 }
 
 .whisper__sudoku {
-  margin: 0.35rem 0 0.45rem;
-  padding: 0.35rem 0.4rem;
-  border: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(9, 1.55rem);
+  width: max-content;
+  max-width: 100%;
+  margin: 0.55rem 0 0.55rem;
+  padding: 0.45rem;
+  border: 1px solid var(--phosphor);
+  background: #000;
+  gap: 0;
   color: var(--phosphor);
   font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, monospace;
-  font-size: 0.58rem;
-  line-height: 1.35;
-  letter-spacing: 0.04em;
-  white-space: pre;
+  font-size: 1.05rem;
+  line-height: 1;
+  letter-spacing: 0;
   text-shadow: var(--glow-soft);
+  user-select: none;
+}
+
+.whisper__sudoku-cell {
+  display: grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.7rem;
+  border-right: 1px solid rgba(255, 61, 40, 0.18);
+  border-bottom: 1px solid rgba(255, 61, 40, 0.18);
+  color: var(--phosphor);
+}
+
+.whisper__sudoku-cell:nth-child(9n) {
+  border-right: none;
+}
+
+.whisper__sudoku-cell:nth-child(n + 73) {
+  border-bottom: none;
+}
+
+.whisper__sudoku-cell:nth-child(3n):not(:nth-child(9n)) {
+  border-right-color: var(--phosphor);
+  border-right-width: 1.5px;
+}
+
+.whisper__sudoku-cell:nth-child(n + 19):nth-child(-n + 27),
+.whisper__sudoku-cell:nth-child(n + 46):nth-child(-n + 54) {
+  border-bottom-color: var(--phosphor);
+  border-bottom-width: 1.5px;
+}
+
+.whisper__sudoku-cell.is-blank {
+  color: var(--phosphor-dim);
+}
+
+.whisper__sudoku-cell.is-blink {
+  animation: whisper-blank-blink 0.55s steps(2, end) 1;
+}
+
+@keyframes whisper-blank-blink {
+  0%,
+  100% {
+    opacity: 1;
+    color: var(--phosphor-dim);
+  }
+  50% {
+    opacity: 0.15;
+    color: var(--phosphor);
+    text-shadow: var(--glow);
+  }
 }
 
 .whisper__line--prompt {
@@ -697,6 +822,7 @@ button:disabled {
 }
 
 .whisper__form {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -724,6 +850,21 @@ button:disabled {
 
 .whisper__input:disabled {
   opacity: 0.4;
+}
+
+@media (max-width: 520px) {
+  .whisper {
+    left: auto;
+    right: 0;
+    top: 0;
+  }
+
+  .whisper__panel,
+  .whisper.is-expanded-x .whisper__panel {
+    width: min(18rem, calc(100vw - 2rem));
+    right: 0;
+    left: auto;
+  }
 }
 
 /* ==========================================================================
@@ -929,6 +1070,25 @@ button:disabled {
   background: var(--phosphor);
   border-color: var(--phosphor);
   text-shadow: none;
+}
+
+.nav-item.is-locked {
+  opacity: 0.42;
+  color: var(--text-muted);
+}
+
+.nav-item.is-locked:hover,
+.nav-item.is-locked:focus-visible {
+  opacity: 0.7;
+  color: var(--phosphor-dim);
+  border-color: var(--phosphor-dim);
+}
+
+.nav-item.is-locked.is-active {
+  opacity: 0.75;
+  color: #000;
+  background: var(--phosphor-dim);
+  border-color: var(--phosphor-dim);
 }
 
 .sys-toggle {
@@ -1625,6 +1785,81 @@ button:disabled {
   color: var(--phosphor);
   text-shadow: var(--glow-soft);
   animation: stiff-block 0.14s steps(3, end);
+}
+
+.adb-pane__status {
+  margin: 0 0 0.45rem;
+  font-size: 0.48rem;
+  letter-spacing: 0.16em;
+  color: var(--phosphor);
+  text-shadow: var(--glow-soft);
+}
+
+.adb-pane__body {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+}
+
+.adb-pane__text {
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.55;
+  letter-spacing: 0.04em;
+  color: var(--phosphor-dim);
+  white-space: pre-wrap;
+}
+
+.adb-pane__text strong {
+  color: var(--phosphor);
+  font-weight: 600;
+}
+
+.adb-hitlist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.adb-hit {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.4rem 0.45rem;
+  border: 1px solid var(--line);
+  background: #000;
+  color: var(--phosphor-dim);
+  font: inherit;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.adb-hit:hover,
+.adb-hit:focus-visible {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor);
+  text-shadow: var(--glow-soft);
+}
+
+.adb-hit__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.adb-hit__flag {
+  flex-shrink: 0;
+  font-size: 0.48rem;
+  letter-spacing: 0.14em;
+  color: var(--phosphor-dim);
 }
 
 @media (max-width: 720px) {
@@ -2975,6 +3210,139 @@ button:disabled {
   letter-spacing: 0.12em;
   color: var(--text-muted);
   text-shadow: none;
+}
+
+/* Partition seal — deep clearance gate */
+.panel__body.is-sealed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel__body.is-sealed > :not(.partition-seal) {
+  display: none !important;
+}
+
+.partition-seal {
+  margin: auto;
+  padding: var(--space-xl) var(--space-md);
+  border: 1px dashed var(--line-strong);
+  text-align: center;
+  background: #000;
+  max-width: 28rem;
+}
+
+.partition-seal__sigil {
+  margin: 0 0 var(--space-sm);
+  font-size: 1.75rem;
+  color: var(--phosphor);
+  text-shadow: var(--glow);
+  opacity: 0.9;
+}
+
+.partition-seal__title {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  color: var(--phosphor);
+  text-shadow: var(--glow-soft);
+}
+
+.partition-seal__body {
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+/* Guest Channel roster */
+.guest-roster {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.guest-roster__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.55rem 0.15rem 0.75rem;
+  border-bottom: 1px solid rgba(201, 168, 74, 0.28);
+  margin-bottom: 0.85rem;
+}
+
+.guest-roster__label {
+  margin: 0;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--gold);
+}
+
+.guest-roster__meta {
+  margin: 0;
+  font-size: 0.48rem;
+  letter-spacing: 0.12em;
+  color: rgba(201, 168, 74, 0.7);
+}
+
+.guest-roster__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.guest-card {
+  border: 1px solid rgba(201, 168, 74, 0.32);
+  background: rgba(201, 168, 74, 0.04);
+  padding: 0.75rem 0.85rem;
+}
+
+.guest-card__head {
+  margin-bottom: 0.55rem;
+}
+
+.guest-card__status {
+  margin: 0 0 0.25rem;
+  font-size: 0.48rem;
+  letter-spacing: 0.16em;
+  color: var(--gold);
+}
+
+.guest-card__title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.guest-card__cycle {
+  margin: 0.3rem 0 0;
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  color: rgba(201, 168, 74, 0.65);
+}
+
+.guest-card__brief {
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.guest-empty__title {
+  margin: 0 0 0.55rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--gold);
 }
 
 .systems-form {

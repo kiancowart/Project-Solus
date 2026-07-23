@@ -74,6 +74,32 @@
         <div class="gate-flash" id="gate-flash" aria-hidden="true"></div>
         <div class="gate">
           <div class="gate__display" id="gate-display" aria-live="polite">_ _ _</div>
+          <div class="whisper" id="whisper" hidden>
+            <button
+              type="button"
+              class="whisper__tab"
+              id="whisper-tab"
+              aria-label="Open whisper channel"
+              aria-expanded="false"
+              aria-controls="whisper-panel"
+              data-heat="0"
+            ></button>
+            <div class="whisper__panel" id="whisper-panel" hidden>
+              <div class="whisper__head" id="whisper-head">Kharon-Celeste</div>
+              <div class="whisper__log" id="whisper-log" role="log" aria-live="polite"></div>
+              <form class="whisper__form" id="whisper-form">
+                <span class="whisper__prompt" aria-hidden="true">&gt;</span>
+                <input
+                  class="whisper__input"
+                  id="whisper-input"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                  aria-label="Whisper input"
+                />
+              </form>
+            </div>
+          </div>
           <p class="gate__status" id="gate-status"></p>
           <div class="gate__cascade" id="gate-cascade" hidden></div>
           <div class="gate__pad" role="group" aria-label="Clearance number pad">
@@ -682,11 +708,13 @@
                ============================================================= -->
           <article class="panel" id="panel-auxiliary" data-panel="auxiliary" hidden>
             <div class="panel__body">
-              <div class="locked-block locked-block--aux">
-                <p class="locked-block__sigil" aria-hidden="true">▽</p>
-                <p class="locked-block__text">
-                  GUEST CHANNEL SEALED — NO ACTIVE ROSTER
-                </p>
+              <div class="guest-roster" id="guest-roster" aria-label="Guest campaign roster">
+                <div class="locked-block locked-block--aux">
+                  <p class="locked-block__sigil" aria-hidden="true">▽</p>
+                  <p class="locked-block__text">
+                    GUEST CHANNEL SEALED — NO ACTIVE ROSTER
+                  </p>
+                </div>
               </div>
             </div>
           </article>
@@ -702,38 +730,8 @@
 
 
     <!-- =====================================================================
-         WHISPER — corner ARG terminal
-         ===================================================================== -->
-    <div class="whisper" id="whisper" hidden>
-      <button
-        type="button"
-        class="whisper__tab"
-        id="whisper-tab"
-        aria-label="Open whisper channel"
-        aria-expanded="false"
-        aria-controls="whisper-panel"
-      ></button>
-      <div class="whisper__panel" id="whisper-panel" hidden>
-        <div class="whisper__head" id="whisper-head">Kharon-Celeste</div>
-        <div class="whisper__log" id="whisper-log" role="log" aria-live="polite"></div>
-        <form class="whisper__form" id="whisper-form">
-          <span class="whisper__prompt" aria-hidden="true">&gt;</span>
-          <input
-            class="whisper__input"
-            id="whisper-input"
-            type="text"
-            autocomplete="off"
-            spellcheck="false"
-            aria-label="Whisper input"
-          />
-        </form>
-      </div>
-    </div>
-
-
-    <!-- =====================================================================
          SCRIPTS
          ===================================================================== -->
-    <script src="main.js?v=20260722aw" type="module"></script>
+    <script src="main.js?v=20260723o" type="module"></script>
   </body>
 </html>

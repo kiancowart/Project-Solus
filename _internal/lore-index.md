@@ -2,7 +2,7 @@
 
 > Agent/developer reference only. Do not link from the site UI, Archives, or Transmissions.
 > Source of truth: `lore/` → Obsidian Vault `/Sol System` (~141 notes). Re-read vault for detail; use this for orientation.
-> Last full pass: 2026-07-21 · Framework update: 2026-07-21 (Khan-ship terminal)
+> Last full pass: 2026-07-21 · Framework update: 2026-07-23 (ARG-first clearance · Player Facing lore · Guest roster)
 
 ---
 
@@ -11,9 +11,10 @@
 The website **is** the terminal of **Cara** — a **G512 Carapace-class** Arkhidian Khan-craft, bonded to Khan **Solus**.
 
 - **Setting:** Crashed on **Sturm**, a moon of **Uros** (ex-Saturn; ex-Zezura; Belt War). Former **Nivian** territory flavor. Splinter space.
-- **Story (Flight Log):** Solus scavenges/repairs to escape; Western/cowboy survival arc; faith in the Empire tested; ends choosing to stay and protect locals (destination beat — not yet written).
+- **Story (Flight Log):** Solus scavenges/repairs to escape; Western/cowboy survival arc; faith in the Empire tested; partner flashbacks in **Spike — Residual**; ends choosing to stay and protect locals (destination beat — not yet written). Seed recovered beats: Impact / Wake / Dust Road.
 - **Tone:** Scarlet faith tech, damaged systems, no Empire relay. UI: pure black void, neon scarlet phosphor CRT, oppressive negative space. **Triangle (▽)** = Imperial Triad (Empress · S.O.V. · Scourge). Gold only for Veiled / sovereign / Guest Channel.
-- **Campaigns:** Live under **Guest Channel (AUX)** — sealed from Solus’s flight record; not the main path.
+- **Onboarding:** ARG-first — Whisper trail grants deep clearance before Flight Log / Archives / Chart open.
+- **Campaigns:** Live under **Guest Channel (AUX)** — sealed from Solus’s flight record; edit `GUEST_CAMPAIGNS` to publish dossiers.
 
 ### Locked names
 
@@ -173,8 +174,41 @@ Timeline after 3 AE · M.A.G. / Tagmata / ships / weapons · Hunter’s Assoc ·
 | Channel | Purpose |
 |---------|---------|
 | Status | Hull Condition Monitor (HSMS-style stress / motion / alarms) |
-| Flight Log | Solus short story |
-| Archives | Lore from ship memory |
-| Cartography | The Nine orbital chart · Sturm fix |
+| Flight Log | Solus short story (requires deep clearance) |
+| Archives | Lore index + Player Facing digests (bodies require deep clearance) |
+| Cartography | The Nine orbital chart · Sturm fix (requires deep clearance) |
 | Diagnostics | Audio / CRT settings |
-| Guest Channel | Future campaigns (sectioned off) |
+| Guest Channel | Campaign roster (`GUEST_CAMPAIGNS` in boot-content.js) |
+
+---
+
+## Unlock map (ARG → hub depth)
+
+1. **Clearance pad** — code `512` reaches the hub (STATUS + DIAGNOSTICS always open).
+2. **Whisper (Kharon-Celeste)** — complete the pad ARG trail; final step sets `localStorage["lattice.clearance"] = "deep"`.
+3. **Deep clearance unlocks** — Flight Log recovered prose, Archives player digests, System Chart, Guest Channel shell.
+4. **Imago mark** — returns to clearance; Whisper stays hidden once deep clearance is stored.
+
+Without deep clearance, locked channels show **PARTITION LOCKED** and point the operator back to the guide.
+
+---
+
+## Player Facing lore layer (no vault rewrite)
+
+| Layer | Location | Ships to site |
+|-------|----------|----------------|
+| Full GM canon | Rest of Obsidian vault (`lore/` symlink) | Titles/paths only → Archives “Recovery pending” |
+| Player-known | `lore/Player Facing/**/*.md` | Title + body when deep-cleared |
+| Author-only | `_internal/`, untagged notes | Never |
+
+**Author habit:** write GM-complete notes as usual. When the table learns something, add a short digest under `Player Facing/` (not a redacted clone of the full note).
+
+**Rebuild catalog:**
+
+```bash
+node scripts/build-lore-catalog.js
+```
+
+Regenerates `lore-catalog.js` (metadata for all notes; `body` + `recovered: true` only for Player Facing).
+
+**Campaign updates:** edit `GUEST_CAMPAIGNS.campaigns` in `boot-content.js` (`status`: `ACTIVE` / `ARCHIVED` / `SEALED`). Empty list → AUX idle empty state after clearance.

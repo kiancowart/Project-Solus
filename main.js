@@ -5,7 +5,22 @@
  * Intro splash COPY lives in: boot-content.js  ← edit text / logo there
  */
 
-import { BOOT_LINES, BOOT_LOGO, ACCESS_CODE, ACCESS_SUCCESS, MOTION, GATE_EASTER_EGGS, WHISPER, SOUNDTRACK, SYSTEM_CHART, FLIGHT_LOG } from "./boot-content.js";
+import {
+  BOOT_LINES,
+  BOOT_LOGO,
+  ACCESS_CODE,
+  ACCESS_SUCCESS,
+  MOTION,
+  GATE_EASTER_EGGS,
+  GATE_NICE_TRY_CODES,
+  GATE_NICE_TRY_TEXT,
+  WHISPER,
+  SOUNDTRACK,
+  SYSTEM_CHART,
+  FLIGHT_LOG,
+  CLEARANCE,
+  GUEST_CAMPAIGNS,
+} from "./boot-content.js";
 import { LORE_CATALOG } from "./lore-catalog.js";
 
 /** Red channel-banner copy — keyed by nav `data-panel` */
@@ -17,6 +32,103 @@ const CHANNEL_TITLES = {
   diagnostics: "FIDELITY BUS // SIGNAL DIAGNOSTICS",
   auxiliary: "EXTERNAL // GUEST CHANNEL",
 };
+
+/* ==========================================================================
+   CLEARANCE — Whisper ARG → deep partitions (localStorage)
+   ========================================================================== */
+
+const CLEARANCE_KEY = CLEARANCE?.storageKey ?? "lattice.clearance";
+const CLEARANCE_DEEP = CLEARANCE?.deepValue ?? "deep";
+const LOCKED_UNTIL_DEEP = CLEARANCE?.lockedUntilDeep ?? [
+  "flightlog",
+  "archives",
+  "cartography",
+  "auxiliary",
+];
+
+/** Session fallback when localStorage is unavailable */
+let sessionDeepClearance = false;
+
+function hasDeepClearance() {
+  if (sessionDeepClearance) return true;
+  try {
+    return localStorage.getItem(CLEARANCE_KEY) === CLEARANCE_DEEP;
+  } catch {
+    return false;
+  }
+}
+
+function grantDeepClearance() {
+  sessionDeepClearance = true;
+  try {
+    localStorage.setItem(CLEARANCE_KEY, CLEARANCE_DEEP);
+  } catch {
+    /* private mode — session flag still unlocks this visit */
+  }
+  applyClearanceUI();
+}
+
+function isPanelLocked(panelId) {
+  if (!LOCKED_UNTIL_DEEP.includes(panelId)) return false;
+  return !hasDeepClearance();
+}
+
+function sealMarkup() {
+  const title = CLEARANCE?.seal?.title ?? "PARTITION LOCKED";
+  const body =
+    CLEARANCE?.seal?.body ??
+    "Lattice handshake incomplete. Return to clearance and consult the guide.";
+  return `
+    <div class="partition-seal" role="status">
+      <p class="partition-seal__sigil" aria-hidden="true">▽</p>
+      <p class="partition-seal__title">${title}</p>
+      <p class="partition-seal__body">${body}</p>
+    </div>`;
+}
+
+function applyClearanceUI() {
+  const deep = hasDeepClearance();
+  document.body.classList.toggle("has-deep-clearance", deep);
+
+  document.querySelectorAll(".nav-item[data-panel]").forEach((btn) => {
+    const locked = isPanelLocked(btn.dataset.panel);
+    btn.classList.toggle("is-locked", locked);
+    if (locked) btn.setAttribute("aria-disabled", "true");
+    else btn.removeAttribute("aria-disabled");
+  });
+
+  document.querySelectorAll(".panel[data-panel]").forEach((panel) => {
+    const id = panel.dataset.panel;
+    const body = panel.querySelector(".panel__body");
+    if (!body) return;
+
+    const seal = body.querySelector(":scope > .partition-seal");
+    const locked = isPanelLocked(id);
+
+    if (locked) {
+      body.classList.add("is-sealed");
+      if (!seal) {
+        body.insertAdjacentHTML("afterbegin", sealMarkup());
+      }
+    } else {
+      body.classList.remove("is-sealed");
+      seal?.remove();
+    }
+  });
+
+  if (deep) initGuestChannel();
+
+  const meta = document.getElementById("adb-meta");
+  if (meta && LORE_CATALOG) {
+    const entries = LORE_CATALOG.entries ?? [];
+    const recoveredCount =
+      LORE_CATALOG.recoveredCount ??
+      entries.filter((e) => e.recovered).length;
+    meta.textContent = deep
+      ? `${entries.length} INDEXED · ${recoveredCount} RECOVERED`
+      : `${entries.length} RECORDS INDEXED`;
+  }
+}
 
 /* ==========================================================================
    AUDIO — Web Audio API synthesizer
@@ -488,6 +600,7 @@ function runClearanceGate(skippedRef) {
       status.className = "gate__status gate__status--deny";
       gate.classList.add("is-denied");
       audio.play("open");
+      whisperPadControl.onDenied();
       setTimeout(() => {
         buffer = "";
         render();
@@ -586,6 +699,10 @@ function runClearanceGate(skippedRef) {
         fail(egg.text || "DENIED");
         return;
       }
+      if (GATE_NICE_TRY_CODES?.includes(buffer)) {
+        fail(GATE_NICE_TRY_TEXT || "NICE TRY");
+        return;
+      }
       fail();
     };
 
@@ -658,6 +775,7 @@ async function enterHub() {
   }
   audio.play("select");
   startChrono();
+  applyClearanceUI();
 
   const activeBtn = document.querySelector(".nav-item.is-active");
   if (activeBtn) {
@@ -1020,11 +1138,15 @@ function initSystems() {
 let whisperPadControl = {
   show() {},
   hide() {},
+  onDenied() {},
+  resetHeat() {},
 };
 
 function setWhisperPadVisible(on) {
-  if (on) whisperPadControl.show();
-  else whisperPadControl.hide();
+  if (on) {
+    whisperPadControl.resetHeat();
+    whisperPadControl.show();
+  } else whisperPadControl.hide();
 }
 
 function initWhisper() {
@@ -1054,14 +1176,46 @@ function initWhisper() {
   let busy = false;
   let farewellIndex = 0;
   let lastBot = null; // { text, cls, grid? }
+  let denyHeat = 0;
+  let strugglePending = false;
+  let struggleSaid = false;
 
-  /** Letters/digits + spacing only; symbols act as spaces. Case-insensitive. */
+  /** Letters/digits + spacing only; apostrophes dropped so don't → dont */
   const normalizeAnswer = (raw) =>
     String(raw ?? "")
       .toLowerCase()
+      .replace(/['’]/g, "")
       .replace(/[^a-z0-9]+/g, " ")
       .trim()
       .replace(/\s+/g, " ");
+
+  const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  /** Phrase may sit among other words; longer needles win first. */
+  const containsPhrase = (raw, list = []) => {
+    const n = normalizeAnswer(raw);
+    if (!n) return false;
+    const needles = [...list]
+      .map((a) => normalizeAnswer(a))
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length);
+    return needles.some((needle) => {
+      const re = new RegExp(`(?:^|\\s)${escapeRegExp(needle)}(?:\\s|$)`);
+      return re.test(n);
+    });
+  };
+
+  const matchesExact = (raw, list = []) => {
+    const n = normalizeAnswer(raw);
+    return list.some((a) => normalizeAnswer(a) === n);
+  };
+
+  const matchesStepList = (raw, list, mode) => {
+    if (mode === "affirmative") return containsPhrase(raw, WHISPER?.affirmatives ?? list);
+    if (mode === "negative") return containsPhrase(raw, WHISPER?.negatives ?? list);
+    if (mode === "contains") return containsPhrase(raw, list);
+    return matchesExact(raw, list);
+  };
 
   const formatSudoku = (grid) => {
     const cell = (n) => (n ? String(n) : "·");
@@ -1091,36 +1245,108 @@ function initWhisper() {
     }
   };
 
-  const showGrid = (grid, { record = true } = {}) => {
-    const text = formatSudoku(grid);
-    const line = document.createElement("pre");
-    line.className = "whisper__line whisper__sudoku whisper__line--prompt";
-    line.textContent = text;
-    log.appendChild(line);
+  const buildSudokuBoard = (grid) => {
+    const board = document.createElement("div");
+    board.className = "whisper__line whisper__sudoku whisper__line--prompt";
+    const cells = [];
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const n = grid[r][c] ?? 0;
+        const cell = document.createElement("span");
+        cell.className = `whisper__sudoku-cell${n ? "" : " is-blank"}`;
+        cell.dataset.target = String(n);
+        cell.textContent = "";
+        board.appendChild(cell);
+        cells.push(cell);
+      }
+    }
+    return { board, cells };
+  };
+
+  const paintSudokuFinal = (cells) => {
+    cells.forEach((cell) => {
+      const n = Number(cell.dataset.target || 0);
+      cell.textContent = n ? String(n) : "·";
+      cell.classList.toggle("is-blank", !n);
+      cell.classList.remove("is-blink");
+    });
+  };
+
+  const showGrid = async (grid, { record = true, animate = true } = {}) => {
+    const { board, cells } = buildSudokuBoard(grid);
+    log.appendChild(board);
     stick();
+
+    if (animate) {
+      const filled = cells.filter((cell) => Number(cell.dataset.target) > 0);
+      const blanks = cells.filter((cell) => Number(cell.dataset.target) === 0);
+
+      const lerp = (a, b, t) => a + (b - a) * t;
+      const shuffle = (list) => {
+        const a = [...list];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      };
+
+      // Random order; start gaps begin long and tighten (slow → fast kickoffs)
+      const order = shuffle(filled);
+      const startDelays = [];
+      let cursor = 0;
+      for (let i = 0; i < order.length; i++) {
+        startDelays.push(cursor);
+        const t = i / Math.max(1, order.length - 1);
+        cursor += Math.round(lerp(311, 21, t * t));
+      }
+
+      await Promise.all(
+        order.map(async (cell, i) => {
+          const target = Number(cell.dataset.target);
+          await sleep(startDelays[i]);
+          for (let v = 1; v <= target; v++) {
+            cell.textContent = String(v);
+            stick();
+            const cellProg = (v - 1) / Math.max(1, target - 1);
+            const globalProg = (i + cellProg) / Math.max(1, order.length);
+            const tick = Math.round(
+              lerp(163, 30, Math.min(1, globalProg) ** 0.9)
+            );
+            await sleep(tick);
+          }
+        })
+      );
+
+      blanks.forEach((cell) => {
+        cell.textContent = "·";
+        cell.classList.add("is-blink");
+      });
+      await sleep(560);
+      blanks.forEach((cell) => cell.classList.remove("is-blink"));
+    } else {
+      paintSudokuFinal(cells);
+    }
+
     if (record) {
-      lastBot = { text, cls: "whisper__line--prompt", grid };
+      lastBot = { text: formatSudoku(grid), cls: "whisper__line--prompt", grid };
     }
   };
 
-  /** Prompt line + optional sudoku (grid dumps instantly). */
-  const showStepPrompt = async (stepObj, { record = true } = {}) => {
+  /** Prompt line + optional sudoku. */
+  const showStepPrompt = async (stepObj, { record = true, animateGrid = true } = {}) => {
     if (stepObj?.prompt) {
       await typeLine(stepObj.prompt, "whisper__line--prompt", {
         record: !stepObj.grid && record,
       });
     }
     if (stepObj?.grid) {
-      showGrid(stepObj.grid, { record });
+      await showGrid(stepObj.grid, { record, animate: animateGrid });
     }
   };
 
-  const matchesAny = (raw, list = []) => {
-    const n = normalizeAnswer(raw);
-    return list.some((a) => normalizeAnswer(a) === n);
-  };
-
-  const isIdentityAsk = (raw) => matchesAny(raw, WHISPER?.identity?.match ?? ["who are you"]);
+  const isIdentityAsk = (raw) =>
+    matchesExact(raw, WHISPER?.identity?.match ?? ["who are you"]);
 
   const hasForbiddenName = (raw) => {
     const word = normalizeAnswer(WHISPER?.forbiddenName?.word ?? "Kian");
@@ -1133,7 +1359,7 @@ function initWhisper() {
   const repeatLastBot = async () => {
     if (!lastBot) return;
     if (lastBot.grid) {
-      showGrid(lastBot.grid, { record: false });
+      await showGrid(lastBot.grid, { record: false, animate: false });
       return;
     }
     await typeLine(lastBot.text, lastBot.cls || "whisper__line--prompt", {
@@ -1146,15 +1372,52 @@ function initWhisper() {
     input.disabled = on;
   };
 
-  const askCurrent = async () => {
-    if (done || step >= steps.length) return;
-    setBusy(true);
-    try {
-      await showStepPrompt(steps[step]);
-    } finally {
-      setBusy(false);
-      if (open) input.focus();
+  const paintHeat = () => {
+    const heat = Math.min(3, denyHeat);
+    tab.dataset.heat = String(heat);
+  };
+
+  const expandTerminal = async () => {
+    root.classList.add("is-expanded-x");
+    await sleep(1900);
+    root.classList.add("is-expanded-y");
+    await sleep(2150);
+  };
+
+  const advanceAfterAccept = async (current, raw) => {
+    if (current.success) {
+      await typeLine(current.success, "whisper__line--ok");
     }
+
+    let shouldExpand = Boolean(current.expandAfter);
+    const magicWords =
+      steps.find((s) => s.skipIfPleaseSaid)?.accept ?? ["please", "plz"];
+    const pleaseAlready = containsPhrase(raw, magicWords);
+
+    step += 1;
+    while (
+      pleaseAlready &&
+      step < steps.length &&
+      steps[step]?.skipIfPleaseSaid
+    ) {
+      if (steps[step].expandAfter) shouldExpand = true;
+      step += 1;
+    }
+
+    if (shouldExpand) await expandTerminal();
+
+    if (current.grantClearance) {
+      grantDeepClearance();
+      const unlock =
+        WHISPER?.unlockLine ?? "There's still so much more to know.";
+      await typeLine(unlock, "whisper__line--ok");
+    }
+
+    if (step >= steps.length) {
+      done = true;
+      return;
+    }
+    await showStepPrompt(steps[step]);
   };
 
   const openPanel = async () => {
@@ -1164,8 +1427,27 @@ function initWhisper() {
     tab.setAttribute("aria-expanded", "true");
     root.classList.add("is-open");
     audio.play("select");
-    if (!log.childElementCount) await askCurrent();
-    else input.focus();
+
+    const firstOpen = !log.childElementCount;
+    if (firstOpen) {
+      setBusy(true);
+      try {
+        if (strugglePending && !struggleSaid) {
+          struggleSaid = true;
+          await typeLine(
+            WHISPER?.struggleLine ?? "I see you're struggling.",
+            "whisper__line--prompt",
+            { record: false }
+          );
+        }
+        await showStepPrompt(steps[step]);
+      } finally {
+        setBusy(false);
+        if (open) input.focus();
+      }
+      return;
+    }
+    input.focus();
   };
 
   const closePanel = ({ silent = false } = {}) => {
@@ -1179,10 +1461,33 @@ function initWhisper() {
   whisperPadControl = {
     show() {
       root.hidden = false;
+      // Gate reveal may leave this stuck pending / clipped from view
+      root.classList.remove("is-pending");
+      root.classList.add("is-shown");
+      paintHeat();
     },
     hide() {
       closePanel({ silent: true });
       root.hidden = true;
+    },
+    onDenied() {
+      denyHeat += 1;
+      if (denyHeat >= 3) strugglePending = true;
+      paintHeat();
+    },
+    resetHeat() {
+      denyHeat = 0;
+      strugglePending = false;
+      struggleSaid = false;
+      step = 0;
+      done = false;
+      farewellIndex = 0;
+      lastBot = null;
+      log.replaceChildren();
+      root.classList.remove("is-expanded-x", "is-expanded-y", "is-open");
+      panel.hidden = true;
+      tab.setAttribute("aria-expanded", "false");
+      paintHeat();
     },
   };
 
@@ -1235,21 +1540,30 @@ function initWhisper() {
       }
 
       const current = steps[step];
-      const accepted = matchesAny(raw, current.accept ?? []);
       const soft = current.softReject;
-      const softHit = soft && matchesAny(raw, soft.match ?? []);
+      const softHit =
+        soft &&
+        matchesStepList(
+          raw,
+          soft.match ?? [],
+          soft.matchMode ?? current.acceptMode ?? "exact"
+        );
+      const accepted = matchesStepList(
+        raw,
+        current.accept ?? [],
+        current.acceptMode ?? "exact"
+      );
+
+      // Negatives win over affirmatives when both could match
+      if (softHit && !accepted) {
+        audio.play("open");
+        await typeLine(soft.text, "whisper__line--deny");
+        return;
+      }
 
       if (accepted) {
         audio.play("select");
-        if (current.success) {
-          await typeLine(current.success, "whisper__line--ok");
-        }
-        step += 1;
-        if (step >= steps.length) {
-          done = true;
-          return;
-        }
-        await showStepPrompt(steps[step]);
+        await advanceAfterAccept(current, raw);
         return;
       }
 
@@ -1261,7 +1575,7 @@ function initWhisper() {
 
       audio.play("open");
       await typeLine(deny, "whisper__line--deny");
-      await showStepPrompt(current);
+      await showStepPrompt(current, { animateGrid: false });
     } finally {
       setBusy(false);
       if (open) input.focus();
@@ -2212,6 +2526,32 @@ function initFlightLog() {
   showIdle();
 }
 
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Minimal markdown → CRT-safe HTML for player-facing digests. */
+function renderLoreBody(md) {
+  const raw = String(md ?? "").trim();
+  if (!raw) return `<p class="adb-pane__pending">Recovery pending</p>`;
+
+  const esc = escapeHtml(raw);
+  const paras = esc.split(/\n{2,}/).map((block) => {
+    let t = block.trim().replace(/\n/g, "<br>");
+    t = t.replace(/^#+\s+/gm, "");
+    t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    t = t.replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1<em>$2</em>");
+    t = t.replace(/^&gt;\s?/gm, "");
+    t = t.replace(/^- /gm, "· ");
+    return `<p class="adb-pane__text">${t}</p>`;
+  });
+  return paras.join("");
+}
+
 function initArchives() {
   const form = document.getElementById("adb-search");
   const input = document.getElementById("adb-query");
@@ -2221,7 +2561,12 @@ function initArchives() {
   if (!form || !input || !log || !pane) return;
 
   const entries = LORE_CATALOG?.entries ?? [];
-  if (meta) meta.textContent = `${entries.length} RECORDS INDEXED`;
+  const recoveredCount = LORE_CATALOG?.recoveredCount ?? entries.filter((e) => e.recovered).length;
+  if (meta) {
+    meta.textContent = hasDeepClearance()
+      ? `${entries.length} INDEXED · ${recoveredCount} RECOVERED`
+      : `${entries.length} RECORDS INDEXED`;
+  }
 
   const push = (text, cls) => {
     const line = document.createElement("p");
@@ -2231,10 +2576,59 @@ function initArchives() {
     log.scrollTop = log.scrollHeight;
   };
 
-  const showPending = (query) => {
+  const showPending = (label) => {
     pane.innerHTML = `
-      <p class="adb-pane__title">${query}</p>
+      <p class="adb-pane__title">${escapeHtml(label)}</p>
       <p class="adb-pane__pending">Recovery pending</p>`;
+  };
+
+  const showRecord = (entry) => {
+    const deep = hasDeepClearance();
+    const canRead = deep && entry.recovered && entry.body;
+    if (!canRead) {
+      showPending(entry.title);
+      return;
+    }
+    pane.innerHTML = `
+      <p class="adb-pane__status">RECOVERED · PLAYER INDEX</p>
+      <p class="adb-pane__title">${escapeHtml(entry.title)}</p>
+      <p class="adb-pane__path">${escapeHtml(entry.path)}</p>
+      <div class="adb-pane__body">${renderLoreBody(entry.body)}</div>`;
+  };
+
+  const showHitList = (hits, query) => {
+    if (!hits.length) {
+      showPending(query);
+      return;
+    }
+    if (hits.length === 1) {
+      showRecord(hits[0]);
+      return;
+    }
+    const deep = hasDeepClearance();
+    const items = hits
+      .slice(0, 24)
+      .map((entry) => {
+        const flag =
+          deep && entry.recovered ? "RECOVERED" : "PENDING";
+        return `<button type="button" class="adb-hit" data-id="${escapeHtml(entry.id)}" data-sfx="open">
+          <span class="adb-hit__title">${escapeHtml(entry.title)}</span>
+          <span class="adb-hit__flag">${flag}</span>
+        </button>`;
+      })
+      .join("");
+    pane.innerHTML = `
+      <p class="adb-pane__title">${escapeHtml(query)}</p>
+      <p class="adb-pane__path">${hits.length} MATCHES</p>
+      <div class="adb-hitlist">${items}</div>`;
+    pane.querySelectorAll(".adb-hit").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const entry = hits.find((h) => h.id === btn.dataset.id);
+        if (!entry) return;
+        audio.play("open");
+        showRecord(entry);
+      });
+    });
   };
 
   form.addEventListener("submit", (e) => {
@@ -2245,7 +2639,6 @@ function initArchives() {
 
     audio.play("click");
 
-    // Clear the initial idle prompt once the operator starts querying
     const idleLine = log.querySelector(".adb__line--sys");
     if (idleLine && log.children.length === 1) idleLine.remove();
 
@@ -2255,14 +2648,74 @@ function initArchives() {
     const hits = entries.filter((entry) =>
       tokens.every((t) => (entry.search || "").includes(t))
     );
-    push(
-      hits.length
-        ? `${hits.length} INDEX HIT${hits.length === 1 ? "" : "S"} · RECOVERY PENDING`
-        : "NO INDEX HITS · RECOVERY PENDING",
-      "adb__line--out"
-    );
-    showPending(query);
+
+    const deep = hasDeepClearance();
+    const recoveredHits = hits.filter((h) => h.recovered && h.body);
+    let status;
+    if (!hits.length) {
+      status = "NO INDEX HITS · RECOVERY PENDING";
+    } else if (!deep) {
+      status = `${hits.length} INDEX HIT${hits.length === 1 ? "" : "S"} · PARTITION LOCKED`;
+    } else if (recoveredHits.length) {
+      status = `${hits.length} HIT${hits.length === 1 ? "" : "S"} · ${recoveredHits.length} RECOVERED`;
+    } else {
+      status = `${hits.length} INDEX HIT${hits.length === 1 ? "" : "S"} · RECOVERY PENDING`;
+    }
+    push(status, "adb__line--out");
+    showHitList(hits, query);
   });
+}
+
+function initGuestChannel() {
+  const host = document.getElementById("guest-roster");
+  if (!host) return;
+
+  const campaigns = GUEST_CAMPAIGNS?.campaigns ?? [];
+  const visible = campaigns.filter((c) => c && c.status !== "SEALED");
+
+  if (!hasDeepClearance()) {
+    host.innerHTML = "";
+    return;
+  }
+
+  if (!visible.length) {
+    host.innerHTML = `
+      <div class="guest-empty locked-block locked-block--aux">
+        <p class="locked-block__sigil" aria-hidden="true">▽</p>
+        <p class="guest-empty__title">${escapeHtml(GUEST_CAMPAIGNS?.emptyTitle ?? "GUEST CHANNEL")}</p>
+        <p class="locked-block__text">${escapeHtml(
+          GUEST_CAMPAIGNS?.emptyBody ??
+            "AUX link idle — no active roster. Campaign dossiers will appear here."
+        )}</p>
+      </div>`;
+    return;
+  }
+
+  const cards = visible
+    .map((camp) => {
+      const status = String(camp.status || "ACTIVE").toUpperCase();
+      return `
+        <article class="guest-card" data-status="${escapeHtml(status)}">
+          <header class="guest-card__head">
+            <p class="guest-card__status">${escapeHtml(status)}</p>
+            <h3 class="guest-card__title">${escapeHtml(camp.title)}</h3>
+            ${
+              camp.cycle
+                ? `<p class="guest-card__cycle">${escapeHtml(camp.cycle)}</p>`
+                : ""
+            }
+          </header>
+          <p class="guest-card__brief">${escapeHtml(camp.briefing ?? "")}</p>
+        </article>`;
+    })
+    .join("");
+
+  host.innerHTML = `
+    <header class="guest-roster__head">
+      <p class="guest-roster__label">AUX · CAMPAIGN ROSTER</p>
+      <p class="guest-roster__meta">${visible.length} DOSSIER${visible.length === 1 ? "" : "S"}</p>
+    </header>
+    <div class="guest-roster__list">${cards}</div>`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -2275,5 +2728,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initFthConsole();
   initFlightLog();
   initArchives();
+  applyClearanceUI();
   runBoot();
 });
