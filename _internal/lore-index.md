@@ -33,9 +33,9 @@ The website **is** the terminal of **Cara** — a **G512 Carapace-class** Arkhid
 
 ```text
 Celeste intercept (intercept.html)  →  Discord share node
-        ↓
+        ↓  tune 097.9 → OPEN CLEARANCE GATE
 Clearance pad (512 via G512 / triad) →  enter Cara
-        ↓
+        ↓  Whisper skimmer path (optional): please → retune 051.2 → sudoku → 512
 Flight Log milestones   →  keyword search recovers journals
         ↓
 Partner-name beat       →  major reveal (when you write it)
@@ -43,11 +43,11 @@ Partner-name beat       →  major reveal (when you write it)
 Imperial Clearance      →  Archives digests + Cartography + Guest Channel
 ```
 
-1. **Off-site first** — [`intercept.html`](../intercept.html) / [`_internal/arg/celeste-intercept.md`](arg/celeste-intercept.md). Discord templates in [`arg/discord-post-template.md`](arg/discord-post-template.md).
+1. **Off-site first** — [`intercept.html`](../intercept.html) / [`_internal/arg/celeste-intercept.md`](arg/celeste-intercept.md). Discord templates in [`arg/discord-post-template.md`](arg/discord-post-template.md). Carriers: **097.9** (greeting) · **051.2** (Whisper echo).
 2. **Pad `512`** — Intro only. Opens limited hub; **Flight Log is the ARG board**.
 3. **Flight Log** — Each recovered entry is a story beat + next step. Search keywords unlock partitions (`lattice.milestones`).
 4. **Imperial Clearance** — Finale entry (`sturm-clearance`, keywords `carapace` / `imperial`) sets `localStorage["lattice.clearance"]="imperial"`. Legacy `"deep"` still counts.
-5. **Whisper (Kharon-Celeste)** — Pad guide only; does **not** grant Imperial Clearance.
+5. **Whisper (Kharon-Celeste)** — Pad guide only; multi-step (tuner echo → sudoku). Does **not** grant Imperial Clearance.
 6. **Shareable** — Clues are words/docs friends can pass; each browser keeps its own progress.
 
 ### Milestone audio

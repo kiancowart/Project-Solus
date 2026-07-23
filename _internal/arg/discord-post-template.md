@@ -19,6 +19,7 @@ Do **not** spoil the clearance digits in Discord. Spoiler tags are fine only for
 
 From the number pad, operators can use **←** to return to Celeste’s frequency dial.
 If they have already locked **097.9** once, the tuner shows **→** under the dial to jump back to the pad.
+Whisper may send skimmers back for a **second carrier (051.2)** before the sudoku — do not spoil that frequency in Discord.
 
 ---
 
@@ -57,6 +58,6 @@ Start here:
 ## Pin checklist
 
 - [ ] One link only (`intercept.html` — it leads to the clearance gate)
-- [ ] No `512` / “try G512 as code” in chat
+- [ ] No `512` / “try G512 as code” / second-carrier **051.2** spoilers in chat
 - [ ] Late joiners can find the pin without digging scroll history
 - [ ] Optional later: short Celeste audio ping as a second message (never the only carrier of the URL)

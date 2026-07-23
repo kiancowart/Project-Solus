@@ -103,6 +103,9 @@ export const WHISPER = {
   title: "Kharon-Celeste",
   /** Shown once when the tab is opened after 3+ denied pad attempts */
   struggleLine: "I see you're struggling.",
+  /** Persist guide progress across tuner trips (← / →) */
+  progressKey: "lattice.whisperStep",
+  doneKey: "lattice.whisperDone",
   identity: {
     match: ["who are you"],
     reply: "Your guide.",
@@ -198,7 +201,48 @@ export const WHISPER = {
       skipIfPleaseSaid: true,
     },
     {
-      prompt: "Good.",
+      /**
+       * Sends them back to intercept.html → lock 051.2 (G512 as dial mark).
+       * Accept the dial reading only — not bare 512 (that's the gate).
+       */
+      prompt:
+        "Good. The greeting carrier won't finish this. Go back to the dial — a second bleed. Her hull generation rides the band the way a dial writes it. Lock it. Then tell me the frequency.",
+      accept: [
+        "051.2",
+        "0512",
+        "51.2",
+        "051 2",
+        "51 2",
+        "0 51 2",
+        "zero five one point two",
+        "five one point two",
+        "oh five one point two",
+      ],
+      acceptMode: "exact",
+      softReject: {
+        match: [
+          "512",
+          "g512",
+          "tuner",
+          "radio",
+          "dial",
+          "frequency",
+          "carrier",
+          "097.9",
+          "0979",
+          "97.9",
+          "979",
+          "back",
+          "intercept",
+          "carapace",
+          "cara",
+        ],
+        matchMode: "contains",
+        text: "← on the gate. Generation as a dial mark — then read me what you lock.",
+      },
+      success: "Yes. Now read the blanks.",
+    },
+    {
       /** 0 = blank. Blanks read 5-1-2 L→R, T→B (1 = center box, 2 = bottom-right box). */
       grid: [
         [0, 3, 4, 6, 7, 8, 9, 1, 2],

@@ -5,9 +5,11 @@
 > **Sigil:** □ (square) = Celeste. ▽ remains Imperial Triad elsewhere.
 >
 > **Entry UX:** page opens as a radio tuner (000.0–108.0). Hold ◀/▶ to sweep;
-> carrier locks at **097.9** after ~2s dwell. TriadSignal plays crushed until lock,
-> then clean through once → waveform flats → aperture splits open onto this copy.
-> Pad link is **←** (back to tuner). After a successful lock, `lattice.interceptTuned` shows **→** under the dial on return visits.
+> carriers lock after ~2s dwell:
+> - **097.9** — greeting: TriadSignal crushed → clean → aperture → this copy → **OPEN CLEARANCE GATE**
+> - **051.2** — second bleed (Whisper path): compact AUX ECHO fragment only (no full open)
+>
+> Pad link is **←** (back to tuner). After a successful 097.9 lock, `lattice.interceptTuned` shows **→** under the dial on return visits. Echo lock also keeps **→** visible.
 
 ---
 
@@ -40,11 +42,34 @@ Pass this intercept. Not your session.
 
 | Clue in copy | Points to |
 |--------------|-----------|
-| G512 / generation on hull | **5-1-2** |
+| G512 / generation on hull | **5-1-2** (pad) and dial mark **051.2** (second carrier) |
 | Three digits / Imperial Triad | three-length code; Whisper sudoku blanks later |
 | “old keys wake old files” | Flight Log keyword recover |
 
 Whisper remains backup if they skim.
+
+---
+
+## Clearance path (Whisper-extended)
+
+Cold / careful readers can still enter **512** on the pad from G512 alone.
+
+Skimmer path through Kharon-Celeste:
+
+1. Tune **097.9** → intercept → **OPEN CLEARANCE GATE**
+2. Whisper: want the answer? → magic word (**please**) → terminal expands
+3. Whisper sends them back to the dial: hull **generation as a frequency**
+4. Tune **051.2** → AUX ECHO fragment (“tell the guide what the dial reads”) → **→** to pad
+5. Whisper accepts **051.2** (not bare 512) → sudoku blanks → **512**
+
+### localStorage keys
+
+| Key | Meaning |
+|-----|---------|
+| `lattice.interceptTuned` | Locked greeting **097.9** at least once |
+| `lattice.interceptEcho` | Locked second carrier **051.2** |
+| `lattice.whisperStep` | Whisper dialogue step index |
+| `lattice.whisperDone` | Sudoku beat finished |
 
 ---
 

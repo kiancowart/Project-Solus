@@ -46,15 +46,55 @@ export function initWhisper() {
     "Don't make me repeat myself.",
     "Fine.",
   ];
-  let step = 0;
+  const progressKey = WHISPER?.progressKey ?? "lattice.whisperStep";
+  const doneKey = WHISPER?.doneKey ?? "lattice.whisperDone";
+
+  const readProgress = () => {
+    try {
+      if (localStorage.getItem(doneKey) === "1") {
+        return { step: steps.length, done: true };
+      }
+      const n = Number(localStorage.getItem(progressKey) ?? "0");
+      const step = Number.isFinite(n) ? Math.max(0, Math.min(steps.length, Math.floor(n))) : 0;
+      return { step, done: step >= steps.length };
+    } catch {
+      return { step: 0, done: false };
+    }
+  };
+
+  const writeProgress = (nextStep, nextDone) => {
+    try {
+      if (nextDone) {
+        localStorage.setItem(doneKey, "1");
+        localStorage.setItem(progressKey, String(steps.length));
+      } else {
+        localStorage.setItem(progressKey, String(nextStep));
+        localStorage.removeItem(doneKey);
+      }
+    } catch {
+      /* private mode */
+    }
+  };
+
+  /** expandAfter fires when leaving a step — restore shell if past that beat */
+  const applyExpandShell = () => {
+    for (let i = 0; i < step; i++) {
+      if (steps[i]?.expandAfter) {
+        root.classList.add("is-expanded-x", "is-expanded-y");
+        return;
+      }
+    }
+  };
+
   let open = false;
-  let done = false;
   let busy = false;
   let farewellIndex = 0;
   let lastBot = null; // { text, cls, grid? }
   let denyHeat = 0;
   let strugglePending = false;
   let struggleSaid = false;
+
+  let { step, done } = readProgress();
 
   /** Letters/digits + spacing only; apostrophes dropped so don't → dont */
   const normalizeAnswer = (raw) =>
@@ -284,13 +324,17 @@ export function initWhisper() {
 
     if (step >= steps.length) {
       done = true;
+      writeProgress(step, true);
       return;
     }
+    writeProgress(step, false);
     await showStepPrompt(steps[step]);
   };
 
   const openPanel = async () => {
-    if (busy || root.hidden) return;
+    // Do not gate on `busy` — replies/expands keep busy true for seconds after
+    // a close, which made reopen feel permanently broken.
+    if (root.hidden || open) return;
     open = true;
     panel.hidden = false;
     tab.setAttribute("aria-expanded", "true");
@@ -299,8 +343,10 @@ export function initWhisper() {
 
     const firstOpen = !log.childElementCount;
     if (firstOpen) {
+      if (busy) return;
       setBusy(true);
       try {
+        applyExpandShell();
         if (strugglePending && !struggleSaid) {
           struggleSaid = true;
           await typeLine(
@@ -309,14 +355,22 @@ export function initWhisper() {
             { record: false }
           );
         }
-        await showStepPrompt(steps[step]);
+        if (done || step >= steps.length) {
+          await typeLine(
+            farewell[0] ?? "I'm done with you now.",
+            "whisper__line--deny",
+            { record: false }
+          );
+        } else {
+          await showStepPrompt(steps[step]);
+        }
       } finally {
         setBusy(false);
         if (open) input.focus();
       }
       return;
     }
-    input.focus();
+    if (!busy) input.focus();
   };
 
   const closePanel = ({ silent = false } = {}) => {
@@ -345,15 +399,17 @@ export function initWhisper() {
       paintHeat();
     },
     resetHeat() {
+      // Deny heat only — guide step persists across tuner trips
       denyHeat = 0;
       strugglePending = false;
       struggleSaid = false;
-      step = 0;
-      done = false;
+      ({ step, done } = readProgress());
       farewellIndex = 0;
       lastBot = null;
+      open = false;
       log.replaceChildren();
       root.classList.remove("is-expanded-x", "is-expanded-y", "is-open");
+      applyExpandShell();
       panel.hidden = true;
       tab.setAttribute("aria-expanded", "false");
       paintHeat();

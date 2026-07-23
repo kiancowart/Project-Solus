@@ -3662,6 +3662,25 @@ body.page-intercept {
   text-shadow: 0 0 8px var(--gold-glow);
 }
 
+.radio--on-echo .radio__freq-value {
+  color: var(--phosphor-bright);
+  text-shadow: var(--glow);
+}
+
+.radio--echo-locked .radio__freq {
+  border-color: var(--line-strong);
+}
+
+.radio--echo-locked .radio__freq-value {
+  color: var(--phosphor-bright);
+  text-shadow: var(--glow);
+}
+
+.radio--echo-locked .radio__clearance {
+  /* Keep → visible under dial after second-carrier lock */
+  display: block;
+}
+
 /* Scope sits just above center; its base = screen midline = rails */
 
 .radio__scope {
@@ -3852,6 +3871,82 @@ body.page-intercept {
 
 .radio__clearance[hidden] {
   display: none !important;
+}
+
+/* —— Second carrier fragment (compact; no full aperture) —— */
+
+.radio-echo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, calc(-50% - 2.8rem));
+  z-index: 6;
+  width: min(22rem, 88vw);
+  padding: 1.1rem 1.15rem 1.2rem;
+  border: 1px solid var(--line);
+  background: #000;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.radio-echo[hidden] {
+  display: none !important;
+}
+
+.radio-echo--revealed {
+  opacity: 1;
+  pointer-events: auto;
+  animation: intercept-fade-in 0.7s ease both;
+}
+
+.radio-echo__sigil {
+  margin: 0 0 0.55rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--phosphor);
+  text-shadow: var(--glow);
+}
+
+.radio-echo__label {
+  margin: 0 0 0.35rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--phosphor);
+}
+
+.radio-echo__warn {
+  margin: 0 0 0.95rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  color: var(--phosphor-dim);
+  text-shadow: none;
+}
+
+.radio-echo__body {
+  font-size: 0.72rem;
+  line-height: 1.65;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.radio-echo__body p {
+  margin: 0 0 0.65rem;
+}
+
+.radio-echo__body p:last-child {
+  margin-bottom: 0;
+}
+
+.radio-echo__after {
+  margin-top: 0.85rem;
+  color: var(--phosphor-dim);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
 }
 
 .radio--controls-out .radio__freq,

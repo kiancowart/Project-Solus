@@ -2,7 +2,10 @@
  * Celeste AUX bleed — radio tuner → intercept reveal
  */
 
-const SIGNAL_FREQ = 97.9;
+import { applyColdStartFromQuery } from "./cold-start.js";
+
+applyColdStartFromQuery();
+
 const FREQ_MIN = 0;
 const FREQ_MAX = 108.0;
 const LOCK_HOLD_MS = 2000;
@@ -12,7 +15,25 @@ const SIGNAL_SRC = "assets/audio/TriadSignal.mp3";
 const CLARITY_WINDOW = 28;
 const MASTER_VOLUME = 0.28;
 const BAR_COUNT = 72;
-const TUNED_KEY = "lattice.interceptTuned";
+
+/** Greeting carrier — full Celeste aperture */
+const GREETING = {
+  id: "greeting",
+  freq: 97.9,
+  storageKey: "lattice.interceptTuned",
+  kind: "message",
+};
+
+/** Second bleed — compact fragment; Whisper asks for this dial reading */
+const ECHO = {
+  id: "echo",
+  freq: 51.2,
+  storageKey: "lattice.interceptEcho",
+  kind: "echo",
+};
+
+const CARRIERS = [GREETING, ECHO];
+const TUNED_KEY = GREETING.storageKey;
 
 const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -34,6 +55,35 @@ function makeSoftClipCurve(amount = 1.4) {
   return curve;
 }
 
+function nearestCarrier(freq) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const c of CARRIERS) {
+    const d = Math.abs(freq - c.freq);
+    if (d < bestDist) {
+      bestDist = d;
+      best = c;
+    }
+  }
+  return { carrier: best, dist: bestDist };
+}
+
+function storageFlag(key) {
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setStorageFlag(key) {
+  try {
+    localStorage.setItem(key, "1");
+  } catch {
+    /* private mode */
+  }
+}
+
 class RadioTuner {
   constructor() {
     this.root = $(".radio");
@@ -47,14 +97,17 @@ class RadioTuner {
     this.ctaFoot = $(".intercept__foot");
     this.frame = $(".radio__frame");
     this.clearanceBtn = $(".radio__clearance");
+    this.echoEl = $(".radio-echo");
 
     this.freq = 82.4;
     this.dialAngle = -18;
     this.direction = 0;
     this.holdMs = 0;
     this.lockHoldMs = 0;
+    this.activeCarrier = null;
     this.locked = false;
     this.revealed = false;
+    this.echoRevealed = false;
     this.audioReady = false;
     this.flatViz = false;
     this.hideBars = false;
@@ -93,24 +146,22 @@ class RadioTuner {
   }
 
   #hasTunedBefore() {
-    try {
-      return localStorage.getItem(TUNED_KEY) === "1";
-    } catch {
-      return false;
-    }
+    return storageFlag(TUNED_KEY);
   }
 
   #markTuned() {
-    try {
-      localStorage.setItem(TUNED_KEY, "1");
-    } catch {
-      /* private mode */
-    }
+    setStorageFlag(TUNED_KEY);
+  }
+
+  #markEcho() {
+    setStorageFlag(ECHO.storageKey);
   }
 
   #syncClearanceExit() {
     if (!this.clearanceBtn) return;
-    if (this.#hasTunedBefore() && !this.locked) {
+    const echoHeld = this.locked && this.activeCarrier?.kind === "echo";
+    const show = (!this.locked && this.#hasTunedBefore()) || echoHeld;
+    if (show) {
       this.clearanceBtn.hidden = false;
       this.root?.classList.add("radio--has-clearance");
     } else {
@@ -286,7 +337,6 @@ class RadioTuner {
     const t = this.ctx.currentTime;
     const mud = 1 - clarity;
 
-    // Louder as you focus in on 097.9; static peels back
     this.signalGain.gain.setTargetAtTime(0.06 + clarity * 0.92, t, 0.1);
     this.noiseGain.gain.setTargetAtTime(0.06 + mud * 0.72, t, 0.12);
     this.muffLp.frequency.setTargetAtTime(380 + clarity * 7600, t, 0.14);
@@ -308,10 +358,10 @@ class RadioTuner {
       const accel = Math.pow(Math.min(1, this.holdMs / 2500), 1.65);
       let speed = 0.2 + accel * 22;
 
-      const distBefore = Math.abs(this.freq - SIGNAL_FREQ);
-      if (distBefore < DETENT_RANGE && accel < 0.55) {
+      const { carrier: near, dist: distBefore } = nearestCarrier(this.freq);
+      if (near && distBefore < DETENT_RANGE && accel < 0.55) {
         speed *= 0.22 + distBefore / DETENT_RANGE;
-        this.freq += (SIGNAL_FREQ - this.freq) * dt * 2.8;
+        this.freq += (near.freq - this.freq) * dt * 2.8;
       }
 
       const atMin = this.freq <= FREQ_MIN && this.direction < 0;
@@ -320,33 +370,37 @@ class RadioTuner {
       if (!atMin && !atMax) {
         this.freq = clamp(this.freq + this.direction * speed * dt, FREQ_MIN, FREQ_MAX);
 
-        if (Math.abs(this.freq - SIGNAL_FREQ) <= LOCK_TOLERANCE) {
-          this.freq = SIGNAL_FREQ;
+        const snap = nearestCarrier(this.freq);
+        if (snap.carrier && snap.dist <= LOCK_TOLERANCE) {
+          this.freq = snap.carrier.freq;
         }
 
         this.dialAngle += this.direction * (35 + accel * 480) * dt;
         this.#renderFreq();
         this.#renderDial();
       } else {
-        // Hard stop at band edges — hold is fine, dial does not keep spinning
         this.freq = clamp(this.freq, FREQ_MIN, FREQ_MAX);
         this.#renderFreq();
       }
     }
 
     if (!this.locked) {
-      const dist = Math.abs(this.freq - SIGNAL_FREQ);
+      const { carrier, dist } = nearestCarrier(this.freq);
       const clarity = Math.pow(1 - clamp(dist / CLARITY_WINDOW, 0, 1), 1.35);
       this.#setClarity(clarity);
 
-      if (dist <= LOCK_TOLERANCE) {
+      if (carrier && dist <= LOCK_TOLERANCE) {
         this.lockHoldMs += dt * 1000;
         this.root?.classList.add("radio--on-signal");
-        if (this.lockHoldMs >= LOCK_HOLD_MS) void this.#lockOn();
+        if (carrier.kind === "echo") this.root?.classList.add("radio--on-echo");
+        else this.root?.classList.remove("radio--on-echo");
+        if (this.lockHoldMs >= LOCK_HOLD_MS) void this.#lockOn(carrier);
       } else {
         this.lockHoldMs =
           this.direction === 0 ? Math.max(0, this.lockHoldMs - dt * 1000 * 1.5) : 0;
-        if (this.lockHoldMs === 0) this.root?.classList.remove("radio--on-signal");
+        if (this.lockHoldMs === 0) {
+          this.root?.classList.remove("radio--on-signal", "radio--on-echo");
+        }
       }
     }
 
@@ -413,18 +467,22 @@ class RadioTuner {
     }
   }
 
-  async #lockOn() {
+  async #lockOn(carrier) {
     if (this.locked) return;
     this.locked = true;
+    this.activeCarrier = carrier;
     this.direction = 0;
-    this.freq = SIGNAL_FREQ;
+    this.freq = carrier.freq;
     this.#renderFreq();
     this.#setClarity(1);
 
     this.root?.classList.remove("radio--spinning");
     this.root?.classList.add("radio--locked");
+    if (carrier.kind === "echo") this.root?.classList.add("radio--echo-locked");
     this.stage?.classList.add("intercept-stage--locked");
-    this.#markTuned();
+
+    if (carrier.kind === "message") this.#markTuned();
+    if (carrier.kind === "echo") this.#markEcho();
     this.#syncClearanceExit();
 
     for (const btn of [this.btnLeft, this.btnRight]) {
@@ -435,6 +493,54 @@ class RadioTuner {
 
     await this.#ensureAudio();
 
+    if (carrier.kind === "echo") {
+      await this.#lockEcho();
+      return;
+    }
+
+    await this.#lockGreeting();
+  }
+
+  async #lockEcho() {
+    // Short clarity swell — not the full greeting open
+    await this.#swellEchoAudio();
+    await this.#wait(420);
+    this.#revealEcho();
+    this.#syncClearanceExit();
+  }
+
+  async #swellEchoAudio() {
+    if (!this.signal || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.noiseGain.gain.setTargetAtTime(0.04, t, 0.08);
+    this.signalGain.gain.setTargetAtTime(0.75, t, 0.08);
+    this.muffLp.frequency.setTargetAtTime(9000, t, 0.1);
+    this.muffHp.frequency.setTargetAtTime(50, t, 0.1);
+    this.masterGain.gain.setTargetAtTime(MASTER_VOLUME * 1.05, t, 0.08);
+
+    // Brief clean pulse, then settle under the fragment
+    await this.#wait(1600);
+
+    if (!this.ctx) return;
+    const t2 = this.ctx.currentTime;
+    this.signalGain.gain.setTargetAtTime(0.22, t2, 0.2);
+    this.noiseGain.gain.setTargetAtTime(0.08, t2, 0.2);
+    this.masterGain.gain.setTargetAtTime(MASTER_VOLUME * 0.55, t2, 0.25);
+  }
+
+  #revealEcho() {
+    if (this.echoRevealed) return;
+    this.echoRevealed = true;
+
+    this.root?.classList.add("radio--echo");
+    if (this.echoEl) {
+      this.echoEl.hidden = false;
+      this.echoEl.setAttribute("aria-hidden", "false");
+      this.echoEl.classList.add("radio-echo--revealed");
+    }
+  }
+
+  async #lockGreeting() {
     // Dial / arrows / freq leave; visualizer stays through the playback
     await this.#wait(280);
     this.root?.classList.add("radio--controls-out");
@@ -443,7 +549,6 @@ class RadioTuner {
 
     await this.#playCleanSignal();
 
-    // Bars collapse fully flat, then vanish — rails remain as the single center line
     this.flatViz = true;
     this.root?.classList.add("radio--flat");
     await this.#wait(1800);
@@ -452,7 +557,6 @@ class RadioTuner {
     this.root?.classList.add("radio--bars-gone");
     await this.#wait(700);
 
-    // Frame grows from the seam; rails ride top/bottom while staying centered
     this.root?.classList.add("radio--splitting");
     this.stage?.classList.add("intercept-stage--opening");
     await this.#wait(1150);
