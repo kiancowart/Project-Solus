@@ -2,7 +2,11 @@
  * =============================================================================
  * BOOT CONTENT — EDIT THIS FILE
  * =============================================================================
- * All intro-splash copy lives here. main.js only plays it back.
+ * Intro splash COPY lives here. main.js only plays it back.
+ *
+ * ALSO EDIT HERE:
+ *   FLIGHT LOG STORIES  — search "FLIGHT LOG STORIES" below
+ *                         journal names, entry titles, and body prose
  *
  * SEQUENCE:  clearance keypad  →  scrolling log  →  Empire logo  →  hub
  *
@@ -261,4 +265,275 @@ export const SYSTEM_CHART = {
     blurb:
       "Splinter-Nation Moon of Uros — formerly apart of the Zezura belt Empire. After the first Belt War, it became one of the first Uros moons to become contested between the young Nivian Replubic and the Arkhidian Empire. As conflicts extended, it became abandoned as a territory, now a Splinter-Nation territory comprised of generations of unwanted Nivian rebels, Arkhidian outcasts, and even those that have been born and raised there. The majority of the moon's surface is comprised of deserts, though there are bursts of randomly generated woodland and bodies of water as a result of failed Arkhidian Crusades.",
   },
+  /** Unlabeled anomaly on Teavicta's orbit */
+  mystery: {
+    id: "teavicta-mystery",
+    parent: "teavicta",
+    offset: 18,
+    angle: -72,
+    mark: "?",
+    readout: "A mystery in the orbit of Unconquered Storm...",
+  },
+  /** Shared archive bay under the chart — filled by planetary extracts later */
+  archive: {
+    title: "SYSTEM ARCHIVE",
+    code: "CART.ARCHIVE // STATUS=NONFUNCTIONAL",
+    body:
+      "Archive mesh is still repairing after impact. Planetary extracts and cross-indexed memory are inaccessible.",
+  },
 };
+
+/* =============================================================================
+   FLIGHT LOG STORIES — EDIT HERE (Solus personal journals)
+   =============================================================================
+   Come back to this block to write / rename journals and entries.
+
+   JOURNAL fields:
+     id            — stable key (don’t rename casually)
+     title         — journal name in the left list
+                     set corruptTitle: true to show gibberish instead
+     yearStart/End — span under the journal name (hidden if corruptTitle)
+
+   ENTRY fields:
+     id            — stable key
+     title         — entry name (null → illegible gibberish in UI)
+     year, cycle   — dating (shown as “AE · CYCLE”; illegible unless recovered)
+     body          — story text shown on the right
+                     null / "" → shared corruption blob (not yet written)
+     recovered     — true = title, date, and body all readable
+
+   Tip: leave body: null on stubs; replace with your prose when ready.
+   Impact under Sturm is the current recovered beat.
+   Minimum AE year: 1510.
+   ============================================================================= */
+
+const FLIGHT_LOG_JOURNALS = [
+  /* --- filler / corrupted journals (names intentionally blank) ------------- */
+  {
+    id: "j-qamor",
+    title: null,
+    corruptTitle: true,
+    yearStart: 1510,
+    yearEnd: 1513,
+    entries: [
+      {
+        id: "qamor-hey-cara",
+        title: "Hey Cara 512!",
+        year: 1512,
+        cycle: 84,
+        recovered: true,
+        /* ↓ write the entry body between the backticks ↓ */
+        body: `Hey Cara! I'm writing in here because I'm bored as all hell on the Hive and I figured out how overide with Sol's ID, so HAHA!
+
+        Should I be using my Shaper status to break into a Khan's ship? Pr0lly n0t.
+        Could I be exed for unauthorized access if Kairet found out? Definitely.
+
+        But who cares!? Ma said you only live once, and its not like you would or could rat me out to Sol anyway. Plus, I kinda like the idea that Sol will be looking through her old logs and then find this. She would definitely be pissed. But then probably give a long sigh. Maybe I could even get her to crack a smile.
+
+        Oh damn, speak of the devil. I better hide before she finds me out. Seeya!
+`,
+      },
+      { id: "qamor-01", title: null, year: 1510, cycle: 2, body: null },
+      { id: "qamor-02", title: null, year: 1511, cycle: 7, body: null },
+      { id: "qamor-03", title: null, year: 1512, cycle: 11, body: null },
+      { id: "qamor-04", title: null, year: 1513, cycle: 4, body: null },
+    ],
+  },
+  {
+    id: "j-ikeph",
+    title: null,
+    corruptTitle: true,
+    yearStart: 1515,
+    yearEnd: 1518,
+    entries: [
+      { id: "ikeph-01", title: null, year: 1515, cycle: 1, body: null },
+      { id: "ikeph-02", title: null, year: 1516, cycle: 5, body: null },
+      { id: "ikeph-03", title: null, year: 1517, cycle: 9, body: null },
+    ],
+  },
+  {
+    id: "j-terra",
+    title: null,
+    corruptTitle: true,
+    yearStart: 1520,
+    yearEnd: 1522,
+    entries: [
+      { id: "terra-01", title: null, year: 1520, cycle: 3, body: null },
+      { id: "terra-02", title: null, year: 1521, cycle: 8, body: null },
+      { id: "terra-03", title: null, year: 1522, cycle: 6, body: null },
+    ],
+  },
+
+  /* --- named journals (readable titles) ------------------------------------ */
+  {
+    id: "j-kaph",
+    title: "Kaph — Prison Moon",
+    yearStart: 1523,
+    yearEnd: 1526,
+    entries: [
+      /* Write Kaph stories here */
+      { id: "kaph-01", title: null, year: 1523, cycle: 2, body: null },
+      { id: "kaph-02", title: null, year: 1524, cycle: 5, body: null },
+      { id: "kaph-03", title: null, year: 1525, cycle: 9, body: null },
+      { id: "kaph-04", title: null, year: 1526, cycle: 1, body: null },
+      { id: "kaph-05", title: null, year: 1526, cycle: 8, body: null },
+    ],
+  },
+  {
+    id: "j-deshret",
+    title: "Deshret — The Embrace",
+    yearStart: 1530,
+    yearEnd: 1533,
+    entries: [
+      /* Write Deshret stories here */
+      { id: "desh-01", title: null, year: 1530, cycle: 3, body: null },
+      { id: "desh-02", title: null, year: 1531, cycle: 6, body: null },
+      { id: "desh-03", title: null, year: 1532, cycle: 2, body: null },
+      { id: "desh-04", title: null, year: 1532, cycle: 10, body: null },
+      { id: "desh-05", title: null, year: 1533, cycle: 4, body: null },
+      { id: "desh-06", title: null, year: 1533, cycle: 11, body: null },
+    ],
+  },
+  {
+    id: "j-heixin",
+    title: null,
+    corruptTitle: true,
+    yearStart: 1535,
+    yearEnd: 1538,
+    entries: [
+      { id: "heixin-01", title: null, year: 1535, cycle: 4, body: null },
+      { id: "heixin-02", title: null, year: 1537, cycle: 7, body: null },
+      { id: "heixin-03", title: null, year: 1538, cycle: 12, body: null },
+    ],
+  },
+  {
+    id: "j-uros-belt",
+    title: "Uros Belt — Sweep Pattern",
+    yearStart: 1546,
+    yearEnd: 1550,
+    entries: [
+      /* Write Uros Belt stories here */
+      { id: "belt-01", title: null, year: 1546, cycle: 5, body: null },
+      { id: "belt-02", title: null, year: 1547, cycle: 9, body: null },
+      { id: "belt-03", title: null, year: 1549, cycle: 2, body: null },
+      { id: "belt-04", title: null, year: 1550, cycle: 7, body: null },
+    ],
+  },
+
+  /* --- most recent journal (keep last) ------------------------------------- */
+  {
+    id: "j-sturm",
+    title: "Sturm — Moon of Uros",
+    yearStart: 1555,
+    yearEnd: 1557,
+    entries: [
+      /* Write Sturm stories here */
+      { id: "sturm-01", title: null, year: 1555, cycle: 3, body: null },
+      { id: "sturm-02", title: null, year: 1556, cycle: 6, body: null },
+      { id: "sturm-03", title: null, year: 1556, cycle: 10, body: null },
+
+      /* RECOVERED — current readable beat */
+      {
+        id: "sturm-impact",
+        title: "Impact",
+        year: 1557,
+        cycle: 11,
+        recovered: true,
+        body: "I've crashed. Fuck.",
+      },
+    ],
+  },
+];
+
+/* ---------------------------------------------------------------------------
+   FLIGHT LOG — runtime build (usually leave alone)
+   Turns FLIGHT_LOG_JOURNALS into UI data; fills null titles/bodies with
+   corruption. Shared blob is used for every unrecovered entry body.
+   --------------------------------------------------------------------------- */
+const FLIGHT_CORRUPT_CHARS =
+  "ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghijkmnopqrstuvwxyz0123456789/·#";
+
+function flightRand(min, max) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function makeCorruptToken(len = 6) {
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    out += FLIGHT_CORRUPT_CHARS[flightRand(0, FLIGHT_CORRUPT_CHARS.length - 1)];
+  }
+  return out;
+}
+
+function makeCorruptionBlob(len = 360) {
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    if (i > 0 && i % 47 === 0) out += "\n";
+    else if (i > 0 && i % 11 === 0) out += " ";
+    else out += FLIGHT_CORRUPT_CHARS[flightRand(0, FLIGHT_CORRUPT_CHARS.length - 1)];
+  }
+  return out;
+}
+
+function buildFlightLog() {
+  const corruption = makeCorruptionBlob(flightRand(1400, 2200));
+
+  const journals = FLIGHT_LOG_JOURNALS.map((journal) => {
+    const titleCorrupted = Boolean(journal.corruptTitle || !journal.title);
+    const title = titleCorrupted
+      ? makeCorruptToken(flightRand(10, 18))
+      : journal.title;
+
+    const entries = (journal.entries ?? []).map((entry) => {
+      const recovered = Boolean(entry.recovered);
+      const hasBody = typeof entry.body === "string" && entry.body.length > 0;
+
+      if (recovered) {
+        return {
+          id: entry.id,
+          title: entry.title ?? "Untitled",
+          year: entry.year,
+          cycle: entry.cycle,
+          yearDisplay: String(entry.year),
+          cycleDisplay: String(entry.cycle).padStart(2, "0"),
+          dateCorrupted: false,
+          corrupted: false,
+          body: entry.body ?? "",
+        };
+      }
+
+      return {
+        id: entry.id,
+        title: entry.title || makeCorruptToken(flightRand(7, 14)),
+        year: entry.year,
+        cycle: entry.cycle,
+        yearDisplay: makeCorruptToken(flightRand(3, 5)),
+        cycleDisplay: makeCorruptToken(2),
+        dateCorrupted: true,
+        corrupted: !hasBody,
+        body: hasBody ? entry.body : null,
+      };
+    });
+
+    return {
+      id: journal.id,
+      title,
+      titleCorrupted,
+      yearStart: journal.yearStart,
+      yearEnd: journal.yearEnd,
+      spanDisplay: titleCorrupted
+        ? `${makeCorruptToken(3)}–${makeCorruptToken(3)} AE`
+        : undefined,
+      entries,
+    };
+  });
+
+  return {
+    idle: "SELECT JOURNAL ENTRY",
+    corruption,
+    journals,
+  };
+}
+
+export const FLIGHT_LOG = buildFlightLog();
+

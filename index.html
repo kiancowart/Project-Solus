@@ -235,161 +235,257 @@
                ============================================================= -->
           <article class="panel panel--hull is-active" id="panel-overview" data-panel="overview">
             <div class="panel__body">
-              <p class="lead">
-                Hull Condition Monitor — structural feed from Cara’s strain net.
-              </p>
-
               <div class="hull-mon" aria-label="Hull stress monitoring display">
                 <header class="hull-mon__head">
                   <span class="hull-mon__title">HM · LIVE</span>
                   <span class="hull-mon__meta">G512-CARA // FTHFLL</span>
-                  <span class="hull-mon__stamp hull-mon__stamp--crit">LIMIT EXCEEDED</span>
                 </header>
 
-                <div class="hull-mon__main">
-                  <div class="hull-mon__schematic" aria-hidden="true">
-                    <svg class="hull-schematic" viewBox="0 0 320 90" role="img">
-                      <!-- Deck / keel profile -->
-                      <path
-                        class="hull-schematic__body"
-                        d="M12 48 L48 28 L260 28 L300 42 L300 58 L260 72 L48 72 L12 52 Z"
-                      />
-                      <path class="hull-schematic__keel" d="M48 72 L260 72" />
-                      <path class="hull-schematic__deck" d="M48 28 L260 28" />
-                      <!-- Station markers (ABS-style long-base gauge sites) -->
-                      <g class="hull-schematic__station hull-schematic__station--ok">
-                        <circle cx="70" cy="50" r="3.2" />
-                        <text x="70" y="18">FWD</text>
-                      </g>
-                      <g class="hull-schematic__station hull-schematic__station--fault">
-                        <circle cx="150" cy="36" r="3.2" />
-                        <text x="150" y="18">MID·P</text>
-                      </g>
-                      <g class="hull-schematic__station hull-schematic__station--fault">
-                        <circle cx="150" cy="64" r="3.2" />
-                        <text x="150" y="86">MID·S</text>
-                      </g>
-                      <g class="hull-schematic__station hull-schematic__station--warn">
-                        <circle cx="240" cy="50" r="3.2" />
-                        <text x="240" y="18">AFT</text>
-                      </g>
-                      <!-- Fracture cue -->
-                      <path class="hull-schematic__crack" d="M142 30 L158 48 L146 70" />
-                    </svg>
-                    <p class="hull-mon__legend">
-                      STRAIN GAUGES · LONG-BASE · 4 STATIONS
-                    </p>
-                  </div>
-
-                  <div class="hull-mon__loads">
-                    <p class="hull-mon__section">HULL GIRDER LOAD // % OF ALLOWABLE (0–200 SCALE)</p>
-                    <div class="hull-bar">
-                      <span class="hull-bar__label">FWD BM</span>
-                      <div class="hull-bar__track" aria-hidden="true">
-                        <span class="hull-bar__zone hull-bar__zone--warn"></span>
-                        <span class="hull-bar__limit" title="100% design limit"></span>
-                        <span class="hull-bar__fill hull-bar__fill--warn" style="width: 39%"></span>
-                      </div>
-                      <span class="hull-bar__val">78%</span>
-                    </div>
-                    <div class="hull-bar">
-                      <span class="hull-bar__label">MID BM</span>
-                      <div class="hull-bar__track" aria-hidden="true">
-                        <span class="hull-bar__zone hull-bar__zone--warn"></span>
-                        <span class="hull-bar__limit" title="100% design limit"></span>
-                        <span class="hull-bar__fill hull-bar__fill--crit" style="width: 94.5%"></span>
-                      </div>
-                      <span class="hull-bar__val hull-bar__val--crit">189%</span>
-                    </div>
-                    <div class="hull-bar">
-                      <span class="hull-bar__label">AFT BM</span>
-                      <div class="hull-bar__track" aria-hidden="true">
-                        <span class="hull-bar__zone hull-bar__zone--warn"></span>
-                        <span class="hull-bar__limit" title="100% design limit"></span>
-                        <span class="hull-bar__fill hull-bar__fill--crit" style="width: 70.5%"></span>
-                      </div>
-                      <span class="hull-bar__val hull-bar__val--crit">141%</span>
-                    </div>
-                    <div class="hull-bar">
-                      <span class="hull-bar__label">TORSION</span>
-                      <div class="hull-bar__track" aria-hidden="true">
-                        <span class="hull-bar__zone hull-bar__zone--warn"></span>
-                        <span class="hull-bar__limit" title="100% design limit"></span>
-                        <span class="hull-bar__fill hull-bar__fill--warn" style="width: 46%"></span>
-                      </div>
-                      <span class="hull-bar__val">92%</span>
-                    </div>
-                    <p class="hull-mon__note">
-                      Scale to 200% allowable. Limit mark @ 100%. Warn ≥ 80%.
-                    </p>
-                  </div>
+                <div class="hull-mon__tabs" role="tablist" aria-label="Diagnostics layer">
+                  <button
+                    type="button"
+                    class="hull-tab is-active"
+                    id="hull-tab-outer"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="hull-view-outer"
+                    data-hull-tab="outer"
+                    data-sfx="select"
+                  >
+                    OUTER
+                  </button>
+                  <button
+                    type="button"
+                    class="hull-tab"
+                    id="hull-tab-inner"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="hull-view-inner"
+                    data-hull-tab="inner"
+                    data-sfx="select"
+                  >
+                    INNER
+                  </button>
                 </div>
 
-                <div class="hull-mon__motion">
-                  <p class="hull-mon__section">MOTION FLUCTUATION</p>
-                  <div class="hull-motion">
-                    <div class="hull-motion__cell">
-                      <span class="hull-motion__k">PITCH</span>
-                      <span class="hull-motion__v">+04.2°</span>
-                      <span class="hull-motion__s">HOLD</span>
-                    </div>
-                    <div class="hull-motion__cell">
-                      <span class="hull-motion__k">ROLL</span>
-                      <span class="hull-motion__v">−11.8°</span>
-                      <span class="hull-motion__s hull-motion__s--warn">BIAS</span>
-                    </div>
-                    <div class="hull-motion__cell">
-                      <span class="hull-motion__k">HEAVE</span>
-                      <span class="hull-motion__v">0.00 g</span>
-                      <span class="hull-motion__s">GROUNDED</span>
-                    </div>
-                    <div class="hull-motion__cell">
-                      <span class="hull-motion__k">FATIGUE</span>
-                      <span class="hull-motion__v">ACCEL.</span>
-                      <span class="hull-motion__s hull-motion__s--crit">EVENT</span>
-                    </div>
-                  </div>
-                </div>
+                <div class="hull-mon__views">
+                  <div
+                    class="hull-view is-active"
+                    id="hull-view-outer"
+                    role="tabpanel"
+                    aria-labelledby="hull-tab-outer"
+                  >
+                    <div class="hull-mon__main">
+                      <div class="hull-mon__schematic">
+                        <div class="hull-mon__plan-box">
+                          <div class="hull-plan" id="hull-plan" aria-label="G512 Carapace top-down plan">
+                            <img
+                              class="hull-plan__img"
+                              src="assets/images/CARAPACE.svg"
+                              alt="Assault Captain-class Carapace — top-down plan"
+                              width="601"
+                              height="578"
+                            />
+                            <div class="hull-plan__overlays" id="hull-plan-overlays">
+                              <span class="hull-plan__mark hull-plan__mark--ok" style="left:50%;top:14%">
+                                <i></i><em>FWD·CAM</em>
+                              </span>
+                              <span class="hull-plan__mark hull-plan__mark--ok" style="left:50%;top:30%">
+                                <i></i><em>CAM·ARRAY</em>
+                              </span>
+                              <span class="hull-plan__mark hull-plan__mark--warn" style="left:36%;top:37%">
+                                <i></i><em>NDL·L</em>
+                              </span>
+                              <span class="hull-plan__mark hull-plan__mark--warn" style="left:64%;top:37%">
+                                <i></i><em>NDL·R</em>
+                              </span>
+                              <span class="hull-plan__mark hull-plan__mark--fault" style="left:22%;top:48%">
+                                <i></i><em>WINGS L</em>
+                              </span>
+                              <span class="hull-plan__mark hull-plan__mark--fault" style="left:78%;top:48%">
+                                <i></i><em>WINGS R</em>
+                              </span>
+                              <span class="hull-plan__mark hull-plan__mark--warn" style="left:50%;top:50%">
+                                <i></i><em>MSL·TOP</em>
+                              </span>
+                              <span class="hull-plan__mark hull-plan__mark--ok" style="left:50%;top:80%">
+                                <i></i><em>AFT·CAM</em>
+                              </span>
+                              <span class="hull-plan__mark hull-plan__mark--crit" style="left:28%;top:90%">
+                                <i></i><em>ENG·L</em>
+                              </span>
+                              <span class="hull-plan__mark hull-plan__mark--crit" style="left:72%;top:90%">
+                                <i></i><em>ENG·R</em>
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            class="hull-plan__eye is-on"
+                            id="hull-plan-eye"
+                            aria-pressed="true"
+                            aria-controls="hull-plan-overlays"
+                            aria-label="Toggle station labels"
+                            title="Toggle station labels"
+                            data-sfx="click"
+                          >
+                            <svg class="hull-plan__eye-svg" viewBox="0 0 24 16" aria-hidden="true">
+                              <polygon points="1,8 7,2 17,2 23,8 17,14 7,14" fill="none" stroke="currentColor" stroke-width="1.25" />
+                              <polygon points="9,8 12,4.5 15,8 12,11.5" fill="currentColor" />
+                            </svg>
+                          </button>
+                        </div>
+                        <p class="hull-mon__legend">
+                          OUTER HULL · PLAN VIEW · STATION FEED
+                        </p>
+                      </div>
 
-                <div class="hull-mon__alarms" role="status">
-                  <p class="hull-alarm">
-                    <span class="hull-alarm__tag">ALM</span>
-                    MIDSHIP GIRDER — BENDING MOMENT ABOVE DESIGN LIMIT
-                  </p>
-                  <p class="hull-alarm">
-                    <span class="hull-alarm__tag">ALM</span>
-                    STRUCTURAL CONTINUITY LOSS — MID·P / MID·S
-                  </p>
-                  <p class="hull-alarm hull-alarm--dim">
-                    <span class="hull-alarm__tag">ADV</span>
-                    RESTRICTED OPERATION — DO NOT LOAD / DO NOT FLEX
-                  </p>
-                </div>
+                      <aside class="hull-mon__detail">
+                        <p class="hull-mon__section">OUTER DIAGNOSTIC SUMMARY</p>
+                        <p class="hull-detail__line">
+                          <span class="hull-detail__k">FRAME</span>
+                          <span class="hull-detail__v">G512 CARAPACE / ASSAULT-CAPTAIN</span>
+                        </p>
+                        <p class="hull-detail__line">
+                          <span class="hull-detail__k">SKIN</span>
+                          <span class="hull-detail__v hull-detail__v--crit">LAMINATE SHEAR @ WING ROOTS</span>
+                        </p>
+                        <p class="hull-detail__line">
+                          <span class="hull-detail__k">ENG</span>
+                          <span class="hull-detail__v hull-detail__v--crit">DUAL NOZZLE COLD · BUS 0V</span>
+                        </p>
+                        <p class="hull-detail__line">
+                          <span class="hull-detail__k">OPTICS</span>
+                          <span class="hull-detail__v">FWD/AFT CAM OK · ARRAY PARTIAL</span>
+                        </p>
+                        <p class="hull-detail__line">
+                          <span class="hull-detail__k">ORDN</span>
+                          <span class="hull-detail__v hull-detail__v--warn">MSL SAFE · NDL HOLD</span>
+                        </p>
 
-                <div class="hull-mon__aux">
-                  <div class="hull-aux">
-                    <span class="hull-aux__k">PROPULSION</span>
-                    <span class="hull-aux__v hull-aux__v--crit">OFFLINE</span>
+                        <p class="hull-mon__section hull-mon__section--spaced">GIRDER LOAD // % ALLOWABLE</p>
+                        <div class="hull-bar">
+                          <span class="hull-bar__label">FWD BM</span>
+                          <div class="hull-bar__track" aria-hidden="true">
+                            <span class="hull-bar__zone hull-bar__zone--warn"></span>
+                            <span class="hull-bar__limit"></span>
+                            <span class="hull-bar__fill hull-bar__fill--warn" style="width: 39%"></span>
+                          </div>
+                          <span class="hull-bar__val">78%</span>
+                        </div>
+                        <div class="hull-bar">
+                          <span class="hull-bar__label">MID BM</span>
+                          <div class="hull-bar__track" aria-hidden="true">
+                            <span class="hull-bar__zone hull-bar__zone--warn"></span>
+                            <span class="hull-bar__limit"></span>
+                            <span class="hull-bar__fill hull-bar__fill--crit" style="width: 94.5%"></span>
+                          </div>
+                          <span class="hull-bar__val hull-bar__val--crit">189%</span>
+                        </div>
+                        <div class="hull-bar">
+                          <span class="hull-bar__label">AFT BM</span>
+                          <div class="hull-bar__track" aria-hidden="true">
+                            <span class="hull-bar__zone hull-bar__zone--warn"></span>
+                            <span class="hull-bar__limit"></span>
+                            <span class="hull-bar__fill hull-bar__fill--crit" style="width: 70.5%"></span>
+                          </div>
+                          <span class="hull-bar__val hull-bar__val--crit">141%</span>
+                        </div>
+                        <div class="hull-bar">
+                          <span class="hull-bar__label">TORSION</span>
+                          <div class="hull-bar__track" aria-hidden="true">
+                            <span class="hull-bar__zone hull-bar__zone--warn"></span>
+                            <span class="hull-bar__limit"></span>
+                            <span class="hull-bar__fill hull-bar__fill--warn" style="width: 46%"></span>
+                          </div>
+                          <span class="hull-bar__val">92%</span>
+                        </div>
+                        <p class="hull-mon__note">0–200 scale · limit @ 100% · warn ≥ 80%</p>
+
+                        <div class="hull-mon__alarms" role="status">
+                          <p class="hull-alarm">
+                            <span class="hull-alarm__tag">ALM</span>
+                            WING LAMINATES — MULTI-LAYER STRESS ABOVE LIMIT
+                          </p>
+                          <p class="hull-alarm">
+                            <span class="hull-alarm__tag">ALM</span>
+                            ENG·L / ENG·R — THRUST BUS DEAD
+                          </p>
+                          <p class="hull-alarm hull-alarm--dim">
+                            <span class="hull-alarm__tag">ADV</span>
+                            RESTRICTED OPERATION — NO FLEX / NO LOAD
+                          </p>
+                        </div>
+                      </aside>
+                    </div>
+
+                    <div class="hull-mon__aux">
+                      <div class="hull-aux">
+                        <span class="hull-aux__k">PROPULSION</span>
+                        <span class="hull-aux__v hull-aux__v--crit">OFFLINE</span>
+                      </div>
+                      <div class="hull-aux">
+                        <span class="hull-aux__k">LIFE SUPPORT</span>
+                        <span class="hull-aux__v hull-aux__v--warn">PARTIAL</span>
+                      </div>
+                      <div class="hull-aux">
+                        <span class="hull-aux__k">LATTICE-LINK</span>
+                        <span class="hull-aux__v">SOLUS · BOUND</span>
+                      </div>
+                      <div class="hull-aux">
+                        <span class="hull-aux__k">EMPIRE SIGNAL</span>
+                        <span class="hull-aux__v hull-aux__v--crit">NONE</span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="hull-aux">
-                    <span class="hull-aux__k">LIFE SUPPORT</span>
-                    <span class="hull-aux__v hull-aux__v--warn">PARTIAL</span>
-                  </div>
-                  <div class="hull-aux">
-                    <span class="hull-aux__k">LATTICE-LINK</span>
-                    <span class="hull-aux__v">SOLUS · BOUND</span>
-                  </div>
-                  <div class="hull-aux">
-                    <span class="hull-aux__k">EMPIRE SIGNAL</span>
-                    <span class="hull-aux__v hull-aux__v--crit">NONE</span>
+
+                  <div
+                    class="hull-view"
+                    id="hull-view-inner"
+                    role="tabpanel"
+                    aria-labelledby="hull-tab-inner"
+                    hidden
+                  >
+                    <div class="hull-inner">
+                      <p class="hull-inner__sigil" aria-hidden="true">▽</p>
+                      <p class="hull-inner__title">INNER DIAGNOSTICS</p>
+                      <p class="hull-inner__code">HM.INNER // STATUS=NONFUNCTIONAL</p>
+                      <p class="hull-inner__text">
+                        Internal frame, pressure webs, and bay telemetry are offline.
+                        The inner diagnostics suite is still reconstructing itself after impact —
+                        sensor mesh incomplete, checksums failing, no command path to compartment
+                        systems.
+                      </p>
+                      <p class="hull-inner__text hull-inner__text--dim">
+                        FTHFLL reports: REPAIR_IN_PROGRESS · ETA UNKNOWN · DO NOT FORCE QUERY
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <p class="prompt-line">
-                <span class="prompt-line__cursor" aria-hidden="true"></span>
-                Awaiting operator input…
-              </p>
+              <div class="fth-console" id="fth-console" aria-label="FTHFLL kernel console">
+                <div class="fth-console__head">
+                  <span>FTHFLL · KERNEL SHELL</span>
+                  <span class="fth-console__mode">RECOVERY</span>
+                </div>
+                <div class="fth-console__log" id="fth-console-log" role="log" aria-live="polite"></div>
+                <form class="fth-console__form" id="fth-console-form">
+                  <p class="fth-console__await is-blink" id="fth-console-await">
+                    awaiting operator input…
+                  </p>
+                  <span class="fth-console__ps" aria-hidden="true">&gt;</span>
+                  <input
+                    class="fth-console__input"
+                    id="fth-console-input"
+                    type="text"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-label="FTHFLL command"
+                    placeholder="command"
+                  />
+                </form>
+              </div>
             </div>
           </article>
 
@@ -397,27 +493,43 @@
           <!-- =============================================================
                CHANNEL 02 — FLIGHT LOG
                ============================================================= -->
-          <article class="panel" id="panel-flightlog" data-panel="flightlog" hidden>
+          <article class="panel panel--flightlog" id="panel-flightlog" data-panel="flightlog" hidden>
             <div class="panel__body">
-              <p class="lead">
-                Solus’s story.
-              </p>
-              <p class="loc-line">
-                <span class="loc-line__label">LOC</span>
-                <span id="node-id">UROS · STURM</span>
-              </p>
-              <ul class="entry-list" id="flightlog-list">
-                <li>
-                  <button type="button" class="entry entry--available" data-sfx="open" disabled>
-                    <span class="entry__tag">ENTRY</span>
-                    <span class="entry__title">Impact — Partial Recover</span>
-                    <span class="entry__meta">DRAFT</span>
-                  </button>
-                </li>
-              </ul>
-              <p class="panel__note">
-                Narrative chapters and audiobook layers will attach here.
-              </p>
+              <div class="flog" id="flog">
+                <aside class="flog__index" aria-label="Journal index">
+                  <p class="flog__index-label">JOURNALS</p>
+                  <form class="flog__search" id="flog-search" role="search">
+                    <label class="visually-hidden" for="flog-query">Search journal entries</label>
+                    <span class="flog__ps" aria-hidden="true">&gt;</span>
+                    <input
+                      class="flog__input"
+                      id="flog-query"
+                      type="search"
+                      name="q"
+                      autocomplete="off"
+                      spellcheck="false"
+                      placeholder="search entries…"
+                    />
+                  </form>
+                  <div class="flog__scroll">
+                    <div class="flog__journals" id="flog-journals"></div>
+                    <div class="flog__rail" aria-hidden="true">
+                      <div class="flog__rail-fill" id="flog-rail-fill"></div>
+                    </div>
+                  </div>
+                </aside>
+                <div
+                  class="flog__split"
+                  id="flog-split"
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize journal panels"
+                  tabindex="0"
+                ></div>
+                <section class="flog__reader" id="flog-reader" aria-live="polite">
+                  <p class="flog__idle">SELECT JOURNAL ENTRY</p>
+                </section>
+              </div>
             </div>
           </article>
 
@@ -425,37 +537,39 @@
           <!-- =============================================================
                CHANNEL 03 — ARCHIVES
                ============================================================= -->
-          <article class="panel" id="panel-archives" data-panel="archives" hidden>
+          <article class="panel panel--archives" id="panel-archives" data-panel="archives" hidden>
             <div class="panel__body">
-              <p class="lead">
-                Doctrine, charts, and Imperial knowledge stored aboard this craft.
-              </p>
-              <ul class="entry-list" id="archive-list">
-                <li>
-                  <button type="button" class="entry" data-sfx="open" disabled>
-                    <span class="entry__tag">DOCTRINE</span>
-                    <span class="entry__title">The Scarlet Faith</span>
-                    <span class="entry__meta">FILE PENDING</span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="entry" data-sfx="open" disabled>
-                    <span class="entry__tag">ORDER</span>
-                    <span class="entry__title">Scarlet Order of the Veil</span>
-                    <span class="entry__meta">FILE PENDING</span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="entry" data-sfx="open" disabled>
-                    <span class="entry__tag">SCOURGE</span>
-                    <span class="entry__title">Khans — Field Primer</span>
-                    <span class="entry__meta">FILE PENDING</span>
-                  </button>
-                </li>
-              </ul>
-              <p class="panel__note">
-                Archive entries will populate as lore repaired.
-              </p>
+              <div class="adb" id="adb">
+                <header class="adb__head">
+                  <div class="adb__titles">
+                    <p class="adb__label">SHIP MEMORY · LORE INDEX</p>
+                    <p class="adb__meta" id="adb-meta">0 RECORDS</p>
+                  </div>
+                </header>
+                <div class="adb__main">
+                  <aside class="adb__term" aria-label="Archive query terminal">
+                    <div class="adb__log" id="adb-log" role="log" aria-live="polite">
+                      <p class="adb__line adb__line--sys">awaiting index query…</p>
+                    </div>
+                    <form class="adb__form" id="adb-search" role="search">
+                      <label class="visually-hidden" for="adb-query">Archive query</label>
+                      <span class="adb__ps" aria-hidden="true">&gt;</span>
+                      <input
+                        class="adb__input"
+                        id="adb-query"
+                        type="text"
+                        name="q"
+                        autocomplete="off"
+                        spellcheck="false"
+                        aria-label="Archive query"
+                      />
+                    </form>
+                  </aside>
+                  <section class="adb__pane" id="adb-pane" aria-live="polite">
+                    <p class="adb__idle">AWAITING SEARCH</p>
+                  </section>
+                </div>
+              </div>
             </div>
           </article>
 
@@ -465,13 +579,29 @@
                ============================================================= -->
           <article class="panel panel--chart" id="panel-cartography" data-panel="cartography" hidden>
             <div class="panel__body">
-              <p class="lead">Stellar charts of The Nine.</p>
               <div class="chart">
                 <div class="chart__map" id="chart-map" aria-label="Orbital map of The Nine"></div>
                 <aside class="chart__readout" id="chart-readout" aria-live="polite">
                   <p class="chart__idle">SELECT ORBITAL BODY</p>
                 </aside>
               </div>
+              <section
+                class="chart-archive"
+                id="chart-archive"
+                aria-label="System archive extract"
+              >
+                <header class="chart-archive__head">
+                  <span class="chart-archive__title">SYSTEM ARCHIVE</span>
+                  <span class="chart-archive__mode">OFFLINE</span>
+                </header>
+                <div class="chart-archive__body" id="chart-archive-body">
+                  <p class="chart-archive__code">CART.ARCHIVE // STATUS=NONFUNCTIONAL</p>
+                  <p class="chart-archive__text">
+                    Archive mesh is still repairing after impact. Planetary extracts and
+                    cross-indexed memory are inaccessible.
+                  </p>
+                </div>
+              </section>
             </div>
           </article>
 
@@ -481,7 +611,6 @@
                ============================================================= -->
           <article class="panel" id="panel-diagnostics" data-panel="diagnostics" hidden>
             <div class="panel__body">
-              <p class="lead">Internal interface settings.</p>
               <form class="systems-form" id="systems-form">
                 <div class="sys-row sys-row--action">
                   <span class="sys-row__label">Interface Audio</span>
@@ -553,20 +682,12 @@
                ============================================================= -->
           <article class="panel" id="panel-auxiliary" data-panel="auxiliary" hidden>
             <div class="panel__body">
-              <p class="lead">
-                A secondary access lane for operators not bound to this hull.
-                Campaign dossiers and table sessions live here.
-              </p>
               <div class="locked-block locked-block--aux">
                 <p class="locked-block__sigil" aria-hidden="true">▽</p>
                 <p class="locked-block__text">
                   GUEST CHANNEL SEALED — NO ACTIVE ROSTER
                 </p>
               </div>
-              <p class="panel__note">
-                Future campaigns will appear as discrete guest sessions,
-                separate from the Khan’s story.
-              </p>
             </div>
           </article>
 
@@ -613,6 +734,6 @@
     <!-- =====================================================================
          SCRIPTS
          ===================================================================== -->
-    <script src="main.js?v=20260722ak" type="module"></script>
+    <script src="main.js?v=20260722aw" type="module"></script>
   </body>
 </html>
