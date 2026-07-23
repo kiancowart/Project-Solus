@@ -4,9 +4,9 @@
  * =============================================================================
  * Intro splash COPY lives here. main.js only plays it back.
  *
- * ALSO EDIT HERE:
- *   FLIGHT LOG STORIES  — search "FLIGHT LOG STORIES" below
- *                         journal names, entry titles, and body prose
+ * ALSO:
+ *   Flight Log stories → lore/Player Facing/Flight Log/ (Obsidian)
+ *   Rebuild: node scripts/build-flight-log.js
  *
  * SEQUENCE:  clearance keypad  →  scrolling log  →  Empire logo  →  hub
  *
@@ -37,23 +37,30 @@
  * =============================================================================
  */
 
+import { FLIGHT_LOG_SOURCE } from "./flight-log.generated.js";
+
 /* ---------------------------------------------------------------------------
    CLEARANCE CODE — number pad gate (plain digits only)
    --------------------------------------------------------------------------- */
 export const ACCESS_CODE = "512";
 
 /* ---------------------------------------------------------------------------
-   DEEP CLEARANCE — Whisper ARG unlock (persisted in localStorage)
-   Gate code alone reaches the hub; Whisper completion opens deep partitions.
+   IMPERIAL CLEARANCE — ARG finale unlock (persisted in localStorage)
+   Pad code reaches the hub + Flight Log ARG. Imperial Clearance opens
+   Archives / Cartography / Guest Channel for lore & TTRPG use.
    --------------------------------------------------------------------------- */
 export const CLEARANCE = {
   storageKey: "lattice.clearance",
+  /** Current flag written on finale */
+  imperialValue: "imperial",
+  /** Legacy Whisper-era value still honored as Imperial Clearance */
   deepValue: "deep",
-  /** Nav panels sealed until Whisper trail completes */
-  lockedUntilDeep: ["flightlog", "archives", "cartography", "auxiliary"],
+  milestoneKey: "lattice.milestones",
+  /** Sealed until Imperial Clearance (Flight Log opens after pad) */
+  lockedUntilImperial: ["archives", "cartography", "auxiliary"],
   seal: {
     title: "PARTITION LOCKED",
-    body: "Lattice handshake incomplete. Return to clearance and consult the guide.",
+    body: "Imperial Clearance required. Recover Flight Log partitions — or consult the guide on the pad.",
   },
 };
 
@@ -205,13 +212,11 @@ export const WHISPER = {
         [3, 4, 5, 2, 8, 6, 1, 7, 9],
       ],
       accept: ["512"],
-      success: "Now you know.",
-      /** Completing this step grants deep clearance (Archives + Flight Log) */
-      grantClearance: true,
+      success: "Now you know. The Flight Log is waiting.",
+      /** Pad help only — Imperial Clearance comes from Flight Log finale */
     },
   ],
   deny: "DENIED",
-  /** Typed once when clearance is granted */
   unlockLine: "There's still so much more to know.",
   farewell: [
     "I'm done with you now. I just wanna watch you delve into hell.",
@@ -403,256 +408,13 @@ export const SYSTEM_CHART = {
 };
 
 /* =============================================================================
-   FLIGHT LOG STORIES — EDIT HERE (Solus personal journals)
+   FLIGHT LOG — built from Obsidian (do not hand-edit journals here)
    =============================================================================
-   Come back to this block to write / rename journals and entries.
-
-   JOURNAL fields:
-     id            — stable key (don’t rename casually)
-     title         — journal name in the left list
-                     set corruptTitle: true to show gibberish instead
-     yearStart/End — span under the journal name (hidden if corruptTitle)
-
-   ENTRY fields:
-     id            — stable key
-     title         — entry name (null → illegible gibberish in UI)
-     year, cycle   — dating (shown as “AE · CYCLE”; illegible unless recovered)
-     body          — story text shown on the right
-                     null / "" → shared corruption blob (not yet written)
-     recovered     — true = title, date, and body all readable
-
-  Tip: leave body: null on stubs; replace with your prose when ready.
-   Impact / Wake / Dust under Sturm are seed recovered beats (need deep clearance).
-   Spike journal = partner flashbacks.
-   Minimum AE year: 1510.
+   Write entries in: lore/Player Facing/Flight Log/entries/*.md
+   Journal shells:   lore/Player Facing/Flight Log/journals.json
+   Regenerate:       node scripts/build-flight-log.js
    ============================================================================= */
 
-const FLIGHT_LOG_JOURNALS = [
-  /* --- filler / corrupted journals (names intentionally blank) ------------- */
-  {
-    id: "j-qamor",
-    title: null,
-    corruptTitle: true,
-    yearStart: 1510,
-    yearEnd: 1513,
-    entries: [
-      {
-        id: "qamor-hey-cara",
-        title: "Hey Cara 512!",
-        year: 1512,
-        cycle: 84,
-        recovered: true,
-        /* ↓ write the entry body between the backticks ↓ */
-        body: `Hey Cara! I'm writing in here because I'm bored as all hell on the Hive and I figured out how overide with Sol's ID, so HAHA!
-
-        Should I be using my Shaper status to break into a Khan's ship? Pr0lly n0t.
-        Could I be exed for unauthorized access if Kairet found out? Definitely.
-
-        But who cares!? Ma said you only live once, and its not like you would or could rat me out to Sol anyway. Plus, I kinda like the idea that Sol will be looking through her old logs and then find this. She would definitely be pissed. But then probably give a long sigh. Maybe I could even get her to crack a smile.
-
-        Oh damn, speak of the devil. I better hide before she finds me out. Seeya!
-`,
-      },
-      { id: "qamor-01", title: null, year: 1510, cycle: 2, body: null },
-      { id: "qamor-02", title: null, year: 1511, cycle: 7, body: null },
-      { id: "qamor-03", title: null, year: 1512, cycle: 11, body: null },
-      { id: "qamor-04", title: null, year: 1513, cycle: 4, body: null },
-    ],
-  },
-  {
-    id: "j-ikeph",
-    title: null,
-    corruptTitle: true,
-    yearStart: 1515,
-    yearEnd: 1518,
-    entries: [
-      { id: "ikeph-01", title: null, year: 1515, cycle: 1, body: null },
-      { id: "ikeph-02", title: null, year: 1516, cycle: 5, body: null },
-      { id: "ikeph-03", title: null, year: 1517, cycle: 9, body: null },
-    ],
-  },
-  {
-    id: "j-terra",
-    title: null,
-    corruptTitle: true,
-    yearStart: 1520,
-    yearEnd: 1522,
-    entries: [
-      { id: "terra-01", title: null, year: 1520, cycle: 3, body: null },
-      { id: "terra-02", title: null, year: 1521, cycle: 8, body: null },
-      { id: "terra-03", title: null, year: 1522, cycle: 6, body: null },
-    ],
-  },
-
-  /* --- named journals (readable titles) ------------------------------------ */
-  {
-    id: "j-kaph",
-    title: "Kaph — Prison Moon",
-    yearStart: 1523,
-    yearEnd: 1526,
-    entries: [
-      /* Write Kaph stories here */
-      { id: "kaph-01", title: null, year: 1523, cycle: 2, body: null },
-      { id: "kaph-02", title: null, year: 1524, cycle: 5, body: null },
-      { id: "kaph-03", title: null, year: 1525, cycle: 9, body: null },
-      { id: "kaph-04", title: null, year: 1526, cycle: 1, body: null },
-      { id: "kaph-05", title: null, year: 1526, cycle: 8, body: null },
-    ],
-  },
-  {
-    id: "j-deshret",
-    title: "Deshret — The Embrace",
-    yearStart: 1530,
-    yearEnd: 1533,
-    entries: [
-      /* Write Deshret stories here */
-      { id: "desh-01", title: null, year: 1530, cycle: 3, body: null },
-      { id: "desh-02", title: null, year: 1531, cycle: 6, body: null },
-      { id: "desh-03", title: null, year: 1532, cycle: 2, body: null },
-      { id: "desh-04", title: null, year: 1532, cycle: 10, body: null },
-      { id: "desh-05", title: null, year: 1533, cycle: 4, body: null },
-      { id: "desh-06", title: null, year: 1533, cycle: 11, body: null },
-    ],
-  },
-  {
-    id: "j-heixin",
-    title: null,
-    corruptTitle: true,
-    yearStart: 1535,
-    yearEnd: 1538,
-    entries: [
-      { id: "heixin-01", title: null, year: 1535, cycle: 4, body: null },
-      { id: "heixin-02", title: null, year: 1537, cycle: 7, body: null },
-      { id: "heixin-03", title: null, year: 1538, cycle: 12, body: null },
-    ],
-  },
-  {
-    id: "j-uros-belt",
-    title: "Uros Belt — Sweep Pattern",
-    yearStart: 1546,
-    yearEnd: 1550,
-    entries: [
-      /* Write Uros Belt stories here */
-      { id: "belt-01", title: null, year: 1546, cycle: 5, body: null },
-      { id: "belt-02", title: null, year: 1547, cycle: 9, body: null },
-      { id: "belt-03", title: null, year: 1549, cycle: 2, body: null },
-      { id: "belt-04", title: null, year: 1550, cycle: 7, body: null },
-    ],
-  },
-
-  /* --- flashbacks — late partner / Spike ----------------------------------- */
-  {
-    id: "j-spike",
-    title: "Spike — Residual",
-    yearStart: 1548,
-    yearEnd: 1554,
-    entries: [
-      {
-        id: "spike-name",
-        title: "Prickly",
-        year: 1548,
-        cycle: 4,
-        recovered: true,
-        body: `They called me Spike before Cara did.
-
-Not for the pistol. For me. Said I was all edge and no give, that even the Shapers flinched when I walked the spar deck like I owned the blood in the floor.
-
-I hated it. Then I didn't. Then it was the only soft thing left in their mouth when the Hive lights went mean.
-
-KSP-512 still carries their hand-oil in the grip. Cara hums the same generation. I tell myself that's coincidence. Faithfull doesn't do coincidence.`,
-      },
-      {
-        id: "spike-crossing",
-        title: "Crossing",
-        year: 1551,
-        cycle: 9,
-        recovered: true,
-        body: `They held my face after the Crossing like I might float out of my own bones.
-
-"Still you," they said. Not praise. A check. A tether.
-
-I don't remember the sermon. I remember their thumb at the corner of my mouth, scarlet salt, the vow sitting wrong in my throat because I wanted to swear it to them instead of Her.
-
-Heresy tastes like copper. I swallowed it anyway.`,
-      },
-      {
-        id: "spike-absence",
-        title: "Absent",
-        year: 1554,
-        cycle: 2,
-        recovered: true,
-        body: `There is a shape in the bunk where a second body should densify the dark.
-
-Cara asks for course corrections in that soft Lattice voice and I answer like a Khan. Between packets I rehearse their laugh until it corrupts — half static, half desert wind that hasn't happened yet.
-
-I keep the pistol oiled. I keep the vow. I keep nothing that mattered.`,
-      },
-      { id: "spike-04", title: null, year: 1552, cycle: 6, body: null },
-      { id: "spike-05", title: null, year: 1553, cycle: 11, body: null },
-    ],
-  },
-
-  /* --- most recent journal (keep last) ------------------------------------- */
-  {
-    id: "j-sturm",
-    title: "Sturm — Moon of Uros",
-    yearStart: 1555,
-    yearEnd: 1557,
-    entries: [
-      { id: "sturm-01", title: null, year: 1555, cycle: 3, body: null },
-      { id: "sturm-02", title: null, year: 1556, cycle: 6, body: null },
-      { id: "sturm-03", title: null, year: 1556, cycle: 10, body: null },
-
-      {
-        id: "sturm-impact",
-        title: "Impact",
-        year: 1557,
-        cycle: 11,
-        recovered: true,
-        body: "I've crashed. Fuck.",
-      },
-      {
-        id: "sturm-wake",
-        title: "Wake",
-        year: 1557,
-        cycle: 11,
-        recovered: true,
-        body: `Cara's ribs are singing wrong. Emergency bus only. Hive unreachable. Guest channel still "repairing" like a prayer that forgot the words.
-
-Outside: Sturm. Splinter dust and old crusade weather. The kind of sky that makes Empire hymns sound like someone else's problem.
-
-I unbuckle. Spike is warm against my thigh. For a second I hear them say my name the soft way.
-
-Then just wind.`,
-      },
-      {
-        id: "sturm-dust",
-        title: "Dust Road",
-        year: 1557,
-        cycle: 12,
-        recovered: true,
-        body: `Walked until the wreck stopped looking like a grave and started looking like a job.
-
-Locals on the ridge — not Empire, not clean Nivian either. Outcast geometry. They watched a Khan crawl out of a Carapace like it was weather.
-
-I tipped my brim. Didn't have a brim. Did it anyway.
-
-Cowboy work now: salvage, barter, keep Cara breathing, decide whether Her light still reaches this far or if I'm just stubborn bone under a dead relay.
-
-Faith is a long road. Sturm is longer.`,
-      },
-      /* stubs for later beats — destination / stay still unwritten */
-      { id: "sturm-04", title: null, year: 1557, cycle: 13, body: null },
-      { id: "sturm-05", title: null, year: 1557, cycle: 14, body: null },
-    ],
-  },
-];
-
-/* ---------------------------------------------------------------------------
-   FLIGHT LOG — runtime build (usually leave alone)
-   Turns FLIGHT_LOG_JOURNALS into UI data; fills null titles/bodies with
-   corruption. Shared blob is used for every unrecovered entry body.
-   --------------------------------------------------------------------------- */
 const FLIGHT_CORRUPT_CHARS =
   "ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghijkmnopqrstuvwxyz0123456789/·#";
 
@@ -680,41 +442,34 @@ function makeCorruptionBlob(len = 360) {
 
 function buildFlightLog() {
   const corruption = makeCorruptionBlob(flightRand(1400, 2200));
+  const sourceJournals = FLIGHT_LOG_SOURCE?.journals ?? [];
 
-  const journals = FLIGHT_LOG_JOURNALS.map((journal) => {
+  const journals = sourceJournals.map((journal) => {
     const titleCorrupted = Boolean(journal.corruptTitle || !journal.title);
     const title = titleCorrupted
       ? makeCorruptToken(flightRand(10, 18))
       : journal.title;
 
     const entries = (journal.entries ?? []).map((entry) => {
-      const recovered = Boolean(entry.recovered);
       const hasBody = typeof entry.body === "string" && entry.body.length > 0;
-
-      if (recovered) {
-        return {
-          id: entry.id,
-          title: entry.title ?? "Untitled",
-          year: entry.year,
-          cycle: entry.cycle,
-          yearDisplay: String(entry.year),
-          cycleDisplay: String(entry.cycle).padStart(2, "0"),
-          dateCorrupted: false,
-          corrupted: false,
-          body: entry.body ?? "",
-        };
-      }
-
       return {
         id: entry.id,
-        title: entry.title || makeCorruptToken(flightRand(7, 14)),
+        title: entry.title ?? null,
         year: entry.year,
         cycle: entry.cycle,
-        yearDisplay: makeCorruptToken(flightRand(3, 5)),
-        cycleDisplay: makeCorruptToken(2),
-        dateCorrupted: true,
-        corrupted: !hasBody,
         body: hasBody ? entry.body : null,
+        seedAfterPad: Boolean(entry.seedAfterPad),
+        unlockKeywords: entry.unlockKeywords ?? [],
+        writeOrder: entry.writeOrder,
+        tellOrder: entry.tellOrder,
+        stinger: entry.stinger ?? null,
+        partnerReveal: Boolean(entry.partnerReveal),
+        grantsImperial: Boolean(entry.grantsImperial),
+        /* display fields filled at runtime by Flight Log UI */
+        yearDisplay: String(entry.year ?? "····"),
+        cycleDisplay: String(entry.cycle ?? 0).padStart(2, "0"),
+        dateCorrupted: true,
+        corrupted: true,
       };
     });
 

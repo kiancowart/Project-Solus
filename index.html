@@ -26,7 +26,9 @@
 
     <!-- =====================================================================
          SCREEN: BOOT — Lattice OS resuscitation sequence
-         Edit copy / code in: boot-content.js
+         Edit copy / code in: content/boot-content.js
+         Flight Log stories: lore/Player Facing/Flight Log/ (Obsidian)
+         Rebuilds: node scripts/build-flight-log.js · node scripts/build-lore-catalog.js
          Sequence: clearance keypad → log → logo → hub
          ===================================================================== -->
     <section id="boot" class="screen screen--boot" aria-label="System boot">
@@ -116,6 +118,7 @@
             <button type="button" class="gate__key" data-key="0">0</button>
             <button type="button" class="gate__key gate__key--action" data-key="enter" aria-label="Enter">✓</button>
           </div>
+          <a class="gate__intercept" href="intercept.html" aria-label="Return to tuner">←</a>
           <div class="gate__eyes" id="gate-eyes" hidden aria-hidden="true">
             <img class="gate__face" src="assets/images/666face.png" alt="" />
             <p class="gate__face-caption">I WEAR NO MASK</p>
@@ -180,7 +183,7 @@
              HUB · NAV — boxy channel groups
              --------------------------------------------------------------- -->
         <aside class="nav-rail" aria-label="Primary directories">
-          <div class="nav-box">
+          <div class="nav-box nav-box--ship">
             <div class="nav-box__head">SHIP CHANNELS</div>
             <nav class="nav-box__body">
               <button
@@ -201,28 +204,10 @@
               >
                 FLIGHT LOG
               </button>
-              <button
-                type="button"
-                class="nav-item"
-                data-panel="cartography"
-                data-channel-title="CARTOGRAPHY // STELLAR FIX"
-                data-sfx="select"
-              >
-                SYSTEM CHART
-              </button>
-              <button
-                type="button"
-                class="nav-item"
-                data-panel="diagnostics"
-                data-channel-title="FIDELITY BUS // SIGNAL DIAGNOSTICS"
-                data-sfx="select"
-              >
-                DIAGNOSTICS
-              </button>
             </nav>
           </div>
 
-          <div class="nav-box">
+          <div class="nav-box nav-box--external">
             <div class="nav-box__head">EXTERNAL DATABASE</div>
             <nav class="nav-box__body">
               <button
@@ -237,6 +222,15 @@
               <button
                 type="button"
                 class="nav-item"
+                data-panel="cartography"
+                data-channel-title="CARTOGRAPHY // STELLAR FIX"
+                data-sfx="select"
+              >
+                SYSTEM CHART
+              </button>
+              <button
+                type="button"
+                class="nav-item"
                 data-panel="auxiliary"
                 data-channel-title="EXTERNAL // GUEST CHANNEL"
                 data-sfx="select"
@@ -244,6 +238,18 @@
                 GUEST CHANNEL
               </button>
             </nav>
+          </div>
+
+          <div class="nav-settings">
+            <button
+              type="button"
+              class="nav-item nav-item--settings"
+              data-panel="diagnostics"
+              data-channel-title="FIDELITY BUS // SIGNAL DIAGNOSTICS"
+              data-sfx="select"
+            >
+              DIAGNOSTICS
+            </button>
           </div>
         </aside>
 
@@ -534,9 +540,13 @@
                       name="q"
                       autocomplete="off"
                       spellcheck="false"
-                      placeholder="search entries…"
+                      placeholder="recovery key…"
+                      aria-description="Enter a recovery keyword to decrypt corrupted journal partitions"
                     />
                   </form>
+                  <p class="flog__search-hint">
+                    SEARCH ACTIVATES RECOVER · KEYWORDS DECRYPT PARTITIONS
+                  </p>
                   <div class="flog__scroll">
                     <div class="flog__journals" id="flog-journals"></div>
                     <div class="flog__rail" aria-hidden="true">
@@ -568,7 +578,7 @@
               <div class="adb" id="adb">
                 <header class="adb__head">
                   <div class="adb__titles">
-                    <p class="adb__label">SHIP MEMORY · LORE INDEX</p>
+                    <p class="adb__label">SHIP MEMORY · RECOVERED INDEX</p>
                     <p class="adb__meta" id="adb-meta">0 RECORDS</p>
                   </div>
                 </header>
@@ -696,9 +706,6 @@
                   </div>
                 </div>
               </form>
-              <p class="panel__note">
-                Music and audiobook playback will route through these channels.
-              </p>
             </div>
           </article>
 
@@ -732,6 +739,6 @@
     <!-- =====================================================================
          SCRIPTS
          ===================================================================== -->
-    <script src="main.js?v=20260723o" type="module"></script>
+    <script src="src/main.js?v=20260723s" type="module"></script>
   </body>
 </html>

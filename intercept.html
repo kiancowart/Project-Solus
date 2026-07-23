@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LATTICE.OS // Presage Projection Intercept</title>
+    <meta
+      name="description"
+      content="Kharon-Celeste intercept — operator handshake required."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="main.css" />
+  </head>
+  <body class="page-intercept">
+    <div class="crt" aria-hidden="true">
+      <div class="crt__scanlines"></div>
+      <div class="crt__vignette"></div>
+      <div class="crt__flicker"></div>
+    </div>
+
+    <div class="intercept-stage" aria-label="AUX frequency tuner">
+      <section class="radio" aria-label="Radio tuner">
+        <div class="radio__freq" aria-live="polite">
+          <span class="radio__freq-value">082.4</span>
+        </div>
+
+        <div class="radio__scope" aria-hidden="true">
+          <div class="radio__viz" id="radio-viz"></div>
+        </div>
+
+        <!-- Centered seam: both rails occupy the viz baseline, then open symmetrically -->
+        <div class="radio__frame">
+          <div class="radio__rail radio__rail--top" aria-hidden="true"></div>
+          <div class="radio__rail radio__rail--bottom" aria-hidden="true"></div>
+
+          <main class="intercept" aria-label="AUX bleed intercept" aria-hidden="true">
+            <header class="intercept__head">
+              <p class="intercept__sigil" aria-hidden="true">□</p>
+              <p class="intercept__label">ID KHARON-CELESTE || PRESAGE PROJECTION INTERCEPT</p>
+              <p class="intercept__warn">ONE WAY SIGNAL · DO NOT REPLY ON THIS FREQUENCY</p>
+            </header>
+
+            <article class="intercept__body">
+              <p>I am not your friend.</p>
+              <p>I am the guide that answers when bonded craft forget how to ask.</p>
+              <p>
+                <strong>G512</strong> Carapace — she calls herself Cara — is still humming on a
+                dead relay. Sturm weather. Partition rot. The Khan left a mess and a gate.
+              </p>
+              <p>You will complete clearance.</p>
+              <p>
+                Three digits. Same count as the Imperial Triad. Same generation stamped on her hull
+                — the mark that ages Scourge iron.
+              </p>
+              <p>Open the node. Finish the handshake.</p>
+              <p>
+                After that: old keys wake old files. Search what Lattice still remembers.
+              </p>
+              <p>Pass this intercept. Not your session.</p>
+              <p class="intercept__sign">— Celeste</p>
+            </article>
+          </main>
+        </div>
+
+        <footer class="intercept__foot" aria-hidden="true">
+          <a class="intercept__cta" href="index.html">OPEN CLEARANCE GATE</a>
+        </footer>
+
+        <div class="radio__controls">
+          <button
+            type="button"
+            class="radio__spin radio__spin--left"
+            aria-label="Tune down — hold to accelerate"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M16.5 3.5 L5.5 12 L16.5 20.5 Z" />
+            </svg>
+          </button>
+
+          <div class="radio__dial" aria-hidden="true">
+            <div class="radio__dial-ring">
+              <div class="radio__dial-hand"></div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="radio__spin radio__spin--right"
+            aria-label="Tune up — hold to accelerate"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M7.5 3.5 L18.5 12 L7.5 20.5 Z" />
+            </svg>
+          </button>
+        </div>
+
+        <a class="radio__clearance" href="index.html" aria-label="Open clearance gate" hidden>→</a>
+      </section>
+    </div>
+
+    <script src="src/intercept.js?v=20260723aa" type="module"></script>
+  </body>
+</html>
