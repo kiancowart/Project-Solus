@@ -32,23 +32,24 @@ The website **is** the terminal of **Cara** — a **G512 Carapace-class** Arkhid
 ## Unlock map (ARG → Imperial Clearance)
 
 ```text
-Celeste intercept (intercept.html)  →  Discord share node
-        ↓  tune 097.9 → OPEN CLEARANCE GATE
-Clearance pad (512 via G512 / triad) →  enter Cara
-        ↓  Whisper skimmer path (optional): please → retune 051.2 → sudoku → 512
-Flight Log milestones   →  keyword search recovers journals
+Celeste intercept  →  pad 512  →  STATUS (blind outer)
+        ↓  FTH: /outer (G512 + S. Raei) → eye + outer feed
+        ↓  FTH: /inner (damage-order serials) → INNER live
+        ↓  Click STELLAR FIX BAY  and/or  PERSONAL RECORD BAY
+System Chart dossiers (▽ NN // BIND)  ↔  Flight Log imperial fragments
         ↓
-Partner-name beat       →  major reveal (when you write it)
-        ↓
-Imperial Clearance      →  Archives digests + Cartography + Guest Channel
+Imperial Clearance 9-slot assemble  →  Archives + Guest Channel
 ```
 
-1. **Off-site first** — [`intercept.html`](../intercept.html) / [`_internal/arg/celeste-intercept.md`](arg/celeste-intercept.md). Discord templates in [`arg/discord-post-template.md`](arg/discord-post-template.md). Carriers: **097.9** (greeting) · **051.2** (Whisper echo).
-2. **Pad `512`** — Intro only. Opens limited hub; **Flight Log is the ARG board**.
-3. **Flight Log** — Each recovered entry is a story beat + next step. Search keywords unlock partitions (`lattice.milestones`).
-4. **Imperial Clearance** — Finale entry (`sturm-clearance`, keywords `carapace` / `imperial`) sets `localStorage["lattice.clearance"]="imperial"`. Legacy `"deep"` still counts.
-5. **Whisper (Kharon-Celeste)** — Pad guide only; multi-step (tuner echo → sudoku). Does **not** grant Imperial Clearance.
-6. **Shareable** — Clues are words/docs friends can pass; each browser keeps its own progress.
+Full solutions & slot map: [`arg/main-path.md`](arg/main-path.md) · editable in [`content/arg-path.js`](../content/arg-path.js).
+
+1. **Off-site first** — [`intercept.html`](../intercept.html). Carriers: **097.9** · **051.2**.
+2. **Pad `512`** — Opens hub; **STATUS** is the ARG board (Flight Log / Chart sealed until INNER puzzles).
+3. **STATUS puzzles** — FTH: `/outer` → `/inner` → click INNER bays for Chart / Log.
+4. **Chart + Log** — Planet dossiers teach slot order; journals yield ▽ fragments via exact keywords.
+5. **Imperial Clearance** — 3×3 wells (planet + fragment). Wrong bind → `SEAL HOLDS` (brief). Grants `lattice.clearance=imperial`.
+6. **Whisper** — Pad guide only; does **not** grant Imperial.
+7. **Shareable** — Clues are words/docs; each browser keeps its own progress.
 
 ### Milestone audio
 

@@ -13,6 +13,7 @@ import { initCartography } from "./cartography.js";
 import { initHullPlan, initFthConsole } from "./hull.js";
 import { initFlightLog } from "./flight-log.js";
 import { initArchives } from "./archives.js";
+import { initImperialClearance } from "./imperial.js";
 import { applyColdStartFromQuery } from "./cold-start.js";
 
 applyColdStartFromQuery();
@@ -27,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initFthConsole();
   initFlightLog();
   initArchives();
+  initImperialClearance();
   applyClearanceUI();
   runBoot();
 });

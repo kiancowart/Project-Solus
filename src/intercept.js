@@ -98,6 +98,7 @@ class RadioTuner {
     this.frame = $(".radio__frame");
     this.clearanceBtn = $(".radio__clearance");
     this.echoEl = $(".radio-echo");
+    this.skipBtn = $("#intercept-skip");
 
     this.freq = 82.4;
     this.dialAngle = -18;
@@ -581,17 +582,41 @@ class RadioTuner {
       /* ignore */
     }
 
+    const skipBtn = this.skipBtn;
+    if (skipBtn) skipBtn.hidden = false;
+
     await new Promise((resolve) => {
       let settled = false;
+      let timeoutId = 0;
       const done = () => {
         if (settled) return;
         settled = true;
+        window.clearTimeout(timeoutId);
         this.signal.removeEventListener("ended", done);
+        skipBtn?.removeEventListener("click", onSkip);
+        window.removeEventListener("keydown", onSkipKey);
+        if (skipBtn) skipBtn.hidden = true;
         resolve();
       };
+      const onSkip = () => {
+        try {
+          this.signal.pause();
+        } catch {
+          /* ignore */
+        }
+        done();
+      };
+      const onSkipKey = (e) => {
+        if (e.key !== "Enter") return;
+        if (!skipBtn || skipBtn.hidden || settled) return;
+        e.preventDefault();
+        onSkip();
+      };
       this.signal.addEventListener("ended", done);
+      skipBtn?.addEventListener("click", onSkip);
+      window.addEventListener("keydown", onSkipKey);
       this.signal.play().catch(() => setTimeout(done, 1200));
-      setTimeout(done, 13000);
+      timeoutId = window.setTimeout(done, 13000);
     });
 
     try {

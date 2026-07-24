@@ -37,6 +37,10 @@ export function initNav() {
     const btn = e.target.closest(".nav-item");
     if (!btn || !rail.contains(btn)) return;
     if (revealing) return;
+    if (btn.classList.contains("is-locked")) {
+      audio.play("click");
+      return;
+    }
 
     const id = btn.dataset.panel;
     if (!id) return;

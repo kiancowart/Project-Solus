@@ -3,6 +3,7 @@
  */
 
 import { SYSTEM_CHART } from "../content/boot-content.js";
+import { PLANET_DOSSIERS } from "../content/arg-path.js";
 import { audio } from "./audio.js";
 import { prefersReducedMotion } from "./motion.js";
 
@@ -162,6 +163,23 @@ export function initCartography() {
     readout.innerHTML = `<p class="chart__error">${errorText}</p>`;
   };
 
+  const showDossier = (planetId) => {
+    const d = PLANET_DOSSIERS[planetId];
+    if (!d) {
+      showError();
+      return;
+    }
+    audio.play("select");
+    if (stopWire) {
+      stopWire();
+      stopWire = null;
+    }
+    readout.innerHTML = `
+      <p class="chart__dossier-title">${d.title}</p>
+      <p class="chart__dossier-slot">${d.slotMark}</p>
+      <p class="chart__dossier-body">${d.body}</p>`;
+  };
+
   const showSturm = () => {
     audio.play("select");
     if (stopWire) {
@@ -247,7 +265,7 @@ export function initCartography() {
     const label = add("text", { class: "chart-svg__label", x: body.size + 4, y: 2.5 }, content);
     label.textContent = body.name;
     g.setAttribute("transform", `translate(${x} ${y})`);
-    bindBody(g, body.id, showError);
+    bindBody(g, body.id, () => showDossier(body.id));
 
     movers.push({
       g,

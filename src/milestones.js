@@ -68,7 +68,6 @@ export function grantDeepClearance() {
 }
 
 export function isEntryRecovered(entryId, entryMeta = {}) {
-  if (hasImperialClearance()) return true;
   if (entryMeta.seedAfterPad) return true;
   return readMilestones().has(entryId);
 }
@@ -87,27 +86,21 @@ export function recoverEntry(entryMeta) {
   else if (stinger === "reveal") audio.play("reveal");
   else audio.play("milestone");
 
-  let grantedImperial = false;
-  if (entryMeta.grantsImperial) {
-    grantImperialClearance();
-    grantedImperial = true;
-    audio.play("imperial");
-  }
-
+  // Keyword entries never auto-grant Imperial — 9-slot assembler only
   return {
     newly: true,
     partnerReveal: Boolean(entryMeta.partnerReveal),
-    grantedImperial,
+    grantedImperial: false,
+    grantsFragment: Boolean(entryMeta.grantsFragment || entryMeta.imperialFragment),
+    fragmentId: entryMeta.fragmentId || entryMeta.imperialFragment || null,
   };
 }
 
-/** Match Flight Log search query against unlock keywords. */
+/** Match Flight Log search query against unlock keywords (exact, case-insensitive). */
 export function recoverByQuery(query, journals) {
   const q = String(query ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]+/g, " ")
     .trim()
-    .replace(/\s+/g, " ");
+    .toLowerCase();
   if (!q) return [];
 
   const recovered = [];
@@ -115,14 +108,72 @@ export function recoverByQuery(query, journals) {
     for (const entry of journal.entries ?? []) {
       const keys = entry.unlockKeywords ?? [];
       if (!keys.length) continue;
-      const hit = keys.some((k) => {
-        const n = String(k).toLowerCase();
-        return q === n || q.includes(n) || n.includes(q);
-      });
+      const hit = keys.some((k) => String(k).toLowerCase() === q);
       if (!hit) continue;
       const result = recoverEntry(entry);
       if (result.newly) recovered.push({ entry, ...result });
     }
   }
   return recovered;
+}
+
+/* ==========================================================================
+   JOURNAL ACCESS — three-digit volume keys (localStorage)
+   ========================================================================== */
+
+const JOURNAL_KEY = CLEARANCE?.journalKey ?? "lattice.journals";
+let sessionJournals = null;
+
+function readUnlockedJournals() {
+  if (sessionJournals) return new Set(sessionJournals);
+  try {
+    const raw = localStorage.getItem(JOURNAL_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    sessionJournals = Array.isArray(list) ? list : [];
+  } catch {
+    sessionJournals = [];
+  }
+  return new Set(sessionJournals);
+}
+
+function writeUnlockedJournals(set) {
+  sessionJournals = [...set];
+  try {
+    localStorage.setItem(JOURNAL_KEY, JSON.stringify(sessionJournals));
+  } catch {
+    /* session only */
+  }
+}
+
+/** Volume browseable: startsOpen, already keyed, or Imperial Clearance. */
+export function isJournalUnlocked(journal) {
+  if (!journal) return false;
+  if (hasImperialClearance()) return true;
+  if (journal.startsOpen) return true;
+  return readUnlockedJournals().has(journal.id);
+}
+
+/**
+ * Attempt to unlock a journal with a 3-digit access code.
+ * @returns {{ ok: boolean, newly?: boolean, reason?: string }}
+ */
+export function unlockJournalWithCode(journal, code) {
+  if (!journal) return { ok: false, reason: "missing" };
+  if (isJournalUnlocked(journal)) return { ok: true, newly: false };
+
+  const expected = journal.accessCode != null ? String(journal.accessCode) : "";
+  const attempt = String(code ?? "").replace(/\D/g, "");
+  if (!expected) {
+    return { ok: false, reason: "unknown" };
+  }
+  if (attempt !== expected) {
+    return { ok: false, reason: "denied" };
+  }
+
+  const set = readUnlockedJournals();
+  const newly = !set.has(journal.id);
+  set.add(journal.id);
+  writeUnlockedJournals(set);
+  if (newly) audio.play("unlock");
+  return { ok: true, newly };
 }

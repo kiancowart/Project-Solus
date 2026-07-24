@@ -11,6 +11,7 @@ import {
   grantImperialClearance,
   grantDeepClearance,
 } from "./milestones.js";
+import { isChannelUnlocked } from "./progress.js";
 
 export {
   hasImperialClearance,
@@ -23,35 +24,40 @@ export {
 export const CHANNEL_TITLES = {
   overview: "HULL TELEMETRY // CRAFT STATUS",
   flightlog: "FLIGHT LOG // PERSONAL RECORD",
+  imperial: "IMPERIAL CLEARANCE // AUTHORIZATION",
   archives: "ARCHIVES // SHIP MEMORY",
   cartography: "CARTOGRAPHY // STELLAR FIX",
   diagnostics: "FIDELITY BUS // SIGNAL DIAGNOSTICS",
   auxiliary: "EXTERNAL // GUEST CHANNEL",
 };
 
-/* ==========================================================================
-   CLEARANCE — Imperial Clearance gates hub depth (localStorage)
-   Pad code opens Flight Log ARG hub; Imperial Clearance opens the rest.
-   ========================================================================== */
-
 const LOCKED_UNTIL_IMPERIAL =
-  CLEARANCE?.lockedUntilImperial ??
-  CLEARANCE?.lockedUntilDeep ?? [
-    "archives",
-    "cartography",
-    "auxiliary",
-  ];
+  CLEARANCE?.lockedUntilImperial ?? ["archives", "auxiliary"];
+
+const LOCKED_UNTIL_PROGRESS =
+  CLEARANCE?.lockedUntilProgress ?? ["flightlog", "cartography"];
 
 export function isPanelLocked(panelId) {
-  if (!LOCKED_UNTIL_IMPERIAL.includes(panelId)) return false;
-  return !hasImperialClearance();
+  if (LOCKED_UNTIL_IMPERIAL.includes(panelId)) {
+    return !hasImperialClearance();
+  }
+  if (LOCKED_UNTIL_PROGRESS.includes(panelId)) {
+    return !isChannelUnlocked(panelId);
+  }
+  return false;
 }
 
-export function sealMarkup() {
-  const title = CLEARANCE?.seal?.title ?? "PARTITION LOCKED";
+export function sealMarkup(kind = "imperial") {
+  const cfg =
+    kind === "progress"
+      ? CLEARANCE?.progressSeal
+      : CLEARANCE?.seal;
+  const title = cfg?.title ?? "PARTITION LOCKED";
   const body =
-    CLEARANCE?.seal?.body ??
-    "Imperial Clearance required. Repair Flight Log partitions — or return to the guide.";
+    cfg?.body ??
+    (kind === "progress"
+      ? "Channel offline. Restore INNER diagnostics on STATUS."
+      : "Imperial Clearance required.");
   return `
     <div class="partition-seal" role="status">
       <p class="partition-seal__sigil" aria-hidden="true">▽</p>
@@ -79,12 +85,12 @@ export function applyClearanceUI() {
 
     const seal = body.querySelector(":scope > .partition-seal");
     const locked = isPanelLocked(id);
+    const kind = LOCKED_UNTIL_PROGRESS.includes(id) ? "progress" : "imperial";
 
     if (locked) {
       body.classList.add("is-sealed");
-      if (!seal) {
-        body.insertAdjacentHTML("afterbegin", sealMarkup());
-      }
+      if (seal) seal.remove();
+      body.insertAdjacentHTML("afterbegin", sealMarkup(kind));
     } else {
       body.classList.remove("is-sealed");
       seal?.remove();

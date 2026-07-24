@@ -204,6 +204,15 @@
               >
                 FLIGHT LOG
               </button>
+              <button
+                type="button"
+                class="nav-item"
+                data-panel="imperial"
+                data-channel-title="IMPERIAL CLEARANCE // AUTHORIZATION"
+                data-sfx="select"
+              >
+                IMPERIAL CLEARANCE
+              </button>
             </nav>
           </div>
 
@@ -309,8 +318,25 @@
                   >
                     <div class="hull-mon__main">
                       <div class="hull-mon__schematic">
+                        <button
+                          type="button"
+                          class="hull-plan__eye is-dead"
+                          id="hull-plan-eye"
+                          aria-pressed="false"
+                          aria-disabled="true"
+                          disabled
+                          aria-controls="hull-plan-overlays"
+                          aria-label="Station labels offline"
+                          title="Optics bus dark"
+                          data-sfx="click"
+                        >
+                          <svg class="hull-plan__eye-svg" viewBox="0 0 24 16" aria-hidden="true">
+                            <polygon points="1,8 7,2 17,2 23,8 17,14 7,14" fill="none" stroke="currentColor" stroke-width="1.25" />
+                            <polygon points="9,8 12,4.5 15,8 12,11.5" fill="currentColor" />
+                          </svg>
+                        </button>
                         <div class="hull-mon__plan-box">
-                          <div class="hull-plan" id="hull-plan" aria-label="G512 Carapace top-down plan">
+                          <div class="hull-plan is-labels-off" id="hull-plan" aria-label="G512 Carapace top-down plan">
                             <img
                               class="hull-plan__img"
                               src="assets/images/CARAPACE.svg"
@@ -319,60 +345,100 @@
                               height="578"
                             />
                             <div class="hull-plan__overlays" id="hull-plan-overlays">
-                              <span class="hull-plan__mark hull-plan__mark--ok" style="left:50%;top:14%">
+                              <span
+                                class="hull-plan__mark hull-plan__mark--ok"
+                                style="left:50%;top:14%"
+                                data-station="fwd-cam"
+                                data-severity="ok"
+                              >
                                 <i></i><em>FWD·CAM</em>
                               </span>
-                              <span class="hull-plan__mark hull-plan__mark--ok" style="left:50%;top:30%">
-                                <i></i><em>CAM·ARRAY</em>
-                              </span>
-                              <span class="hull-plan__mark hull-plan__mark--warn" style="left:36%;top:37%">
+                              <span
+                                class="hull-plan__mark hull-plan__mark--ok"
+                                style="left:36%;top:28%"
+                                data-station="ndl-l"
+                                data-severity="ok"
+                              >
                                 <i></i><em>NDL·L</em>
                               </span>
-                              <span class="hull-plan__mark hull-plan__mark--warn" style="left:64%;top:37%">
+                              <span
+                                class="hull-plan__mark hull-plan__mark--warn"
+                                style="left:64%;top:28%"
+                                data-station="ndl-r"
+                                data-severity="warn"
+                                data-serial="NR5"
+                                data-damage-order="3"
+                              >
                                 <i></i><em>NDL·R</em>
                               </span>
-                              <span class="hull-plan__mark hull-plan__mark--fault" style="left:22%;top:48%">
+                              <span
+                                class="hull-plan__mark hull-plan__mark--fault"
+                                style="left:22%;top:48%"
+                                data-station="wings-l"
+                                data-severity="fault"
+                                data-serial="WL3"
+                                data-damage-order="2"
+                              >
                                 <i></i><em>WINGS L</em>
                               </span>
-                              <span class="hull-plan__mark hull-plan__mark--fault" style="left:78%;top:48%">
+                              <span
+                                class="hull-plan__mark hull-plan__mark--ok"
+                                style="left:78%;top:48%"
+                                data-station="wings-r"
+                                data-severity="ok"
+                              >
                                 <i></i><em>WINGS R</em>
                               </span>
-                              <span class="hull-plan__mark hull-plan__mark--warn" style="left:50%;top:50%">
+                              <span
+                                class="hull-plan__mark hull-plan__mark--ok"
+                                style="left:50%;top:50%"
+                                data-station="msl-top"
+                                data-severity="ok"
+                              >
                                 <i></i><em>MSL·TOP</em>
                               </span>
-                              <span class="hull-plan__mark hull-plan__mark--ok" style="left:50%;top:80%">
+                              <span
+                                class="hull-plan__mark hull-plan__mark--ok"
+                                style="left:50%;top:80%"
+                                data-station="aft-cam"
+                                data-severity="ok"
+                              >
                                 <i></i><em>AFT·CAM</em>
                               </span>
-                              <span class="hull-plan__mark hull-plan__mark--crit" style="left:28%;top:90%">
+                              <span
+                                class="hull-plan__mark hull-plan__mark--crit"
+                                style="left:28%;top:90%"
+                                data-station="eng-l"
+                                data-severity="crit"
+                                data-serial="EL0"
+                                data-damage-order="1"
+                              >
                                 <i></i><em>ENG·L</em>
                               </span>
-                              <span class="hull-plan__mark hull-plan__mark--crit" style="left:72%;top:90%">
+                              <span
+                                class="hull-plan__mark hull-plan__mark--ok"
+                                style="left:72%;top:90%"
+                                data-station="eng-r"
+                                data-severity="ok"
+                              >
                                 <i></i><em>ENG·R</em>
                               </span>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            class="hull-plan__eye is-on"
-                            id="hull-plan-eye"
-                            aria-pressed="true"
-                            aria-controls="hull-plan-overlays"
-                            aria-label="Toggle station labels"
-                            title="Toggle station labels"
-                            data-sfx="click"
-                          >
-                            <svg class="hull-plan__eye-svg" viewBox="0 0 24 16" aria-hidden="true">
-                              <polygon points="1,8 7,2 17,2 23,8 17,14 7,14" fill="none" stroke="currentColor" stroke-width="1.25" />
-                              <polygon points="9,8 12,4.5 15,8 12,11.5" fill="currentColor" />
-                            </svg>
-                          </button>
                         </div>
                         <p class="hull-mon__legend">
                           OUTER HULL · PLAN VIEW · STATION FEED
                         </p>
                       </div>
 
-                      <aside class="hull-mon__detail">
+                      <aside class="hull-mon__detail" id="hull-mon-detail">
+                        <div class="hull-mon__await" id="hull-detail-await">
+                          <p class="hull-mon__section">HM · FEED</p>
+                          <p class="hull-await-copy">AWAITING RECOVERY</p>
+                        </div>
+                        <div class="hull-mon__live" id="hull-detail-live">
+                          <div class="hull-part-detail" id="hull-part-detail" hidden></div>
+                          <div class="hull-detail-summary" id="hull-detail-summary">
                         <p class="hull-mon__section">OUTER DIAGNOSTIC SUMMARY</p>
                         <p class="hull-detail__line">
                           <span class="hull-detail__k">FRAME</span>
@@ -380,94 +446,89 @@
                         </p>
                         <p class="hull-detail__line">
                           <span class="hull-detail__k">SKIN</span>
-                          <span class="hull-detail__v hull-detail__v--crit">LAMINATE SHEAR @ WING ROOTS</span>
-                        </p>
-                        <p class="hull-detail__line">
-                          <span class="hull-detail__k">ENG</span>
-                          <span class="hull-detail__v hull-detail__v--crit">DUAL NOZZLE COLD · BUS 0V</span>
+                          <span class="hull-detail__v hull-detail__v--crit">LAMINATE SHEAR @ PORT WING</span>
                         </p>
                         <p class="hull-detail__line">
                           <span class="hull-detail__k">OPTICS</span>
-                          <span class="hull-detail__v">FWD/AFT CAM OK · ARRAY PARTIAL</span>
+                          <span class="hull-detail__v">FWD/AFT CAM OK</span>
                         </p>
                         <p class="hull-detail__line">
                           <span class="hull-detail__k">ORDN</span>
-                          <span class="hull-detail__v hull-detail__v--warn">MSL SAFE · NDL HOLD</span>
+                          <span class="hull-detail__v hull-detail__v--warn">MSL SAFE · NDL·R FAULT</span>
+                        </p>
+                        <p class="hull-detail__line">
+                          <span class="hull-detail__k">LIFE</span>
+                          <span class="hull-detail__v hull-detail__v--warn">SUPPORT PARTIAL</span>
+                        </p>
+                        <p class="hull-detail__line">
+                          <span class="hull-detail__k">EMPIRE</span>
+                          <span class="hull-detail__v hull-detail__v--crit">SIGNAL NONE</span>
+                        </p>
+                        <p class="hull-detail__line">
+                          <span class="hull-detail__k">LATTICE</span>
+                          <span class="hull-detail__v hull-detail__v--crit">LINK INACTIVE</span>
                         </p>
 
-                        <p class="hull-mon__section hull-mon__section--spaced">GIRDER LOAD // % ALLOWABLE</p>
-                        <div class="hull-bar">
-                          <span class="hull-bar__label">FWD BM</span>
+                        <p class="hull-mon__section hull-mon__section--spaced">ENGINE BUS // OUTPUT</p>
+                        <div class="hull-bar hull-bar--bus" data-eng-bus>
+                          <span class="hull-bar__label">ENG→FWD</span>
                           <div class="hull-bar__track" aria-hidden="true">
                             <span class="hull-bar__zone hull-bar__zone--warn"></span>
                             <span class="hull-bar__limit"></span>
-                            <span class="hull-bar__fill hull-bar__fill--warn" style="width: 39%"></span>
+                            <span class="hull-bar__fill hull-bar__fill--crit" style="width: 5%"></span>
                           </div>
-                          <span class="hull-bar__val">78%</span>
+                          <span class="hull-bar__val hull-bar__val--crit">5%</span>
                         </div>
-                        <div class="hull-bar">
-                          <span class="hull-bar__label">MID BM</span>
+                        <div class="hull-bar hull-bar--bus" data-eng-bus>
+                          <span class="hull-bar__label">ENG→MID</span>
                           <div class="hull-bar__track" aria-hidden="true">
                             <span class="hull-bar__zone hull-bar__zone--warn"></span>
                             <span class="hull-bar__limit"></span>
-                            <span class="hull-bar__fill hull-bar__fill--crit" style="width: 94.5%"></span>
+                            <span class="hull-bar__fill hull-bar__fill--crit" style="width: 3%"></span>
                           </div>
-                          <span class="hull-bar__val hull-bar__val--crit">189%</span>
+                          <span class="hull-bar__val hull-bar__val--crit">3%</span>
                         </div>
-                        <div class="hull-bar">
-                          <span class="hull-bar__label">AFT BM</span>
+                        <div class="hull-bar hull-bar--bus" data-eng-bus>
+                          <span class="hull-bar__label">ENG→AFT</span>
                           <div class="hull-bar__track" aria-hidden="true">
                             <span class="hull-bar__zone hull-bar__zone--warn"></span>
                             <span class="hull-bar__limit"></span>
-                            <span class="hull-bar__fill hull-bar__fill--crit" style="width: 70.5%"></span>
+                            <span class="hull-bar__fill hull-bar__fill--crit" style="width: 4%"></span>
                           </div>
-                          <span class="hull-bar__val hull-bar__val--crit">141%</span>
+                          <span class="hull-bar__val hull-bar__val--crit">4%</span>
                         </div>
-                        <div class="hull-bar">
-                          <span class="hull-bar__label">TORSION</span>
+                        <div class="hull-bar hull-bar--bus" data-eng-bus>
+                          <span class="hull-bar__label">ENG→WING</span>
                           <div class="hull-bar__track" aria-hidden="true">
                             <span class="hull-bar__zone hull-bar__zone--warn"></span>
                             <span class="hull-bar__limit"></span>
-                            <span class="hull-bar__fill hull-bar__fill--warn" style="width: 46%"></span>
+                            <span class="hull-bar__fill hull-bar__fill--crit" style="width: 2%"></span>
                           </div>
-                          <span class="hull-bar__val">92%</span>
+                          <span class="hull-bar__val hull-bar__val--crit">2%</span>
                         </div>
-                        <p class="hull-mon__note">0–200 scale · limit @ 100% · warn ≥ 80%</p>
+                        <p class="hull-mon__note">ENG→ = nozzle feed to section</p>
 
                         <div class="hull-mon__alarms" role="status">
                           <p class="hull-alarm">
                             <span class="hull-alarm__tag">ALM</span>
-                            WING LAMINATES — MULTI-LAYER STRESS ABOVE LIMIT
+                            WINGS L — PORT LAMINATE STRESS ABOVE LIMIT
                           </p>
                           <p class="hull-alarm">
                             <span class="hull-alarm__tag">ALM</span>
-                            ENG·L / ENG·R — THRUST BUS DEAD
+                            ENG·L — THRUST BUS DEAD
+                          </p>
+                          <p class="hull-alarm">
+                            <span class="hull-alarm__tag">ALM</span>
+                            NDL·R — NEEDLE GUN HOLD
                           </p>
                           <p class="hull-alarm hull-alarm--dim">
                             <span class="hull-alarm__tag">ADV</span>
-                            RESTRICTED OPERATION — NO FLEX / NO LOAD
+                            LATTICE BOUND · SOLUS — RELAY STILL DARK
                           </p>
                         </div>
+                          </div>
+                        </div>
                       </aside>
-                    </div>
-
-                    <div class="hull-mon__aux">
-                      <div class="hull-aux">
-                        <span class="hull-aux__k">PROPULSION</span>
-                        <span class="hull-aux__v hull-aux__v--crit">OFFLINE</span>
-                      </div>
-                      <div class="hull-aux">
-                        <span class="hull-aux__k">LIFE SUPPORT</span>
-                        <span class="hull-aux__v hull-aux__v--warn">PARTIAL</span>
-                      </div>
-                      <div class="hull-aux">
-                        <span class="hull-aux__k">LATTICE-LINK</span>
-                        <span class="hull-aux__v">SOLUS · BOUND</span>
-                      </div>
-                      <div class="hull-aux">
-                        <span class="hull-aux__k">EMPIRE SIGNAL</span>
-                        <span class="hull-aux__v hull-aux__v--crit">NONE</span>
-                      </div>
                     </div>
                   </div>
 
@@ -478,19 +539,28 @@
                     aria-labelledby="hull-tab-inner"
                     hidden
                   >
-                    <div class="hull-inner">
+                    <div class="hull-inner hull-inner--sealed" id="hull-inner-sealed">
                       <p class="hull-inner__sigil" aria-hidden="true">▽</p>
                       <p class="hull-inner__title">INNER DIAGNOSTICS</p>
-                      <p class="hull-inner__code">HM.INNER // STATUS=NONFUNCTIONAL</p>
-                      <p class="hull-inner__text">
-                        Internal frame, pressure webs, and bay telemetry are offline.
-                        The inner diagnostics suite is still reconstructing itself after impact —
-                        sensor mesh incomplete, checksums failing, no command path to compartment
-                        systems.
-                      </p>
+                      <p class="hull-inner__code">HM.INNER // STATUS=SEALED</p>
+                      <p class="hull-await-copy">AWAITING DIAGNOSTIC RECOVERY CODE</p>
                       <p class="hull-inner__text hull-inner__text--dim">
-                        FTHFLL reports: REPAIR_IN_PROGRESS · ETA UNKNOWN · DO NOT FORCE QUERY
+                        Feed serials through FTHFLL when OUTER stations are live.
                       </p>
+                    </div>
+                    <div class="hull-inner hull-inner--live" id="hull-inner-live" hidden>
+                      <div class="hull-inner__bays">
+                        <button type="button" class="hull-bay" data-bay="stellar" data-sfx="select">
+                          <p class="hull-bay__label">STELLAR FIX BAY</p>
+                          <p class="hull-bay__code">GYRO · ORBIT RING · DEAD CHART GLYPH</p>
+                          <p class="hull-bay__hint">Open bay to restore stellar fix.</p>
+                        </button>
+                        <button type="button" class="hull-bay" data-bay="personal" data-sfx="select">
+                          <p class="hull-bay__label">PERSONAL RECORD BAY</p>
+                          <p class="hull-bay__code">BUNK · RECORDER · CORRUPTED SCROLL</p>
+                          <p class="hull-bay__hint">Open bay to restore personal record.</p>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -504,7 +574,7 @@
                 <div class="fth-console__log" id="fth-console-log" role="log" aria-live="polite"></div>
                 <form class="fth-console__form" id="fth-console-form">
                   <p class="fth-console__await is-blink" id="fth-console-await">
-                    awaiting operator input…
+                    AWAITING OPERATOR INPUT
                   </p>
                   <span class="fth-console__ps" aria-hidden="true">&gt;</span>
                   <input
@@ -514,7 +584,7 @@
                     autocomplete="off"
                     spellcheck="false"
                     aria-label="FTHFLL command"
-                    placeholder="command"
+                    placeholder="/help"
                   />
                 </form>
               </div>
@@ -529,7 +599,10 @@
             <div class="panel__body">
               <div class="flog" id="flog">
                 <aside class="flog__index" aria-label="Journal index">
-                  <p class="flog__index-label">JOURNALS</p>
+                  <p class="flog__index-label">
+                    JOURNALS
+                    <span class="flog__index-count" id="flog-journal-count">0/0</span>
+                  </p>
                   <form class="flog__search" id="flog-search" role="search">
                     <label class="visually-hidden" for="flog-query">Search journal entries</label>
                     <span class="flog__ps" aria-hidden="true">&gt;</span>
@@ -544,11 +617,16 @@
                       aria-description="Enter a recovery keyword to decrypt corrupted journal partitions"
                     />
                   </form>
-                  <p class="flog__search-hint">
-                    SEARCH ACTIVATES RECOVER · KEYWORDS DECRYPT PARTITIONS
-                  </p>
                   <div class="flog__scroll">
-                    <div class="flog__journals" id="flog-journals"></div>
+                    <div class="flog__list">
+                      <div class="flog__journals" id="flog-journals"></div>
+                      <p class="flog__index-await" id="flog-index-await" hidden role="status">
+                        AWAITING SEARCH KEY
+                      </p>
+                      <p class="flog__index-miss" id="flog-index-miss" hidden role="status">
+                        INDEX MISS // NO PARTITION MATCHES QUERY
+                      </p>
+                    </div>
                     <div class="flog__rail" aria-hidden="true">
                       <div class="flog__rail-fill" id="flog-rail-fill"></div>
                     </div>
@@ -565,6 +643,72 @@
                 <section class="flog__reader" id="flog-reader" aria-live="polite">
                   <p class="flog__idle">SELECT JOURNAL ENTRY</p>
                 </section>
+              </div>
+            </div>
+          </article>
+
+
+          <!-- =============================================================
+               CHANNEL — IMPERIAL CLEARANCE
+               ============================================================= -->
+          <article class="panel panel--imperial" id="panel-imperial" data-panel="imperial" hidden>
+            <div class="panel__body">
+              <div class="imperial-gate" id="imperial-gate" aria-live="polite">
+                <div class="imperial-gate__main">
+                  <div class="imperial-assemble" id="imperial-assemble">
+                    <p class="imperial-assemble__label">IMPERIAL SEAL · NINE WELLS</p>
+                    <div class="imperial-grid" id="imperial-grid" role="group" aria-label="Nine clearance slots"></div>
+                    <p class="imperial-assemble__tray-label">RECOVERED FRAGMENTS</p>
+                    <div class="imperial-tray" id="imperial-tray" aria-label="Recovered seal fragments"></div>
+                    <p class="imperial-assemble__status" id="imperial-assemble-status" aria-live="polite"></p>
+                    <button type="button" class="imperial-submit" id="imperial-submit" data-sfx="select">
+                      BIND SEAL
+                    </button>
+                  </div>
+                  <div class="imperial-gate__stack imperial-gate__stack--granted">
+                    <div class="imperial-gate__state imperial-gate__state--open">
+                      <p class="imperial-gate__sigil" aria-hidden="true">△</p>
+                      <p class="imperial-gate__title">IMPERIAL CLEARANCE GRANTED</p>
+                      <p class="imperial-gate__body">
+                        Archives · Guest Channel — open for walk.
+                        Memory no longer pretends the ship will rise.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="imperial-gate__footer">
+                  <button
+                    type="button"
+                    class="imperial-purge"
+                    id="imperial-purge-btn"
+                    data-sfx="select"
+                  >
+                    RESET
+                  </button>
+                  <div
+                    class="imperial-confirm"
+                    id="imperial-confirm"
+                    hidden
+                    role="dialog"
+                    aria-labelledby="imperial-confirm-label"
+                  >
+                    <p class="imperial-confirm__label" id="imperial-confirm-label">
+                      ARE YOU SURE? Y/N
+                    </p>
+                    <label class="imperial-confirm__row" for="imperial-confirm-input">
+                      <span class="imperial-confirm__ps" aria-hidden="true">&gt;</span>
+                      <input
+                        class="imperial-confirm__input"
+                        id="imperial-confirm-input"
+                        type="text"
+                        maxlength="1"
+                        autocomplete="off"
+                        spellcheck="false"
+                        aria-label="Type Y or N, then press Enter"
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           </article>
@@ -739,6 +883,6 @@
     <!-- =====================================================================
          SCRIPTS
          ===================================================================== -->
-    <script src="src/main.js?v=20260723cold" type="module"></script>
+    <script src="src/main.js?v=20260723flog" type="module"></script>
   </body>
 </html>

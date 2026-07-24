@@ -7,11 +7,14 @@ import { audio } from "./audio.js";
 import { applyClearanceUI } from "./clearance.js";
 import {
   isEntryRecovered,
+  isJournalUnlocked,
   recoverByQuery,
+  unlockJournalWithCode,
 } from "./milestones.js";
+import { markFragmentRecovered } from "./progress.js";
 
 /* ==========================================================================
-   FLIGHT LOG — journals, reader, keyword recovery
+   FLIGHT LOG — journals, reader, keyword recovery, volume keys
    ========================================================================== */
 
 export function initFlightLog() {
@@ -22,6 +25,7 @@ export function initFlightLog() {
   const searchInput = document.getElementById("flog-query");
   const railFill = document.getElementById("flog-rail-fill");
   const split = document.getElementById("flog-split");
+  const journalCountEl = document.getElementById("flog-journal-count");
   if (!host || !reader || !FLIGHT_LOG) return;
 
   const journals = FLIGHT_LOG.journals ?? [];
@@ -37,10 +41,19 @@ export function initFlightLog() {
       "Keywords wake sealed files.",
     ].join("\n");
   const idle = FLIGHT_LOG.idle ?? "SELECT JOURNAL ENTRY";
+  const idleHint =
+    FLIGHT_LOG.idleHint ??
+    [
+      "Search recovery keywords to decrypt sealed entries.",
+      "Each journal tracks recovered / total partitions.",
+      "Locked volumes need a three-digit access key.",
+    ].join("\n");
+
   let selectedBtn = null;
   let activeEntry = null;
   let pages = [];
   let pageIndex = 0;
+  let keyTarget = null;
 
   const corruptToken = (len = 8) => {
     const chars =
@@ -52,7 +65,6 @@ export function initFlightLog() {
     return out;
   };
 
-  /** Apply recovered vs corrupted display fields from milestone state. */
   const syncEntryDisplay = (entry) => {
     const recovered = isEntryRecovered(entry.id, entry);
     entry.corrupted = !recovered;
@@ -77,6 +89,12 @@ export function initFlightLog() {
       e.authorTitle = e.title;
       e.authorBody = e.body;
       syncEntryDisplay(e);
+      if (
+        isEntryRecovered(e.id, e) &&
+        (e.fragmentId || e.imperialFragment)
+      ) {
+        markFragmentRecovered(e.fragmentId || e.imperialFragment);
+      }
     });
   });
 
@@ -98,6 +116,20 @@ export function initFlightLog() {
       ? entry.cycleDisplay ?? "··"
       : String(entry.cycle).padStart(2, "0");
     return `${year} AE · C.${cycle}`;
+  };
+
+  const entryStats = (journal) => {
+    const entries = journal.entries ?? [];
+    const total = entries.length;
+    const recovered = entries.filter((e) => isEntryRecovered(e.id, e)).length;
+    return { recovered, total };
+  };
+
+  const updateJournalCount = () => {
+    if (!journalCountEl) return;
+    const total = journals.length;
+    const open = journals.filter((j) => isJournalUnlocked(j)).length;
+    journalCountEl.textContent = `${open}/${total}`;
   };
 
   const updateRail = () => {
@@ -209,16 +241,98 @@ export function initFlightLog() {
 
   const showIdle = () => {
     activeEntry = null;
+    keyTarget = null;
     pages = [];
     pageIndex = 0;
-    reader.innerHTML = `<p class="flog__idle">${idle}</p>`;
+    reader.innerHTML = `
+      <div class="flog__idle-block">
+        <p class="flog__idle">${idle}</p>
+        <p class="flog__idle-hint">${idleHint.replace(/\n/g, "<br />")}</p>
+      </div>`;
     if (selectedBtn) {
       selectedBtn.classList.remove("is-active");
       selectedBtn = null;
     }
   };
 
+  const showJournalKeyPad = (journal) => {
+    activeEntry = null;
+    keyTarget = journal;
+    pages = [];
+    pageIndex = 0;
+    if (selectedBtn) {
+      selectedBtn.classList.remove("is-active");
+      selectedBtn = null;
+    }
+
+    const label = journal.titleCorrupted
+      ? "CORRUPTED VOLUME"
+      : journal.title || "JOURNAL";
+
+    reader.innerHTML = `
+      <div class="flog-key">
+        <p class="flog-key__status">VOLUME LOCKED</p>
+        <h3 class="flog-key__title">${label}</h3>
+        <p class="flog-key__meta">${journal.yearStart}–${journal.yearEnd} AE</p>
+        <p class="flog-key__copy">Enter three-digit access key to open this journal.</p>
+        <form class="flog-key__form" id="flog-key-form" autocomplete="off">
+          <label class="visually-hidden" for="flog-key-input">Journal access key</label>
+          <input
+            class="flog-key__input"
+            id="flog-key-input"
+            type="text"
+            inputmode="numeric"
+            maxlength="3"
+            pattern="[0-9]*"
+            placeholder="···"
+            spellcheck="false"
+          />
+          <button type="submit" class="flog-key__submit">UNLOCK</button>
+        </form>
+        <p class="flog-key__feedback" id="flog-key-feedback" aria-live="polite"></p>
+      </div>`;
+
+    const form = reader.querySelector("#flog-key-form");
+    const input = reader.querySelector("#flog-key-input");
+    const feedback = reader.querySelector("#flog-key-feedback");
+    input?.focus();
+
+    form?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const code = input?.value ?? "";
+      const result = unlockJournalWithCode(journal, code);
+      if (!result.ok) {
+        audio.play("click");
+        if (feedback) {
+          feedback.textContent =
+            result.reason === "unknown"
+              ? "NO KEY ON RECORD FOR THIS VOLUME"
+              : "ACCESS DENIED";
+          feedback.classList.add("is-deny");
+        }
+        form.classList.remove("is-shake");
+        void form.offsetWidth;
+        form.classList.add("is-shake");
+        return;
+      }
+
+      if (feedback) {
+        feedback.textContent = "VOLUME OPEN";
+        feedback.classList.remove("is-deny");
+      }
+      rebuildJournalList(journal.id);
+      updateJournalCount();
+      const details = host.querySelector(
+        `.flog-journal[data-journal="${journal.id}"]`
+      );
+      if (details) details.open = true;
+      showIdle();
+      syncIndexVisibility();
+    });
+  };
+
   const showEntry = (entry, btn) => {
+    keyTarget = null;
     syncEntryDisplay(entry);
     if (selectedBtn) selectedBtn.classList.remove("is-active");
     selectedBtn = btn;
@@ -273,52 +387,148 @@ export function initFlightLog() {
     });
   };
 
-  const applySearch = (raw) => {
-    const hits = recoverByQuery(raw, journals);
-    if (hits.length) {
-      hits.forEach(({ entry }) => syncEntryDisplay(entry));
-      rebuildJournalList();
-      applyClearanceUI();
-      const last = hits[hits.length - 1];
-      if (last?.grantedImperial) {
-        audio.play("imperial");
-      }
+  const missEl = document.getElementById("flog-index-miss");
+  const awaitEl = document.getElementById("flog-index-await");
+  let searchFocused = false;
+  let committedQuery = null;
+
+  const wordsOf = (text) =>
+    String(text ?? "")
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+  /** Exact word / keyword match — case-insensitive; symbols kept (im ≠ i'm). */
+  const entryMatchesQuery = (btn, query) => {
+    const q = String(query ?? "")
+      .trim()
+      .toLowerCase();
+    if (!q) return true;
+
+    const keywords = String(btn.dataset.keywords || "")
+      .toLowerCase()
+      .split("\u001f")
+      .filter(Boolean);
+    if (keywords.includes(q)) return true;
+
+    return wordsOf(btn.dataset.search || "").includes(q);
+  };
+
+  const setMissVisible = (show) => {
+    if (!missEl) return;
+    missEl.hidden = !show;
+  };
+
+  const setAwaitVisible = (show) => {
+    if (!awaitEl) return;
+    awaitEl.hidden = !show;
+  };
+
+  const syncIndexVisibility = () => {
+    if (searchFocused) {
+      host.classList.add("is-suppressed");
+      setMissVisible(false);
+      setAwaitVisible(true);
+      return;
     }
 
-    const q = raw.trim().toLowerCase();
-    const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+    setAwaitVisible(false);
 
+    if (committedQuery == null || committedQuery === "") {
+      host.classList.remove("is-suppressed");
+      host.querySelectorAll(".flog-journal").forEach((details) => {
+        details.hidden = false;
+        details.querySelectorAll(".flog-entry").forEach((btn) => {
+          const li = btn.closest("li");
+          if (li) li.hidden = false;
+        });
+      });
+      setMissVisible(false);
+      updateJournalCount();
+      updateRail();
+      return;
+    }
+
+    let anyVisible = false;
     host.querySelectorAll(".flog-journal").forEach((details) => {
-      const journalName = (
-        details.querySelector(".flog-journal__name")?.textContent || ""
-      ).toLowerCase();
-      let anyVisible = !tokens.length;
+      if (details.classList.contains("is-locked")) {
+        details.hidden = true;
+        return;
+      }
 
+      let journalHit = false;
       details.querySelectorAll(".flog-entry").forEach((btn) => {
-        const hay = (btn.dataset.search || "").toLowerCase();
-        const match =
-          !tokens.length ||
-          tokens.every((t) => hay.includes(t) || journalName.includes(t));
-        btn.closest("li").hidden = !match;
-        if (match) anyVisible = true;
+        const match = entryMatchesQuery(btn, committedQuery);
+        const li = btn.closest("li");
+        if (li) li.hidden = !match;
+        if (match) journalHit = true;
       });
 
-      details.hidden = !anyVisible;
-      if (tokens.length && anyVisible) details.open = true;
+      details.hidden = !journalHit;
+      if (journalHit) {
+        details.open = true;
+        anyVisible = true;
+      }
     });
 
+    if (anyVisible) {
+      host.classList.remove("is-suppressed");
+      setMissVisible(false);
+    } else {
+      host.classList.add("is-suppressed");
+      setMissVisible(true);
+    }
+    updateJournalCount();
     updateRail();
   };
 
-  const rebuildJournalList = () => {
-    const openId = host.querySelector(".flog-journal[open]")?.dataset.journal;
+  const commitSearch = (raw) => {
+    const q = String(raw ?? "").trim();
+    committedQuery = q || null;
+    searchFocused = false;
+
+    if (q) {
+      const hits = recoverByQuery(q, journals);
+      if (hits.length) {
+        hits.forEach(({ entry, fragmentId }) => {
+          syncEntryDisplay(entry);
+          const frag =
+            fragmentId ||
+            entry.fragmentId ||
+            entry.imperialFragment ||
+            null;
+          if (frag) markFragmentRecovered(frag);
+        });
+        rebuildJournalList();
+        applyClearanceUI();
+        window.dispatchEvent(new CustomEvent("lattice:fragments"));
+        const last = hits[hits.length - 1];
+        if (last?.grantedImperial) {
+          audio.play("imperial");
+        }
+      }
+    }
+
+    syncIndexVisibility();
+    searchInput?.blur();
+  };
+
+  const rebuildJournalList = (preferOpenId = null) => {
+    const openId =
+      preferOpenId ?? host.querySelector(".flog-journal[open]")?.dataset.journal;
     host.replaceChildren();
-    journals.forEach((journal, ji) => {
+
+    journals.forEach((journal) => {
+      const unlocked = isJournalUnlocked(journal);
+      const { recovered, total } = entryStats(journal);
+
       const details = document.createElement("details");
       details.className = "flog-journal";
       details.dataset.journal = journal.id;
-      details.open =
-        openId === journal.id || (!openId && ji === journals.length - 1);
+      if (!unlocked) details.classList.add("is-locked");
+      // Never auto-open on first paint; only restore an already-open volume
+      details.open = Boolean(unlocked && openId && openId === journal.id);
 
       const spanText = journal.titleCorrupted
         ? journal.spanDisplay ?? "····–···· AE"
@@ -328,8 +538,22 @@ export function initFlightLog() {
       summary.className = "flog-journal__summary";
       summary.innerHTML = `
       <span class="flog-journal__name${journal.titleCorrupted ? " is-corrupt" : ""}">${journal.title}</span>
-      <span class="flog-journal__span">${spanText}</span>`;
+      <span class="flog-journal__meta">
+        <span class="flog-journal__count">${recovered}/${total}</span>
+        <span class="flog-journal__span">${spanText}</span>
+      </span>`;
       details.appendChild(summary);
+
+      if (!unlocked) {
+        summary.addEventListener("click", (e) => {
+          e.preventDefault();
+          details.open = false;
+          audio.play("click");
+          showJournalKeyPad(journal);
+        });
+        host.appendChild(details);
+        return;
+      }
 
       const list = document.createElement("ul");
       list.className = "flog-journal__entries";
@@ -355,6 +579,7 @@ export function initFlightLog() {
         ]
           .filter(Boolean)
           .join(" ");
+        btn.dataset.keywords = (entry.unlockKeywords ?? []).join("\u001f");
         btn.innerHTML = `
         <span class="flog-entry__date">${formatListDate(entry)}</span>
         <span class="flog-entry__title${entry.corrupted ? " is-corrupt" : ""}">${listTitle}</span>
@@ -377,6 +602,9 @@ export function initFlightLog() {
       });
       host.appendChild(details);
     });
+
+    updateJournalCount();
+    syncIndexVisibility();
   };
 
   const bindSplit = () => {
@@ -444,6 +672,7 @@ export function initFlightLog() {
 
   host.replaceChildren();
   rebuildJournalList();
+  showIdle();
 
   host.addEventListener("scroll", updateRail, { passive: true });
   window.addEventListener("resize", () => {
@@ -453,32 +682,22 @@ export function initFlightLog() {
   requestAnimationFrame(updateRail);
 
   if (searchInput) {
-    searchInput.addEventListener("input", () => applySearch(searchInput.value));
+    searchInput.addEventListener("focus", () => {
+      searchFocused = true;
+      syncIndexVisibility();
+    });
+    searchInput.addEventListener("blur", () => {
+      // Keep list suppressed only while focused; restore last committed view
+      searchFocused = false;
+      syncIndexVisibility();
+    });
   }
   if (searchForm) {
     searchForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      applySearch(searchInput?.value ?? "");
+      commitSearch(searchInput?.value ?? "");
     });
   }
 
   bindSplit();
-
-  /* Open the first seeded recovered entry so the ARG starts mid-story */
-  const seedEntry = journals
-    .flatMap((j) => j.entries ?? [])
-    .filter((e) => e.seedAfterPad && isEntryRecovered(e.id, e))
-    .sort((a, b) => (a.tellOrder ?? 999) - (b.tellOrder ?? 999))[0];
-
-  if (seedEntry) {
-    const btn = host.querySelector(
-      `.flog-entry[data-entry-id="${seedEntry.id}"]`
-    );
-    const details = btn?.closest(".flog-journal");
-    if (details) details.open = true;
-    if (btn) showEntry(seedEntry, btn);
-    else showIdle();
-  } else {
-    showIdle();
-  }
 }

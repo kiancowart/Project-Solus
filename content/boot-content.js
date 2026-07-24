@@ -38,6 +38,7 @@
  */
 
 import { FLIGHT_LOG_SOURCE } from "./flight-log.generated.js";
+import { IMPERIAL_SLOTS } from "./arg-path.js";
 
 /* ---------------------------------------------------------------------------
    CLEARANCE CODE — number pad gate (plain digits only)
@@ -46,8 +47,8 @@ export const ACCESS_CODE = "512";
 
 /* ---------------------------------------------------------------------------
    IMPERIAL CLEARANCE — ARG finale unlock (persisted in localStorage)
-   Pad code reaches the hub + Flight Log ARG. Imperial Clearance opens
-   Archives / Cartography / Guest Channel for lore & TTRPG use.
+   Pad code reaches the hub + STATUS. STATUS puzzles unlock Flight Log &
+   System Chart. Imperial 9-slot assembly opens Archives / Guest Channel.
    --------------------------------------------------------------------------- */
 export const CLEARANCE = {
   storageKey: "lattice.clearance",
@@ -56,11 +57,17 @@ export const CLEARANCE = {
   /** Legacy Whisper-era value still honored as Imperial Clearance */
   deepValue: "deep",
   milestoneKey: "lattice.milestones",
-  /** Sealed until Imperial Clearance (Flight Log opens after pad) */
-  lockedUntilImperial: ["archives", "cartography", "auxiliary"],
+  /** Sealed until Imperial Clearance */
+  lockedUntilImperial: ["archives", "auxiliary"],
+  /** Sealed until STATUS puzzles set lattice.unlock.* */
+  lockedUntilProgress: ["flightlog", "cartography"],
   seal: {
     title: "PARTITION LOCKED",
-    body: "Imperial Clearance required. Recover Flight Log partitions — or consult the guide on the pad.",
+    body: "Imperial Clearance required. Complete the nine-slot seal — or return to STATUS.",
+  },
+  progressSeal: {
+    title: "PARTITION LOCKED",
+    body: "Channel offline. Restore INNER diagnostics on STATUS — FTHFLL still listens.",
   },
 };
 
@@ -487,6 +494,9 @@ function makeCorruptionBlob(len = 360) {
 function buildFlightLog() {
   const corruption = makeCorruptionBlob(flightRand(1400, 2200));
   const sourceJournals = FLIGHT_LOG_SOURCE?.journals ?? [];
+  const slotByJournal = Object.fromEntries(
+    IMPERIAL_SLOTS.map((s) => [s.journalId, s])
+  );
 
   const journals = sourceJournals.map((journal) => {
     const titleCorrupted = Boolean(journal.corruptTitle || !journal.title);
@@ -494,7 +504,13 @@ function buildFlightLog() {
       ? makeCorruptToken(flightRand(10, 18))
       : journal.title;
 
-    const entries = (journal.entries ?? []).map((entry) => {
+    const slot = slotByJournal[journal.id];
+    const accessFromSlot =
+      slot?.volumeCode != null && slot.volumeCode !== ""
+        ? String(slot.volumeCode)
+        : null;
+
+    let entries = (journal.entries ?? []).map((entry) => {
       const hasBody = typeof entry.body === "string" && entry.body.length > 0;
       return {
         id: entry.id,
@@ -508,14 +524,40 @@ function buildFlightLog() {
         tellOrder: entry.tellOrder,
         stinger: entry.stinger ?? null,
         partnerReveal: Boolean(entry.partnerReveal),
-        grantsImperial: Boolean(entry.grantsImperial),
-        /* display fields filled at runtime by Flight Log UI */
+        grantsImperial: false,
+        imperialFragment: null,
+        fragmentId: null,
         yearDisplay: String(entry.year ?? "····"),
         cycleDisplay: String(entry.cycle ?? 0).padStart(2, "0"),
         dateCorrupted: true,
         corrupted: true,
       };
     });
+
+    if (slot) {
+      const fragId = `${slot.planetId}-imperial-key`;
+      entries = entries.filter((e) => e.id !== fragId && e.id !== "sturm-clearance");
+      entries.push({
+        id: fragId,
+        title: "Imperial Bind",
+        year: journal.yearEnd ?? journal.yearStart ?? 1500,
+        cycle: 15,
+        body: `Seal fragment recovered from this volume.\n\n${slot.fragment}\n\nThe chart still knows the bind order. The wells still wait.`,
+        seedAfterPad: false,
+        unlockKeywords: slot.keywords ?? [],
+        writeOrder: 500,
+        tellOrder: 50,
+        stinger: "reveal",
+        partnerReveal: false,
+        grantsImperial: false,
+        imperialFragment: slot.fragment,
+        fragmentId: slot.fragment,
+        yearDisplay: String(journal.yearEnd ?? "····"),
+        cycleDisplay: "15",
+        dateCorrupted: true,
+        corrupted: true,
+      });
+    }
 
     return {
       id: journal.id,
@@ -526,12 +568,20 @@ function buildFlightLog() {
       spanDisplay: titleCorrupted
         ? `${makeCorruptToken(3)}–${makeCorruptToken(3)} AE`
         : undefined,
+      accessCode:
+        accessFromSlot ??
+        (journal.accessCode != null && journal.accessCode !== ""
+          ? String(journal.accessCode)
+          : null),
+      startsOpen: Boolean(journal.startsOpen),
       entries,
     };
   });
 
   return {
     idle: "SELECT JOURNAL ENTRY",
+    idleHint:
+      "Search recovery keywords to decrypt sealed entries.\nEach journal tracks recovered / total partitions.\nLocked volumes need a three-digit access key.",
     corruption,
     journals,
   };

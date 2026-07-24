@@ -20,4 +20,4 @@ Prefer Guest Channel dossiers + Player Facing digests once the one-shot skeleton
 
 ## Partner name
 
-Flight Log entry `spike-partner` is a sealed milestone (`unlockKeywords`: partner / their name). Replace the body when you are ready — that reveal should carry the `reveal` stinger.
+Flight Log draft `drafts/spike-partner.md` is a sealed milestone (`unlockKeywords`: partner / their name). Move it back into `entries/` when ready — that reveal should carry the `reveal` stinger.

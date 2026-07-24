@@ -142,6 +142,19 @@ export class TerminalAudio {
     return curve;
   }
 
+  /** Halt looping soundtrack (purge / cold exit). */
+  stopSoundtrack() {
+    if (this.soundtrack) {
+      this.soundtrack.pause();
+      try {
+        this.soundtrack.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+    }
+    this.soundtrackStarted = false;
+  }
+
   #syncSoundtrack() {
     if (!this.soundtrack) return;
 

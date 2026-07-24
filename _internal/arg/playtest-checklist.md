@@ -1,39 +1,47 @@
-# Playtest checklist — Celeste intercept → clearance
+# Playtest checklist — full ARG path
 
-Use a cold reader (friend who does **not** know the pad code).
+Use a cold reader (friend who does **not** know solutions). Wipe with `?cold=1` or private window.
 
-## Setup
+## Keys to wipe
 
-1. Serve the site locally or on your host.
-2. Clear their browser data for the origin, or use a private window. Keys to wipe:
-   - `lattice.clearance`
-   - `lattice.milestones`
-   - `lattice.interceptTuned`
-   - `lattice.interceptEcho`
-   - `lattice.whisperStep`
-   - `lattice.whisperDone`
-3. Give them **only** the Discord-style post + `intercept.html` URL (no hints).
+- `lattice.clearance`, `lattice.milestones`, `lattice.journals`
+- `lattice.interceptTuned`, `lattice.interceptEcho`
+- `lattice.whisperStep`, `lattice.whisperDone`
+- `lattice.hull`, `lattice.unlock`, `lattice.clearance.draft`, `lattice.fragments`
 
-## Pass criteria
+## Intro
 
 | Step | Pass if |
 |------|---------|
-| Discord → intercept | Opens intercept in under ~2 minutes from the post |
-| Tone | Feels like Celeste / Lattice, not “play my ARG” |
-| Open gate | Finds **OPEN CLEARANCE GATE** → pad |
-| Code (careful reader) | Guesses **512** from G512 / triad / “three digits” without Whisper |
-| Code (skimmer) | Whisper path: please → return to tuner → lock **051.2** → report frequency → sudoku blanks → **512** |
-| Second carrier | Discovers **051.2** from Whisper + G512 / “generation” language (not random sweep luck alone) |
-| After gate | Sees Flight Log; Impact / recovery-key framing makes sense |
-| Share rule | Understands “pass intercept, not session” (ask them) |
+| Discord → intercept | Opens intercept from the post |
+| 097.9 lock | Finds Celeste message + OPEN CLEARANCE GATE |
+| Pad 512 | Via G512 / triad or Whisper → 051.2 → sudoku |
+| Hub land | STATUS is open; Flight Log + Chart nav look locked |
 
-## Fail / iterate
+## STATUS
 
-- If nobody finds 512 on the pad: strengthen hull-generation language on intercept (still no digits).
-- If nobody finds **051.2**: tighten Whisper copy (“generation as a dial mark”) without saying the digits aloud.
-- If URL is confusing: make CTA larger; keep one link in Discord.
-- If Google-looking: you are not using Docs as the face — stay on `intercept.html`.
+| Step | Pass if |
+|------|---------|
+| Blind outer | Eye dead; right panel says AWAITING RECOVERY (no looping dots) |
+| INNER sealed | AWAITING DIAGNOSTIC RECOVERY CODE |
+| Unknown / bare | Any unknown input → `CMD … NOT RECOGNIZED — TYPE /help FOR COMMAND LIST` |
+| `/help` | Lists `/outer` · `/inner` |
+| `/outer` | `ENTR SHIP ID` `G512` + `ENTR KHAN ID` `S. Raei` arms eye |
+| Station click | Damaged mark shows serial + TIME OF DAMAGE (TIMESTAMP HH:MM:SS UTC / CYCLE 10 / AE 1557) |
+| `/inner` | `DAMAGED PART SERIALS` + `### ### ###`; code `EL0 WL3 NR5` (or compact) restores INNER; sealed copy clears |
+| Chart unlock | Click STELLAR FIX BAY |
+| Log unlock | Click PERSONAL RECORD BAY (either order with Chart) |
 
-## Author note
+## Chart + Log + Clearance
 
-You cannot fully automate this checklist; run it once with a friend before a wider Lux Mori drop.
+| Step | Pass if |
+|------|---------|
+| Dossiers | Planet click shows `▽ NN // BIND` |
+| Fragments | Exact keywords recover ▽A1…▽I9 into Imperial tray |
+| Wrong bind | BIND SEAL → SEAL HOLDS flashes then clears (no coaching) |
+| Correct 9 | Planet order + fragments → Imperial; Archives/Guest open |
+| Clearance layout | Assembler / tray / bind / granted state centered in channel |
+
+## Author solutions
+
+See [`main-path.md`](main-path.md) / [`content/arg-path.js`](../../content/arg-path.js).

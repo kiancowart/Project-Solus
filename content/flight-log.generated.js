@@ -4,7 +4,7 @@
  * Regenerate: node scripts/build-flight-log.js
  */
 export const FLIGHT_LOG_SOURCE = {
-  "generated": "2026-07-23",
+  "generated": "2026-07-24",
   "journals": [
     {
       "id": "j-qamor",
@@ -12,6 +12,7 @@ export const FLIGHT_LOG_SOURCE = {
       "corruptTitle": true,
       "yearStart": 1510,
       "yearEnd": 1513,
+      "accessCode": "512",
       "entries": [
         {
           "id": "qamor-hey-cara",
@@ -43,28 +44,6 @@ export const FLIGHT_LOG_SOURCE = {
           "title": null,
           "year": 1511,
           "cycle": 7,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "qamor-03",
-          "title": null,
-          "year": 1512,
-          "cycle": 11,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "qamor-04",
-          "title": null,
-          "year": 1513,
-          "cycle": 4,
           "body": null,
           "seedAfterPad": false,
           "unlockKeywords": [],
@@ -195,28 +174,6 @@ export const FLIGHT_LOG_SOURCE = {
           "unlockKeywords": [],
           "writeOrder": 9999,
           "tellOrder": 9999
-        },
-        {
-          "id": "kaph-04",
-          "title": null,
-          "year": 1526,
-          "cycle": 1,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "kaph-05",
-          "title": null,
-          "year": 1526,
-          "cycle": 8,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
         }
       ]
     },
@@ -253,39 +210,6 @@ export const FLIGHT_LOG_SOURCE = {
           "title": null,
           "year": 1532,
           "cycle": 2,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "desh-04",
-          "title": null,
-          "year": 1532,
-          "cycle": 10,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "desh-05",
-          "title": null,
-          "year": 1533,
-          "cycle": 4,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "desh-06",
-          "title": null,
-          "year": 1533,
-          "cycle": 11,
           "body": null,
           "seedAfterPad": false,
           "unlockKeywords": [],
@@ -374,17 +298,6 @@ export const FLIGHT_LOG_SOURCE = {
           "unlockKeywords": [],
           "writeOrder": 9999,
           "tellOrder": 9999
-        },
-        {
-          "id": "belt-04",
-          "title": null,
-          "year": 1550,
-          "cycle": 7,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
         }
       ]
     },
@@ -442,45 +355,6 @@ export const FLIGHT_LOG_SOURCE = {
           "stinger": "milestone",
           "partnerReveal": false,
           "grantsImperial": false
-        },
-        {
-          "id": "spike-partner",
-          "title": null,
-          "year": 1550,
-          "cycle": 1,
-          "body": "[RECOVERY PARTIAL]\n\nThe record wants a name. Lattice refuses.\n\nWhen you are ready to reveal who they were, replace this body — that reveal is a major ARG milestone.",
-          "seedAfterPad": false,
-          "unlockKeywords": [
-            "partner",
-            "their name"
-          ],
-          "writeOrder": 55,
-          "tellOrder": 8,
-          "stinger": "reveal",
-          "partnerReveal": true,
-          "grantsImperial": false
-        },
-        {
-          "id": "spike-04",
-          "title": null,
-          "year": 1552,
-          "cycle": 6,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "spike-05",
-          "title": null,
-          "year": 1553,
-          "cycle": 11,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
         }
       ]
     },
@@ -489,6 +363,7 @@ export const FLIGHT_LOG_SOURCE = {
       "title": "Sturm — Moon of Uros",
       "yearStart": 1555,
       "yearEnd": 1557,
+      "startsOpen": true,
       "entries": [
         {
           "id": "sturm-impact",
@@ -537,23 +412,6 @@ export const FLIGHT_LOG_SOURCE = {
           "stinger": "milestone",
           "partnerReveal": false,
           "grantsImperial": false
-        },
-        {
-          "id": "sturm-clearance",
-          "title": "Imperial Seal",
-          "year": 1557,
-          "cycle": 15,
-          "body": "Cara's deeper partitions answer a word the Hive used to whisper over bonded craft.\n\n**Imperial Clearance.**\n\nNot for flight home. Not for Her. For the operator still standing in the wreck — so the memory can be walked without pretending the ship will rise.\n\nYou may open Archives. Chart. Guest Channel.\n\nThere's still so much more to know. You don't have to earn the door twice.",
-          "seedAfterPad": false,
-          "unlockKeywords": [
-            "carapace",
-            "imperial"
-          ],
-          "writeOrder": 200,
-          "tellOrder": 9,
-          "stinger": "imperial",
-          "partnerReveal": false,
-          "grantsImperial": true
         },
         {
           "id": "sturm-01",
