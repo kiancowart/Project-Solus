@@ -53,15 +53,15 @@ OK stations have no serial. Clicking a damaged mark shows serial + TIME OF DAMAG
 
 | Slot | Planet | Journal | Fragment | Volume code | Keywords (fragment entry) |
 |------|--------|---------|----------|-------------|---------------------------|
-| 1 | Qamor | j-qamor | ▽A1 | 512 | qamor, seed |
-| 2 | Ikeph | j-ikeph | ▽B2 | 215 | ikeph |
-| 3 | Terra | j-terra | ▽C3 | 320 | terra |
-| 4 | Deshret | j-deshret | ▽D4 | 430 | deshret, embrace |
-| 5 | Teavicta | j-kaph | ▽E5 | 540 | kaph, teavicta |
-| 6 | Uros | j-uros-belt | ▽F6 | 650 | uros, belt |
-| 7 | Heixin | j-heixin | ▽G7 | 760 | heixin |
-| 8 | Haider | j-spike | ▽H8 | 870 | haider, spike |
-| 9 | Vol | j-sturm | ▽I9 | (starts open) | vol, edge |
+| 1 | Qamor | j-qamor | A1 | 512 | qamor, seed |
+| 2 | Ikeph | j-ikeph | B2 | 215 | ikeph |
+| 3 | Terra | j-terra | C3 | 320 | terra |
+| 4 | Deshret | j-deshret | D4 | 430 | deshret, embrace |
+| 5 | Teavicta | j-kaph | E5 | 540 | kaph, teavicta |
+| 6 | Uros | j-uros-belt | F6 | 650 | uros, belt |
+| 7 | Heixin | j-heixin | G7 | 760 | heixin |
+| 8 | Haider | j-spike | H8 | 870 | haider, spike |
+| 9 | Vol | j-sturm | I9 | (starts open) | vol, edge |
 
 Chart dossiers show `▽ NN // BIND` for slot index. Sturm moon / Teavicta mystery remain special readouts, not clearance slots.
 

@@ -135,7 +135,7 @@ export function initFlightLog() {
   const updateRail = () => {
     if (!railFill) return;
     const max = host.scrollHeight - host.clientHeight;
-    const fill = max <= 0 ? 1 : 1 - host.scrollTop / max;
+    const fill = max <= 0 ? 1 : host.scrollTop / max;
     railFill.style.transform = `scaleY(${Math.max(0, Math.min(1, fill))})`;
   };
 

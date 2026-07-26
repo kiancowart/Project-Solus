@@ -136,6 +136,12 @@ export function runClearanceGate(skippedRef) {
 
     revealTopToBottom(gate.querySelector(".gate"));
 
+    const interceptLink = gate.querySelector(".gate__intercept");
+    interceptLink?.addEventListener("click", () => {
+      // Carry ambient bed across full-page jump back to the tuner
+      if (audio.enabled) audio.markAmbienceLive();
+    });
+
     const render = () => {
       display.textContent = formatGateDisplay(buffer, maxLen);
     };
@@ -184,7 +190,8 @@ export function runClearanceGate(skippedRef) {
         eyes.hidden = false;
         eyes.setAttribute("aria-hidden", "false");
       }
-      audio.play("open");
+      // No ambience, no SFX on the no-mask stare — refresh required
+      audio.enterDeadSilence();
       gate.removeEventListener("click", onPadClick);
       window.removeEventListener("keydown", onKeydown);
       // Intentionally never resolves — refresh required
@@ -413,6 +420,18 @@ export async function runBoot() {
     updateAudioToggle(true);
   };
   document.addEventListener("keydown", () => unlockAudio(), { once: true });
+  document.addEventListener(
+    "pointerdown",
+    () => {
+      void unlockAudio();
+    },
+    { once: true }
+  );
+
+  // Resume terminal ambience after intercept → clearance navigation
+  if (audio.shouldResumeAmbience()) {
+    void unlockAudio();
+  }
 
   const skippedRef = { skipped: false };
   skipBtn.hidden = true;

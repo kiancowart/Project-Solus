@@ -72,6 +72,16 @@ export const CLEARANCE = {
 };
 
 /* ---------------------------------------------------------------------------
+   AMBIENCE — terminal hum from site open (except 666 eyes)
+   --------------------------------------------------------------------------- */
+export const AMBIENCE = {
+  src: "assets/audio/TrmnlAmbience.mp3",
+  loop: true,
+  /** Default 0–1 level (Diagnostics Ambience slider starts here) */
+  volume: 0.18,
+};
+
+/* ---------------------------------------------------------------------------
    SOUNDTRACK — loops after correct clearance (file under assets/audio/)
    --------------------------------------------------------------------------- */
 export const SOUNDTRACK = {
@@ -362,6 +372,17 @@ export const BOOT_LOGO = {
    Optional: awaitDotsMs — after typing, blink "..." for that many ms (loading hold)
    --------------------------------------------------------------------------- */
 export const BOOT_LINES = [
+  {
+    text: "REMOTE_LINK :: bridging terminal → G512 interface via KHARON-CELESTE",
+    cls: "boot-line--link",
+    delay: 40,
+    awaitDotsMs: 2400,
+  },
+  {
+    text: "REMOTE_LINK :: connection confirmed",
+    cls: "boot-line--ok boot-line--link",
+    delay: 50,
+  },
   {
     text: "[FTHFLL] LATTICE.OS :: permissions clarifying",
     cls: "boot-line--ok",

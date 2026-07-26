@@ -168,6 +168,7 @@ export function initSystems() {
   const audioBtn = document.getElementById("audio-toggle");
   const motionBtn = document.getElementById("reduce-motion");
   const sfxGain = document.getElementById("sfx-gain");
+  const ambienceGain = document.getElementById("ambience-gain");
   const musicGain = document.getElementById("music-gain");
   const scan = document.getElementById("scan-intensity");
 
@@ -186,6 +187,11 @@ export function initSystems() {
   motionBtn.addEventListener("click", () => {
     updateMotionToggle(!document.body.classList.contains("reduce-motion"));
   });
+
+  bindFillBar(ambienceGain, (v) => {
+    audio.setAmbienceGain(v / 100);
+  });
+  audio.setAmbienceGain(readFillBarValue(ambienceGain) / 100);
 
   bindFillBar(sfxGain, (v) => {
     audio.setSfxGain(v / 100);

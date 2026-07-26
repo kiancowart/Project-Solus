@@ -37,9 +37,9 @@ Use a cold reader (friend who does **not** know solutions). Wipe with `?cold=1` 
 | Step | Pass if |
 |------|---------|
 | Dossiers | Planet click shows `▽ NN // BIND` |
-| Fragments | Exact keywords recover ▽A1…▽I9 into Imperial tray |
+| Fragments | Exact keywords recover A1…I9 into Imperial tray |
 | Wrong bind | BIND SEAL → SEAL HOLDS flashes then clears (no coaching) |
-| Correct 9 | Planet order + fragments → Imperial; Archives/Guest open |
+| Correct 9 | Planet order + fragments → Imperial; all channels open (Chart, Log, Archives, Guest) |
 | Clearance layout | Assembler / tray / bind / granted state centered in channel |
 
 ## Author solutions

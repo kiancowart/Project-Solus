@@ -9,5 +9,6 @@
 
 ## audio/
 
+- `TrmnlAmbience.mp3` — site-wide looping terminal ambience (from open; silenced on 666 eyes). Wired via `AMBIENCE.src` in `content/boot-content.js`.
 - `keep-up.mp3` — post-pad looping soundtrack. Wired via `SOUNDTRACK.src` in `content/boot-content.js`.
 - Milestone stingers are synthesized in `src/audio.js` (`milestone` / `reveal` / `imperial`).

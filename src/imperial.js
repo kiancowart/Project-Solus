@@ -16,7 +16,10 @@ import {
   getClearanceDraft,
   setClearanceDraft,
   getRecoveredFragments,
+  setChannelUnlock,
+  setHullProgress,
 } from "./progress.js";
+import { initHullPlan } from "./hull.js";
 
 const INTERCEPT_HREF = "intercept.html";
 const BLACKOUT_MS = 900;
@@ -26,7 +29,7 @@ function normFrag(s) {
   return String(s ?? "")
     .trim()
     .toUpperCase()
-    .replace(/\s+/g, "");
+    .replace(/[▽▼\s]+/g, "");
 }
 
 export function initImperialClearance() {
@@ -202,10 +205,20 @@ export function initImperialClearance() {
     }
 
     grantImperialClearance();
+    // Imperial bind opens every ship channel, including Chart / Flight Log.
+    setChannelUnlock("cartography", true);
+    setChannelUnlock("flightlog", true);
+    setHullProgress({
+      chartPuzzle: true,
+      logPuzzle: true,
+      optics: true,
+      inner: true,
+    });
     audio.play("imperial");
     clearSealHolds();
     syncGrantedUI();
     applyClearanceUI();
+    initHullPlan.applyHullUI?.();
   };
 
   submit?.addEventListener("click", tryBind);
@@ -280,6 +293,7 @@ export function initImperialClearance() {
 
     await playBootLogo();
     await sleep(bootMs(BLACKOUT_MS));
+    if (audio.enabled) audio.markAmbienceLive();
     window.location.href = INTERCEPT_HREF;
   };
 

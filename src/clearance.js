@@ -38,8 +38,9 @@ const LOCKED_UNTIL_PROGRESS =
   CLEARANCE?.lockedUntilProgress ?? ["flightlog", "cartography"];
 
 export function isPanelLocked(panelId) {
+  if (hasImperialClearance()) return false;
   if (LOCKED_UNTIL_IMPERIAL.includes(panelId)) {
-    return !hasImperialClearance();
+    return true;
   }
   if (LOCKED_UNTIL_PROGRESS.includes(panelId)) {
     return !isChannelUnlocked(panelId);

@@ -3,8 +3,32 @@
  */
 
 import { applyColdStartFromQuery } from "./cold-start.js";
+import { initInterceptMessageAudio } from "./intercept-audio.js";
+import { audio } from "./audio.js";
 
 applyColdStartFromQuery();
+
+/** Start site ambience on first gesture (autoplay policy). */
+function bindAmbienceUnlock() {
+  const unlock = async () => {
+    document.removeEventListener("pointerdown", unlock);
+    document.removeEventListener("keydown", unlock);
+    try {
+      await audio.enable();
+    } catch {
+      /* ignore */
+    }
+  };
+  document.addEventListener("pointerdown", unlock, { once: true });
+  document.addEventListener("keydown", unlock, { once: true });
+
+  // Resume after clearance pad → tuner navigation
+  if (audio.shouldResumeAmbience()) {
+    void unlock();
+  }
+}
+
+bindAmbienceUnlock();
 
 const FREQ_MIN = 0;
 const FREQ_MAX = 108.0;
@@ -99,6 +123,7 @@ class RadioTuner {
     this.clearanceBtn = $(".radio__clearance");
     this.echoEl = $(".radio-echo");
     this.skipBtn = $("#intercept-skip");
+    this.messageAudio = null;
 
     this.freq = 82.4;
     this.dialAngle = -18;
@@ -138,6 +163,7 @@ class RadioTuner {
   init() {
     this.#buildBars();
     this.#bindControls();
+    this.#bindClearanceHandoff();
     this.#renderFreq();
     this.#setClarity(0);
     this.#renderDial();
@@ -169,6 +195,15 @@ class RadioTuner {
       this.clearanceBtn.hidden = true;
       this.root?.classList.remove("radio--has-clearance");
     }
+  }
+
+  #bindClearanceHandoff() {
+    if (!this.clearanceBtn || this.clearanceBtn.dataset.ambienceBound) return;
+    this.clearanceBtn.dataset.ambienceBound = "1";
+    this.clearanceBtn.addEventListener("click", () => {
+      // Carry ambient bed across full-page jump to the link-override pad
+      audio.markAmbienceLive();
+    });
   }
 
   #buildBars() {
@@ -216,6 +251,38 @@ class RadioTuner {
 
     window.addEventListener("pointerup", stop);
     window.addEventListener("blur", stop);
+
+    const keyDir = (e) => {
+      const key = e.key;
+      if (key === "ArrowLeft" || key === "a" || key === "A") return -1;
+      if (key === "ArrowRight" || key === "d" || key === "D") return 1;
+      return 0;
+    };
+
+    const isTypingTarget = (el) => {
+      if (!el || !(el instanceof Element)) return false;
+      const tag = el.tagName;
+      return (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        el.isContentEditable
+      );
+    };
+
+    window.addEventListener("keydown", (e) => {
+      if (this.locked || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+      const dir = keyDir(e);
+      if (!dir) return;
+      start(dir)(e);
+    });
+
+    window.addEventListener("keyup", (e) => {
+      const dir = keyDir(e);
+      if (!dir) return;
+      if (this.direction === dir) stop();
+    });
   }
 
   async #ensureAudio() {
@@ -634,6 +701,11 @@ class RadioTuner {
     this.root?.classList.add("radio--message");
     this.message?.classList.add("intercept--revealed");
     this.message?.setAttribute("aria-hidden", "false");
+
+    if (!this.messageAudio) {
+      this.messageAudio = initInterceptMessageAudio();
+    }
+    this.messageAudio.show();
 
     window.setTimeout(() => {
       this.ctaFoot?.classList.add("intercept__foot--in");

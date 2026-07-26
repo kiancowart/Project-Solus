@@ -2,7 +2,26 @@
  * LATTICE.OS — Terminal audio
  */
 
-import { SOUNDTRACK } from "../content/boot-content.js";
+import { AMBIENCE, SOUNDTRACK } from "../content/boot-content.js";
+
+const AMBIENCE_LIVE_KEY = "lattice.ambienceLive";
+
+function readAmbienceLive() {
+  try {
+    return sessionStorage.getItem(AMBIENCE_LIVE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeAmbienceLive(on) {
+  try {
+    if (on) sessionStorage.setItem(AMBIENCE_LIVE_KEY, "1");
+    else sessionStorage.removeItem(AMBIENCE_LIVE_KEY);
+  } catch {
+    /* private mode */
+  }
+}
 
 /* ==========================================================================
    AUDIO — Web Audio API synthesizer
@@ -12,12 +31,31 @@ export class TerminalAudio {
   constructor() {
     this.ctx = null;
     this.enabled = false;
+    /** 666 eyes — no ambience, no SFX until refresh */
+    this.deadSilent = false;
     this.sfxGain = 0.55;
+    this.ambienceGain = Math.max(0, Math.min(1, AMBIENCE?.volume ?? 0.18));
     this.musicGain = Math.max(0, Math.min(1, SOUNDTRACK?.volume ?? 0.15));
+
+    this.ambience = null;
+    this.ambienceGainNode = null;
+    this.ambienceStarted = false;
+    this.ambienceRouted = false;
+
     this.soundtrack = null;
     this.musicGainNode = null;
     this.soundtrackStarted = false;
     this.soundtrackRouted = false;
+  }
+
+  /** True when a prior page left ambience running (pad ↔ intercept). */
+  shouldResumeAmbience() {
+    return readAmbienceLive();
+  }
+
+  /** Mark ambience as wanted across a same-origin navigation. */
+  markAmbienceLive() {
+    if (!this.deadSilent) writeAmbienceLive(true);
   }
 
   async ensure() {
@@ -30,18 +68,37 @@ export class TerminalAudio {
   }
 
   async enable() {
+    if (this.deadSilent) return;
     await this.ensure();
     this.enabled = true;
+    await this.startAmbience();
+    this.#syncAmbience();
     this.#syncSoundtrack();
   }
 
   disable() {
     this.enabled = false;
+    writeAmbienceLive(false);
+    this.#syncAmbience();
     this.#syncSoundtrack();
+  }
+
+  /** Hard mute for the 666 no-mask stare (refresh to escape). */
+  enterDeadSilence() {
+    this.deadSilent = true;
+    this.enabled = false;
+    writeAmbienceLive(false);
+    this.stopAmbience();
+    this.stopSoundtrack();
   }
 
   setSfxGain(normalized) {
     this.sfxGain = Math.max(0, Math.min(1, normalized));
+  }
+
+  setAmbienceGain(normalized) {
+    this.ambienceGain = Math.max(0, Math.min(1, normalized));
+    this.#syncAmbience();
   }
 
   setMusicGain(normalized) {
@@ -49,8 +106,35 @@ export class TerminalAudio {
     this.#syncSoundtrack();
   }
 
+  /** Start looping terminal ambience once (idempotent). */
+  async startAmbience() {
+    if (this.deadSilent) return;
+    const src = AMBIENCE?.src;
+    if (!src || this.ambienceStarted) return;
+
+    await this.ensure();
+    if (!this.ambience) {
+      const el = new Audio(src);
+      el.loop = AMBIENCE.loop !== false;
+      el.preload = "auto";
+      this.ambience = el;
+    }
+
+    this.#routeAmbience();
+    this.ambienceStarted = true;
+    this.#syncAmbience();
+    try {
+      await this.ambience.play();
+      writeAmbienceLive(true);
+    } catch {
+      // Autoplay may still block; next enable()/gesture retries via #syncAmbience
+      this.ambienceStarted = false;
+    }
+  }
+
   /** Start looping clearance soundtrack once (idempotent). */
   async startSoundtrack() {
+    if (this.deadSilent) return;
     const src = SOUNDTRACK?.src;
     if (!src || this.soundtrackStarted) return;
 
@@ -68,9 +152,19 @@ export class TerminalAudio {
     try {
       await this.soundtrack.play();
     } catch {
-      // Autoplay may still block; next enable()/gesture retries via #syncSoundtrack
       this.soundtrackStarted = false;
     }
+  }
+
+  #routeAmbience() {
+    if (!this.ambience || !this.ctx || this.ambienceRouted) return;
+
+    const source = this.ctx.createMediaElementSource(this.ambience);
+    this.ambienceGainNode = this.ctx.createGain();
+    this.ambienceGainNode.gain.value = 0;
+    source.connect(this.ambienceGainNode).connect(this.ctx.destination);
+    this.ambience.volume = 1;
+    this.ambienceRouted = true;
   }
 
   /** Bitcrush + band-limit chain for a crushed terminal radio feel. */
@@ -142,6 +236,18 @@ export class TerminalAudio {
     return curve;
   }
 
+  stopAmbience() {
+    if (this.ambience) {
+      this.ambience.pause();
+      try {
+        this.ambience.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+    }
+    this.ambienceStarted = false;
+  }
+
   /** Halt looping soundtrack (purge / cold exit). */
   stopSoundtrack() {
     if (this.soundtrack) {
@@ -155,25 +261,55 @@ export class TerminalAudio {
     this.soundtrackStarted = false;
   }
 
+  #syncAmbience() {
+    if (!this.ambience) return;
+
+    const level = this.enabled && !this.deadSilent ? this.ambienceGain : 0;
+    if (this.ambienceGainNode) {
+      this.ambienceGainNode.gain.value = level;
+    } else {
+      this.ambience.volume = level;
+    }
+
+    if (
+      this.enabled &&
+      !this.deadSilent &&
+      this.ambienceStarted &&
+      this.ambience.paused
+    ) {
+      this.ambience
+        .play()
+        .then(() => writeAmbienceLive(true))
+        .catch(() => {});
+    } else if ((!this.enabled || this.deadSilent) && !this.ambience.paused) {
+      this.ambience.pause();
+    }
+  }
+
   #syncSoundtrack() {
     if (!this.soundtrack) return;
 
-    const level = this.enabled ? this.musicGain : 0;
+    const level = this.enabled && !this.deadSilent ? this.musicGain : 0;
     if (this.musicGainNode) {
       this.musicGainNode.gain.value = level;
     } else {
       this.soundtrack.volume = level;
     }
 
-    if (this.enabled && this.soundtrackStarted && this.soundtrack.paused) {
+    if (
+      this.enabled &&
+      !this.deadSilent &&
+      this.soundtrackStarted &&
+      this.soundtrack.paused
+    ) {
       this.soundtrack.play().catch(() => {});
-    } else if (!this.enabled && !this.soundtrack.paused) {
+    } else if ((!this.enabled || this.deadSilent) && !this.soundtrack.paused) {
       this.soundtrack.pause();
     }
   }
 
   play(type = "click") {
-    if (!this.enabled || !this.ctx) return;
+    if (this.deadSilent || !this.enabled || !this.ctx) return;
 
     const t = this.ctx.currentTime;
     const master = this.ctx.createGain();
@@ -186,7 +322,6 @@ export class TerminalAudio {
     }
 
     if (type === "unlock") {
-      // Heavier clearance sting — ascending industrial tones
       this.#tone(master, 160, 0.1, t, "square");
       this.#tone(master, 240, 0.1, t + 0.12, "square");
       this.#tone(master, 360, 0.14, t + 0.26, "triangle");
@@ -196,7 +331,6 @@ export class TerminalAudio {
     }
 
     if (type === "milestone") {
-      // Soft Her Story–like recover ping
       this.#tone(master, 310, 0.08, t, "triangle");
       this.#tone(master, 465, 0.1, t + 0.09, "triangle");
       this.#tone(master, 620, 0.12, t + 0.2, "sine");
@@ -204,7 +338,6 @@ export class TerminalAudio {
     }
 
     if (type === "reveal") {
-      // Longer reveal motif
       this.#tone(master, 220, 0.12, t, "sine");
       this.#tone(master, 330, 0.12, t + 0.14, "triangle");
       this.#tone(master, 440, 0.14, t + 0.3, "triangle");

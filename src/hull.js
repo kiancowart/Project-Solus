@@ -515,6 +515,15 @@ export function initFthConsole() {
     unknownCmd(parsed.raw);
   };
 
+  input.addEventListener("focus", clearAwait);
+  input.addEventListener("pointerdown", clearAwait);
+
+  form.addEventListener("pointerdown", (e) => {
+    if (e.target === input) return;
+    clearAwait();
+    input.focus();
+  });
+
   input.addEventListener("input", () => {
     if (input.value.length > 0) clearAwait();
   });

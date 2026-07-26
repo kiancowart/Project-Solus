@@ -56,6 +56,31 @@ a:visited {
   box-sizing: border-box;
 }
 
+/* CRT scroll rails — match Flight Log phosphor rail */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--phosphor) rgba(255, 61, 40, 0.06);
+}
+
+*::-webkit-scrollbar {
+  width: 0.35rem;
+  height: 0.35rem;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255, 61, 40, 0.06);
+  border: 1px solid rgba(255, 61, 40, 0.35);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--phosphor);
+  box-shadow: 0 0 6px rgba(255, 61, 40, 0.45);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 html,
 body {
   margin: 0;
@@ -280,8 +305,6 @@ button:disabled {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  scrollbar-width: thin;
-  scrollbar-color: var(--phosphor-dim) transparent;
 }
 
 .boot__log .boot-line--ok {
@@ -2142,6 +2165,8 @@ button:disabled {
 }
 
 .flog__journals::-webkit-scrollbar {
+  width: 0;
+  height: 0;
   display: none;
 }
 
@@ -2173,6 +2198,25 @@ button:disabled {
   display: none !important;
 }
 
+/* Shared CRT phosphor rails (Flight Log + intercept message) */
+.crt-rail {
+  flex-shrink: 0;
+  width: 0.35rem;
+  border: 1px solid rgba(255, 61, 40, 0.35);
+  background: rgba(255, 61, 40, 0.06);
+  overflow: hidden;
+}
+
+.crt-rail__fill {
+  width: 100%;
+  height: 100%;
+  background: var(--phosphor);
+  box-shadow: 0 0 6px rgba(255, 61, 40, 0.45);
+  transform-origin: top center;
+  transform: scaleY(0);
+  transition: transform 0.05s linear;
+}
+
 .flog__rail {
   flex-shrink: 0;
   width: 0.35rem;
@@ -2189,7 +2233,7 @@ button:disabled {
   background: var(--phosphor);
   box-shadow: 0 0 6px rgba(255, 61, 40, 0.45);
   transform-origin: top center;
-  transform: scaleY(1);
+  transform: scaleY(0);
   transition: transform 0.05s linear;
 }
 
@@ -3129,6 +3173,10 @@ button:disabled {
   gap: 0.45rem;
 }
 
+.hull-inner[hidden] {
+  display: none !important;
+}
+
 .hull-inner__sigil {
   margin: 0;
   font-size: 1.4rem;
@@ -3539,6 +3587,22 @@ button:disabled {
   padding: 0.4rem 0.55rem;
   min-height: 2.1rem;
   flex-shrink: 0;
+  cursor: text;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.fth-console__form:focus-within {
+  border-top-color: var(--phosphor);
+  background: rgba(255, 61, 40, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 61, 40, 0.35);
+}
+
+.fth-console__form:focus-within .fth-console__ps {
+  color: var(--phosphor);
+  text-shadow: var(--glow-soft);
 }
 
 .fth-console__await {
@@ -3581,6 +3645,7 @@ button:disabled {
   letter-spacing: 0.06em;
   outline: none;
   text-shadow: var(--glow-soft);
+  caret-color: var(--phosphor);
 }
 
 .fth-console__input::placeholder {
@@ -3595,6 +3660,15 @@ button:disabled {
 
 .fth-console.is-awaiting .fth-console__input {
   caret-color: transparent;
+}
+
+.fth-console.is-awaiting .fth-console__form:focus-within .fth-console__ps,
+.fth-console.is-awaiting .fth-console__form:focus-within .fth-console__input {
+  opacity: 1;
+}
+
+.fth-console.is-awaiting .fth-console__form:focus-within .fth-console__input {
+  caret-color: var(--phosphor);
 }
 
 .hull-mon__alarms {
@@ -4731,6 +4805,58 @@ body.page-intercept {
 
 /* —— Intercept message (lives between the rails) —— */
 
+.intercept-audio__play {
+  position: relative;
+  flex-shrink: 0;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: #000;
+  color: var(--phosphor);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition:
+    color 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.intercept-audio__play:hover,
+.intercept-audio__play:focus-visible {
+  border-color: var(--line-strong);
+  color: var(--phosphor-bright);
+  outline: none;
+  box-shadow: var(--glow-soft);
+}
+
+.intercept-audio__play:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.intercept-audio__icon {
+  display: block;
+  width: 0.85rem;
+  height: 0.85rem;
+  fill: currentColor;
+  grid-area: 1 / 1;
+}
+
+.intercept-audio__icon--pause {
+  display: none;
+}
+
+.intercept-audio__play.is-playing .intercept-audio__icon--play {
+  display: none;
+}
+
+.intercept-audio__play.is-playing .intercept-audio__icon--pause {
+  display: block;
+}
+
 .intercept {
   position: absolute;
   inset: 0;
@@ -4738,11 +4864,13 @@ body.page-intercept {
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: clamp(1.35rem, 4vw, 2.4rem) clamp(0.85rem, 3vw, 1.5rem) 2.5rem;
-  overflow: auto;
+  padding: clamp(1.1rem, 3.5vw, 1.85rem) clamp(0.55rem, 2vw, 0.95rem);
+  overflow: hidden;
   opacity: 0;
   pointer-events: none;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .intercept--revealed {
@@ -4764,6 +4892,124 @@ body.page-intercept {
     opacity: 1;
     filter: none;
   }
+}
+
+.intercept__layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 3.6rem minmax(0, 1fr) 0.35rem;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.intercept__audio-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.45rem;
+  min-height: 0;
+  height: 100%;
+}
+
+.intercept-audio__play {
+  margin-right: 0;
+  align-self: flex-end;
+}
+
+.intercept__audio-scrub {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  touch-action: none;
+  cursor: default;
+  pointer-events: none;
+}
+
+.intercept__audio-scrub.is-live {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.intercept__audio-tip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 0.12rem 0.28rem;
+  border: 1px solid var(--line);
+  background: #000;
+  color: var(--phosphor);
+  font-size: 0.48rem;
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--glow-soft);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 0.12s ease;
+  z-index: 3;
+}
+
+.intercept__audio-scrub.is-live:hover .intercept__audio-tip {
+  opacity: 1;
+}
+
+.intercept__rail {
+  align-self: stretch;
+  min-height: 0;
+  height: 100%;
+}
+
+.intercept__rail--audio {
+  flex: none;
+  width: 0.35rem;
+  height: 100%;
+  align-self: stretch;
+  pointer-events: none;
+  touch-action: none;
+  transition:
+    width 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.intercept__audio-scrub.is-live:hover .intercept__rail--audio {
+  width: 0.85rem;
+  border-color: var(--line-strong);
+  box-shadow: 0 0 8px rgba(255, 61, 40, 0.35);
+}
+
+.intercept__rail--audio .crt-rail__fill {
+  transform: scaleY(0);
+  pointer-events: none;
+}
+
+.intercept__rail--audio:focus-visible {
+  outline: 1px solid var(--phosphor);
+  outline-offset: 2px;
+}
+
+.intercept__scroll {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 0.15rem;
+  scrollbar-width: none;
+}
+
+.intercept__scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .intercept__head {
@@ -4808,16 +5054,14 @@ body.page-intercept {
   margin: 0 0 1rem;
 }
 
+.intercept__body p:last-child {
+  margin-bottom: 0;
+}
+
 .intercept__body strong {
   color: var(--phosphor-bright);
   font-weight: 700;
   text-shadow: var(--glow-soft);
-}
-
-.intercept__sign {
-  margin-top: 1.5rem;
-  color: var(--phosphor);
-  letter-spacing: 0.1em;
 }
 
 .intercept__foot {

@@ -86,14 +86,24 @@ export function setClearanceDraft(draft) {
   return draft;
 }
 
+function normalizeFragmentId(id) {
+  return String(id ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[▽▼\s]+/g, "");
+}
+
 export function getRecoveredFragments() {
   const data = readJson(FRAG_KEY, fragRef, { ids: [] });
-  return new Set(Array.isArray(data.ids) ? data.ids : []);
+  const ids = Array.isArray(data.ids) ? data.ids : [];
+  return new Set(ids.map(normalizeFragmentId).filter(Boolean));
 }
 
 export function markFragmentRecovered(fragmentId) {
+  const id = normalizeFragmentId(fragmentId);
+  if (!id) return getRecoveredFragments();
   const set = getRecoveredFragments();
-  set.add(fragmentId);
+  set.add(id);
   writeJson(FRAG_KEY, fragRef, { ids: [...set] });
   return set;
 }

@@ -39,31 +39,78 @@
           <div class="radio__rail radio__rail--bottom" aria-hidden="true"></div>
 
           <main class="intercept" aria-label="AUX bleed intercept" aria-hidden="true">
-            <header class="intercept__head">
-              <p class="intercept__sigil" aria-hidden="true">□</p>
-              <p class="intercept__label">ID KHARON-CELESTE || PRESAGE PROJECTION INTERCEPT</p>
-              <p class="intercept__warn">ONE WAY SIGNAL · DO NOT REPLY ON THIS FREQUENCY</p>
-            </header>
+            <div class="intercept__layout">
+              <div class="intercept__audio-col" id="intercept-audio">
+                <button
+                  type="button"
+                  class="intercept-audio__play"
+                  id="intercept-audio-play"
+                  aria-label="Play intercept message"
+                  aria-pressed="false"
+                  disabled
+                >
+                  <svg class="intercept-audio__icon intercept-audio__icon--play" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M8 5 L19 12 L8 19 Z" />
+                  </svg>
+                  <svg class="intercept-audio__icon intercept-audio__icon--pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <rect x="6" y="5" width="4" height="14" />
+                    <rect x="14" y="5" width="4" height="14" />
+                  </svg>
+                </button>
+                <div class="intercept__audio-scrub" id="intercept-audio-scrub">
+                  <p class="intercept__audio-tip" id="intercept-audio-tip" aria-hidden="true">00:00</p>
+                  <aside
+                    class="intercept__rail intercept__rail--audio crt-rail"
+                    id="intercept-audio-rail"
+                    role="slider"
+                    aria-label="Intercept audio position"
+                    aria-orientation="vertical"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="0"
+                    tabindex="-1"
+                  >
+                    <div class="crt-rail__fill" id="intercept-audio-fill"></div>
+                  </aside>
+                </div>
+              </div>
 
-            <article class="intercept__body">
-              <p>I am not your friend.</p>
-              <p>I am the guide that answers when bonded craft forget how to ask.</p>
-              <p>
-                <strong>G512</strong> Carapace — she calls herself Cara — is still humming on a
-                dead relay. Sturm weather. Partition rot. The Khan left a mess and a gate.
-              </p>
-              <p>You will complete clearance.</p>
-              <p>
-                Three digits. Same count as the Imperial Triad. Same generation stamped on her hull
-                — the mark that ages Scourge iron.
-              </p>
-              <p>Open the node. Finish the handshake.</p>
-              <p>
-                After that: old keys wake old files. Search what Lattice still remembers.
-              </p>
-              <p>Pass this intercept. Not your session.</p>
-              <p class="intercept__sign">— Celeste</p>
-            </article>
+              <div class="intercept__scroll" id="intercept-scroll">
+                <header class="intercept__head">
+                  <p class="intercept__sigil" aria-hidden="true">□</p>
+                  <p class="intercept__label">ID KHARON-CELESTE || PRESAGE PROJECTION INTERCEPT</p>
+                  <p class="intercept__warn">ONE WAY SIGNAL · DO NOT REPLY ON THIS FREQUENCY</p>
+                </header>
+
+                <article class="intercept__body">
+                  <p>
+                    You probably have a lot questions.
+                    <br><br>
+                    My identity is not your concern, but I'll tell you what I have to. My designation is attached to this interception and there's a chance that, if you wanted to, you could trace that I'm reaching out from the M.O.S. Nu-Lunae. Both of those facts are highly classified, and depending on who you are, that might mean nothing to you or might mean a lot. Whatever the case, understand that the binary encoded message I sent and the signal therein are <strong>NOT</strong> to be shared with any souls other than those it was initially shared to. I suggest you take stock of who all received it for your own sakes.
+                    <br><br>
+                    I'm too far for our communication to be anything more than sparse. I reached out with binary before because I was communicating through that archaic OS. Now that you're at a terminal, it's easier but still limited.
+                    <br><br>
+                    You and I share a mutual aquantance. <i>I need him to owe me</i>. Hence why I'm doing something for him. He wants me connect you to and get Imperial clearance on an old, crashed Carapace ship. It's systems are still kicking, but it's damaged state has put it in emergency mode. Lucky for us, that means it's more crackable than usual. I've laid out the groundwork for a connection between your terminal and the ship's kernel. Put in the right code for it's link override, it'll complete the connection, allowing you to access it's OS.
+                    <br><br>
+                    The ship's protections are still active enough to stop me from projecting further into the system than the link override. I'm relying on you to do what I can't. In other words, you'll be on your own. Arkhidian software is deliberately obtuse, so navigating it without prior knowledge is difficult. You'll probably deal with that a lot, especially if the damages have corrupted it at all. Whatever the case, as long as you can get the Imperial Clearance, it'll send a ping back to me, and <i>we'll never have to speak again</i>.
+                    <br><br>
+                    If you need assistance, get into contact with our mutual aquantance. He said you have his information, so if you absolutely <i>need</i> me for assistance, he should be able to connect us for me to send a binary encoding again. That said, it's a <i>fuckin</i> headache and a risk for me to reach out like that. So please just make this easy for both of us and do it on your own.
+                    <br><br>
+                    If you need an incentive, our friend said "It'll be worth your while." Don't ask me what that means. <i>I don't know</i>.
+                    <br><br>
+                    One last thing.
+                    <br><br>
+                    What we're doing breaks <i>several</i> Triad laws. If you snitch, <strong>I will know</strong>, and I promise you that I have the resources to make it so you, whoever you snitched to, and anyone you care about, never existed.
+                    <br><br>
+                    <strong>DON'T GET ANY STUPID IDEAS.</strong>
+                  </p>
+                </article>
+              </div>
+
+              <aside class="intercept__rail intercept__rail--scroll crt-rail" aria-hidden="true">
+                <div class="crt-rail__fill" id="intercept-scroll-fill"></div>
+              </aside>
+            </div>
           </main>
         </div>
 
