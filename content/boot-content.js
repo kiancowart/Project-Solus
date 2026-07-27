@@ -219,21 +219,21 @@ export const WHISPER = {
     },
     {
       /**
-       * Sends them back to intercept.html → lock 051.2 (G512 as dial mark).
+       * Sends them back to intercept.html → lock 033.3 (emergency frequency).
        * Accept the dial reading only — not bare 512 (that's the gate).
        */
       prompt:
-        "Good. The greeting carrier won't finish this. Go back to the dial — a second bleed. Her hull generation rides the band the way a dial writes it. Lock it. Then tell me the frequency.",
+        "Good. I've directed the emergency frequency to you. Find it on the tuner.",
       accept: [
-        "051.2",
-        "0512",
-        "51.2",
-        "051 2",
-        "51 2",
-        "0 51 2",
-        "zero five one point two",
-        "five one point two",
-        "oh five one point two",
+        "033.3",
+        "0333",
+        "33.3",
+        "033 3",
+        "33 3",
+        "0 33 3",
+        "zero three three point three",
+        "three three point three",
+        "oh three three point three",
       ],
       acceptMode: "exact",
       softReject: {
@@ -249,13 +249,16 @@ export const WHISPER = {
           "0979",
           "97.9",
           "979",
+          "051.2",
+          "0512",
+          "51.2",
           "back",
           "intercept",
           "carapace",
           "cara",
         ],
         matchMode: "contains",
-        text: "← on the gate. Generation as a dial mark — then read me what you lock.",
+        text: "← on the gate. Lock the emergency frequency — then read me what the dial shows.",
       },
       success: "Yes. Now read the blanks.",
     },

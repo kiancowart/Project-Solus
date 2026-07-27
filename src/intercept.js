@@ -34,9 +34,21 @@ const FREQ_MIN = 0;
 const FREQ_MAX = 108.0;
 const LOCK_HOLD_MS = 2000;
 const LOCK_TOLERANCE = 0.12;
-const DETENT_RANGE = 1.8;
+/** Soft pull toward a carrier — keep narrow so spinning past stays easy */
+const DETENT_RANGE = 0.75;
+/** Only magnetize while the dial is still crawling */
+const DETENT_MAX_ACCEL = 0.28;
+const DETENT_PULL = 1.05;
+const DETENT_SPEED_FLOOR = 0.55;
 const SIGNAL_SRC = "assets/audio/TriadSignal.mp3";
-const CLARITY_WINDOW = 28;
+const BLOOD_SRC = "assets/audio/blood.mp3";
+/** Both carriers are silent outside this ±MHz band */
+const SIGNAL_HEAR_WINDOW = 15;
+/**
+ * Clarity curve inside the hear window — higher = static hangs on longer;
+ * only near/exact center reads either bed clearly.
+ */
+const SIGNAL_CLARITY_CURVE = 3.8;
 const MASTER_VOLUME = 0.28;
 const BAR_COUNT = 72;
 
@@ -46,14 +58,16 @@ const GREETING = {
   freq: 97.9,
   storageKey: "lattice.interceptTuned",
   kind: "message",
+  lockable: true,
 };
 
-/** Second bleed — compact fragment; Whisper asks for this dial reading */
+/** Emergency frequency — glow + blood bed; does not lock the dial */
 const ECHO = {
   id: "echo",
-  freq: 51.2,
+  freq: 33.3,
   storageKey: "lattice.interceptEcho",
   kind: "echo",
+  lockable: false,
 };
 
 const CARRIERS = [GREETING, ECHO];
@@ -92,6 +106,13 @@ function nearestCarrier(freq) {
   return { carrier: best, dist: bestDist };
 }
 
+/** 0 outside ±SIGNAL_HEAR_WINDOW; rises late so the bed stays buried until close. */
+function carrierClarity(dist) {
+  if (!Number.isFinite(dist) || dist > SIGNAL_HEAR_WINDOW) return 0;
+  const t = 1 - dist / SIGNAL_HEAR_WINDOW;
+  return Math.pow(clamp(t, 0, 1), SIGNAL_CLARITY_CURVE);
+}
+
 function storageFlag(key) {
   try {
     return localStorage.getItem(key) === "1";
@@ -121,7 +142,6 @@ class RadioTuner {
     this.ctaFoot = $(".intercept__foot");
     this.frame = $(".radio__frame");
     this.clearanceBtn = $(".radio__clearance");
-    this.echoEl = $(".radio-echo");
     this.skipBtn = $("#intercept-skip");
     this.messageAudio = null;
 
@@ -133,7 +153,6 @@ class RadioTuner {
     this.activeCarrier = null;
     this.locked = false;
     this.revealed = false;
-    this.echoRevealed = false;
     this.audioReady = false;
     this.flatViz = false;
     this.hideBars = false;
@@ -148,6 +167,8 @@ class RadioTuner {
     this.ctx = null;
     this.signal = null;
     this.signalGain = null;
+    this.blood = null;
+    this.bloodGain = null;
     this.muffLp = null;
     this.muffHp = null;
     this.noiseGain = null;
@@ -180,14 +201,9 @@ class RadioTuner {
     setStorageFlag(TUNED_KEY);
   }
 
-  #markEcho() {
-    setStorageFlag(ECHO.storageKey);
-  }
-
   #syncClearanceExit() {
     if (!this.clearanceBtn) return;
-    const echoHeld = this.locked && this.activeCarrier?.kind === "echo";
-    const show = (!this.locked && this.#hasTunedBefore()) || echoHeld;
+    const show = !this.locked && this.#hasTunedBefore();
     if (show) {
       this.clearanceBtn.hidden = false;
       this.root?.classList.add("radio--has-clearance");
@@ -223,17 +239,24 @@ class RadioTuner {
   }
 
   #bindControls() {
+    const setActiveBtn = (dir) => {
+      this.btnLeft?.classList.toggle("is-active", dir === -1);
+      this.btnRight?.classList.toggle("is-active", dir === 1);
+    };
+
     const start = (dir) => (e) => {
       e.preventDefault();
       if (this.locked) return;
       this.direction = dir;
       this.holdMs = 0;
+      setActiveBtn(dir);
       void this.#ensureAudio();
       this.root?.classList.add("radio--spinning");
     };
     const stop = () => {
       this.direction = 0;
       this.holdMs = 0;
+      setActiveBtn(0);
       this.root?.classList.remove("radio--spinning");
     };
 
@@ -291,6 +314,9 @@ class RadioTuner {
       if (this.signal?.paused && !this.locked) {
         this.signal.play().catch(() => {});
       }
+      if (this.blood?.paused && !this.locked) {
+        this.blood.play().catch(() => {});
+      }
       return;
     }
 
@@ -302,7 +328,13 @@ class RadioTuner {
     el.preload = "auto";
     this.signal = el;
 
+    const bloodEl = new Audio(BLOOD_SRC);
+    bloodEl.loop = true;
+    bloodEl.preload = "auto";
+    this.blood = bloodEl;
+
     const source = this.ctx.createMediaElementSource(el);
+    const bloodSource = this.ctx.createMediaElementSource(bloodEl);
 
     this.muffHp = this.ctx.createBiquadFilter();
     this.muffHp.type = "highpass";
@@ -320,6 +352,9 @@ class RadioTuner {
 
     this.signalGain = this.ctx.createGain();
     this.signalGain.gain.value = 0.12;
+
+    this.bloodGain = this.ctx.createGain();
+    this.bloodGain.gain.value = 0;
 
     const noiseBuf = this.#makeNoiseBuffer(3);
     this.noiseNode = this.ctx.createBufferSource();
@@ -357,6 +392,8 @@ class RadioTuner {
       .connect(soft)
       .connect(this.signalGain);
 
+    bloodSource.connect(this.bloodGain);
+
     this.noiseNode.connect(this.noiseDull);
     this.noiseNode.connect(this.noiseBright);
     this.noiseDull.connect(noiseMix);
@@ -364,13 +401,14 @@ class RadioTuner {
     noiseMix.connect(this.noiseGain);
 
     this.signalGain.connect(this.analyser);
+    this.bloodGain.connect(this.analyser);
     this.noiseGain.connect(this.analyser);
     this.analyser.connect(this.masterGain);
     this.masterGain.connect(this.ctx.destination);
 
     this.noiseNode.start();
     try {
-      await el.play();
+      await Promise.all([el.play(), bloodEl.play()]);
     } catch {
       /* retry on next spin */
     }
@@ -405,15 +443,29 @@ class RadioTuner {
     const t = this.ctx.currentTime;
     const mud = 1 - clarity;
 
-    this.signalGain.gain.setTargetAtTime(0.06 + clarity * 0.92, t, 0.1);
-    this.noiseGain.gain.setTargetAtTime(0.06 + mud * 0.72, t, 0.12);
-    this.muffLp.frequency.setTargetAtTime(380 + clarity * 7600, t, 0.14);
-    this.muffHp.frequency.setTargetAtTime(140 - clarity * 100, t, 0.14);
+    const greetClarity = carrierClarity(Math.abs(this.freq - GREETING.freq));
+    const bloodClarity = carrierClarity(Math.abs(this.freq - ECHO.freq));
+
+    if (bloodClarity > 0) {
+      this.bloodGain?.gain.setTargetAtTime(0.45 + bloodClarity * 1.55, t, 0.08);
+      this.signalGain.gain.setTargetAtTime(0.015 * (1 - bloodClarity), t, 0.12);
+    } else if (greetClarity > 0) {
+      this.bloodGain?.gain.setTargetAtTime(0, t, 0.08);
+      this.signalGain.gain.setTargetAtTime(0.04 + greetClarity * 0.96, t, 0.1);
+    } else {
+      this.bloodGain?.gain.setTargetAtTime(0, t, 0.08);
+      this.signalGain.gain.setTargetAtTime(0.02, t, 0.12);
+    }
+
+    // Static falls off gently — still present until you're nearly on-carrier
+    this.noiseGain.gain.setTargetAtTime(0.26 + mud * 0.52, t, 0.12);
+    this.muffLp.frequency.setTargetAtTime(420 + clarity * 5200, t, 0.14);
+    this.muffHp.frequency.setTargetAtTime(130 - clarity * 80, t, 0.14);
     if (this.noiseBright) {
-      this.noiseBright.frequency.setTargetAtTime(3200 - clarity * 900, t, 0.15);
+      this.noiseBright.frequency.setTargetAtTime(3000 - clarity * 700, t, 0.15);
     }
     if (this.noiseDull) {
-      this.noiseDull.frequency.setTargetAtTime(1200 + clarity * 400, t, 0.15);
+      this.noiseDull.frequency.setTargetAtTime(1100 + clarity * 350, t, 0.15);
     }
   }
 
@@ -427,9 +479,9 @@ class RadioTuner {
       let speed = 0.2 + accel * 22;
 
       const { carrier: near, dist: distBefore } = nearestCarrier(this.freq);
-      if (near && distBefore < DETENT_RANGE && accel < 0.55) {
-        speed *= 0.22 + distBefore / DETENT_RANGE;
-        this.freq += (near.freq - this.freq) * dt * 2.8;
+      if (near && distBefore < DETENT_RANGE && accel < DETENT_MAX_ACCEL) {
+        speed *= DETENT_SPEED_FLOOR + (1 - DETENT_SPEED_FLOOR) * (distBefore / DETENT_RANGE);
+        this.freq += (near.freq - this.freq) * dt * DETENT_PULL;
       }
 
       const atMin = this.freq <= FREQ_MIN && this.direction < 0;
@@ -438,8 +490,9 @@ class RadioTuner {
       if (!atMin && !atMax) {
         this.freq = clamp(this.freq + this.direction * speed * dt, FREQ_MIN, FREQ_MAX);
 
+        // Snap to exact mark only when nearly stopped — don't glue while scrolling past
         const snap = nearestCarrier(this.freq);
-        if (snap.carrier && snap.dist <= LOCK_TOLERANCE) {
+        if (snap.carrier && snap.dist <= LOCK_TOLERANCE && accel < 0.15) {
           this.freq = snap.carrier.freq;
         }
 
@@ -454,15 +507,22 @@ class RadioTuner {
 
     if (!this.locked) {
       const { carrier, dist } = nearestCarrier(this.freq);
-      const clarity = Math.pow(1 - clamp(dist / CLARITY_WINDOW, 0, 1), 1.35);
-      this.#setClarity(clarity);
+      this.#setClarity(carrierClarity(dist));
 
       if (carrier && dist <= LOCK_TOLERANCE) {
-        this.lockHoldMs += dt * 1000;
         this.root?.classList.add("radio--on-signal");
         if (carrier.kind === "echo") this.root?.classList.add("radio--on-echo");
         else this.root?.classList.remove("radio--on-echo");
-        if (this.lockHoldMs >= LOCK_HOLD_MS) void this.#lockOn(carrier);
+
+        if (carrier.lockable === false) {
+          this.lockHoldMs = 0;
+        } else if (this.direction === 0) {
+          // Must hold still on the greeting carrier — scrolling past shouldn't arm the lock
+          this.lockHoldMs += dt * 1000;
+          if (this.lockHoldMs >= LOCK_HOLD_MS) void this.#lockOn(carrier);
+        } else {
+          this.lockHoldMs = Math.max(0, this.lockHoldMs - dt * 1000 * 3);
+        }
       } else {
         this.lockHoldMs =
           this.direction === 0 ? Math.max(0, this.lockHoldMs - dt * 1000 * 1.5) : 0;
@@ -497,7 +557,11 @@ class RadioTuner {
     }
 
     const mid = (BAR_COUNT - 1) / 2;
-    const phase = this.lastTs * 0.008;
+    const phase = this.lastTs * 0.009;
+    const c = this.clarity;
+    // Push mid-clarity toward static so only a hard lock looks “alive”
+    const signalWeight = Math.pow(c, 1.65);
+    const staticWeight = 1 - signalWeight;
 
     for (let i = 0; i < BAR_COUNT; i++) {
       let target;
@@ -505,31 +569,40 @@ class RadioTuner {
       if (this.flatViz) {
         target = 0;
       } else if (hasAudio) {
-        const bin = Math.floor((i / BAR_COUNT) * (this.freqData.length * 0.7));
+        const bin = Math.floor((i / BAR_COUNT) * (this.freqData.length * 0.72));
         const spectral = this.freqData[bin] / 255;
         const tIdx = Math.floor((i / BAR_COUNT) * this.timeData.length);
         const wave = Math.abs(this.timeData[tIdx] - 128) / 128;
 
-        this.noiseFloor[i] = (this.noiseFloor[i] * 0.82 + Math.random() * 0.18) % 1;
+        // Static: low, soft hash — still distinct from carrier, less frantic
+        this.noiseFloor[i] =
+          (this.noiseFloor[i] * 0.72 + Math.random() * 0.28) % 1;
         const crackle = this.noiseFloor[i];
-        const staticShape =
-          0.08 +
-          crackle * (0.62 - this.clarity * 0.48) +
-          Math.abs(Math.sin(i * 0.27 + phase)) * 0.1 * (1 - this.clarity);
+        const hash =
+          Math.abs(Math.sin(i * 1.7 + phase * 1.6)) * 0.22 +
+          Math.abs(Math.cos(i * 0.41 - phase)) * 0.16;
+        const staticShape = 0.05 + crackle * 0.28 + hash * 0.16 * staticWeight;
 
-        const signalShape = spectral * 0.65 + wave * 0.9;
-        const blend =
-          staticShape * (1 - this.clarity * 0.9) + signalShape * (0.12 + this.clarity * 0.98);
+        // Signal: taller coherent peaks, tempered so motion stays readable
+        const signalShape = Math.pow(spectral * 0.5 + wave * 0.95, 0.9);
+        const boost = 0.18 + signalWeight * 1.05;
+        const blend = staticShape * staticWeight * 0.95 + signalShape * boost;
 
         const edge = Math.abs(i - mid) / mid;
-        const centerBias = this.clarity > 0.55 ? 1 - edge * 0.12 : 0.88 + edge * 0.18;
-        target = clamp(blend * centerBias, 0.04, 1);
+        const centerBias =
+          signalWeight > 0.35
+            ? 1.02 - edge * (0.06 + signalWeight * 0.16)
+            : 0.78 + edge * 0.28 + crackle * 0.1;
+        target = clamp(blend * centerBias, 0.03, 0.92);
       } else {
-        this.noiseFloor[i] = (this.noiseFloor[i] * 0.75 + Math.random() * 0.25) % 1;
-        target = 0.08 + this.noiseFloor[i] * 0.55;
+        this.noiseFloor[i] = (this.noiseFloor[i] * 0.7 + Math.random() * 0.3) % 1;
+        target = 0.05 + this.noiseFloor[i] * 0.36;
       }
 
-      const lerp = this.flatViz ? Math.min(1, dt * 4.5) : Math.min(1, dt * (11 + this.clarity * 7));
+      // Gentler follow — static still flickers; signal eases instead of snaps
+      const lerp = this.flatViz
+        ? Math.min(1, dt * 4.5)
+        : Math.min(1, dt * (8 + staticWeight * 10 + signalWeight * 6));
       this.barHeight[i] += (target - this.barHeight[i]) * lerp;
       this.barNodes[i].style.setProperty("--h", this.barHeight[i].toFixed(3));
     }
@@ -537,6 +610,8 @@ class RadioTuner {
 
   async #lockOn(carrier) {
     if (this.locked) return;
+    if (carrier.lockable === false) return;
+
     this.locked = true;
     this.activeCarrier = carrier;
     this.direction = 0;
@@ -544,68 +619,25 @@ class RadioTuner {
     this.#renderFreq();
     this.#setClarity(1);
 
-    this.root?.classList.remove("radio--spinning");
+    this.root?.classList.remove("radio--spinning", "radio--on-echo");
     this.root?.classList.add("radio--locked");
-    if (carrier.kind === "echo") this.root?.classList.add("radio--echo-locked");
     this.stage?.classList.add("intercept-stage--locked");
 
     if (carrier.kind === "message") this.#markTuned();
-    if (carrier.kind === "echo") this.#markEcho();
     this.#syncClearanceExit();
 
     for (const btn of [this.btnLeft, this.btnRight]) {
       if (!btn) continue;
+      btn.classList.remove("is-active");
       btn.disabled = true;
       btn.setAttribute("aria-disabled", "true");
     }
 
     await this.#ensureAudio();
-
-    if (carrier.kind === "echo") {
-      await this.#lockEcho();
-      return;
+    if (this.bloodGain && this.ctx) {
+      this.bloodGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
     }
-
     await this.#lockGreeting();
-  }
-
-  async #lockEcho() {
-    // Short clarity swell — not the full greeting open
-    await this.#swellEchoAudio();
-    await this.#wait(420);
-    this.#revealEcho();
-    this.#syncClearanceExit();
-  }
-
-  async #swellEchoAudio() {
-    if (!this.signal || !this.ctx) return;
-    const t = this.ctx.currentTime;
-    this.noiseGain.gain.setTargetAtTime(0.04, t, 0.08);
-    this.signalGain.gain.setTargetAtTime(0.75, t, 0.08);
-    this.muffLp.frequency.setTargetAtTime(9000, t, 0.1);
-    this.muffHp.frequency.setTargetAtTime(50, t, 0.1);
-    this.masterGain.gain.setTargetAtTime(MASTER_VOLUME * 1.05, t, 0.08);
-
-    // Brief clean pulse, then settle under the fragment
-    await this.#wait(1600);
-
-    if (!this.ctx) return;
-    const t2 = this.ctx.currentTime;
-    this.signalGain.gain.setTargetAtTime(0.22, t2, 0.2);
-    this.noiseGain.gain.setTargetAtTime(0.08, t2, 0.2);
-    this.masterGain.gain.setTargetAtTime(MASTER_VOLUME * 0.55, t2, 0.25);
-  }
-
-  #revealEcho() {
-    if (this.echoRevealed) return;
-    this.echoRevealed = true;
-
-    this.root?.classList.add("radio--echo");
-    if (this.echoEl) {
-      this.echoEl.hidden = false;
-      this.echoEl.setAttribute("aria-hidden", "false");
-      this.echoEl.classList.add("radio-echo--revealed");
-    }
   }
 
   async #lockGreeting() {

@@ -169,13 +169,13 @@ button:disabled {
     opacity: 0.25;
   }
   95% {
-    opacity: 0.7;
+    opacity: 0.55;
   }
   96% {
-    opacity: 0.1;
+    opacity: 0.15;
   }
   97% {
-    opacity: 0.55;
+    opacity: 0.45;
   }
 }
 
@@ -550,13 +550,17 @@ button:disabled {
 }
 
 .gate__intercept,
-.radio__clearance {
+.radio__clearance,
+.intercept__cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 5.5rem;
+  box-sizing: border-box;
+  /* One number-pad key: gate is min(16rem, 86vw), 3 cols, 0.4rem gaps */
+  width: calc((min(16rem, 86vw) - 0.8rem) / 3);
+  min-width: 0;
   min-height: 1.85rem;
-  padding: 0.4rem 0.85rem;
+  padding: 0.4rem 0;
   border: 1px solid var(--line);
   background: #000;
   color: var(--phosphor);
@@ -576,7 +580,6 @@ button:disabled {
 
 .gate__intercept {
   display: block;
-  width: fit-content;
   margin: 0.65rem auto 0;
 }
 
@@ -4501,10 +4504,17 @@ body.page-intercept {
   height: calc(var(--h, 0.2) * 100%);
   min-height: 0;
   background: var(--phosphor);
-  opacity: calc(0.65 + var(--clarity) * 0.35);
-  box-shadow: 0 0 5px rgba(255, 61, 40, calc(0.18 + var(--clarity) * 0.4));
+  opacity: calc(0.38 + var(--clarity) * 0.62);
+  box-shadow:
+    0 0 4px rgba(255, 61, 40, calc(0.08 + var(--clarity) * 0.55)),
+    0 0 14px rgba(255, 61, 40, calc(var(--clarity) * 0.45));
   transform-origin: bottom center;
   align-self: flex-end;
+}
+
+.radio--on-signal .radio__bar,
+.radio--on-echo .radio__bar {
+  opacity: calc(0.55 + var(--clarity) * 0.45);
 }
 
 .radio--flat .radio__bar {
@@ -4586,7 +4596,7 @@ body.page-intercept {
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--phosphor);
+  color: var(--phosphor-dim);
   cursor: pointer;
   touch-action: none;
   user-select: none;
@@ -4603,20 +4613,25 @@ body.page-intercept {
   height: 1.7rem;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1;
+  stroke-width: 1px;
   overflow: visible;
+}
+
+.radio__spin svg path {
+  /* Match .radio__dial-ring border: 1px — keep stroke in CSS px while SVG scales */
+  vector-effect: non-scaling-stroke;
 }
 
 .radio__spin:hover,
 .radio__spin:focus-visible {
-  color: var(--phosphor-bright);
   outline: none;
-  filter: drop-shadow(0 0 6px rgba(255, 61, 40, 0.45));
 }
 
+.radio__spin.is-active,
 .radio__spin:active {
   transform: scale(0.92);
   color: var(--phosphor-bright);
+  filter: drop-shadow(0 0 6px rgba(255, 61, 40, 0.45));
 }
 
 .radio__spin:disabled {
@@ -4864,7 +4879,7 @@ body.page-intercept {
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: clamp(1.1rem, 3.5vw, 1.85rem) clamp(0.55rem, 2vw, 0.95rem);
+  padding: clamp(1.1rem, 3.5vw, 1.85rem) clamp(0.7rem, 2.2vw, 1.1rem);
   overflow: hidden;
   opacity: 0;
   pointer-events: none;
@@ -4898,7 +4913,11 @@ body.page-intercept {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 3.6rem minmax(0, 1fr) 0.35rem;
+  /* Equal side columns so horizontal rails overhang the message evenly */
+  grid-template-columns:
+    var(--intercept-side, 3.6rem)
+    minmax(0, 1fr)
+    var(--intercept-side, 3.6rem);
   gap: 0.45rem;
   align-items: stretch;
 }
@@ -4908,9 +4927,11 @@ body.page-intercept {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  justify-content: flex-start;
   gap: 0.45rem;
   min-height: 0;
   height: 100%;
+  width: 100%;
 }
 
 .intercept-audio__play {
@@ -4965,6 +4986,12 @@ body.page-intercept {
   align-self: stretch;
   min-height: 0;
   height: 100%;
+}
+
+.intercept__rail--scroll {
+  width: 0.35rem;
+  justify-self: start;
+  align-self: stretch;
 }
 
 .intercept__rail--audio {
@@ -5084,23 +5111,6 @@ body.page-intercept {
   visibility: visible;
   pointer-events: auto;
   animation: intercept-fade-in 0.85s ease both;
-}
-
-.intercept__cta {
-  display: inline-block;
-  padding: 0.75rem 1.35rem;
-  border: 1px solid var(--line);
-  background: #000;
-  color: var(--phosphor);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-decoration: none;
-  text-shadow: var(--glow-soft);
-  transition:
-    color 0.12s ease,
-    background 0.12s ease,
-    border-color 0.12s ease;
 }
 
 .intercept__cta:hover,
