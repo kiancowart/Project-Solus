@@ -5,6 +5,7 @@
 import { applyColdStartFromQuery } from "./cold-start.js";
 import { initInterceptMessageAudio } from "./intercept-audio.js";
 import { audio } from "./audio.js";
+import { BLOOD_LYRICS } from "../content/blood-lyrics.js";
 
 applyColdStartFromQuery();
 
@@ -41,7 +42,7 @@ const DETENT_MAX_ACCEL = 0.28;
 const DETENT_PULL = 1.05;
 const DETENT_SPEED_FLOOR = 0.55;
 const SIGNAL_SRC = "assets/audio/TriadSignal.mp3";
-const BLOOD_SRC = "assets/audio/blood.mp3";
+const BLOOD_SRC = "assets/audio/newblood.mp3";
 /** Both carriers are silent outside this ±MHz band */
 const SIGNAL_HEAR_WINDOW = 15;
 /**
@@ -144,6 +145,7 @@ class RadioTuner {
     this.clearanceBtn = $(".radio__clearance");
     this.skipBtn = $("#intercept-skip");
     this.messageAudio = null;
+    this.lyricRoot = $("#blood-lyric");
 
     this.freq = 82.4;
     this.dialAngle = -18;
@@ -157,6 +159,10 @@ class RadioTuner {
     this.flatViz = false;
     this.hideBars = false;
     this.clarity = 0;
+    this.bloodLyricLive = false;
+    this.lyricIndex = 0;
+    this.lyricLastT = 0;
+    this.lyricTyping = null;
 
     this.raf = 0;
     this.lastTs = 0;
@@ -533,7 +539,148 @@ class RadioTuner {
     }
 
     this.#paintViz(dt);
+    this.#syncBloodLyrics();
     this.raf = requestAnimationFrame((t) => this.#tick(t));
+  }
+
+  #syncBloodLyrics() {
+    if (!this.lyricRoot || this.locked || this.revealed) {
+      if (this.bloodLyricLive) this.#stopBloodLyrics();
+      return;
+    }
+
+    // Poem only while the dial sits on 033.3 — not in the wider hear band
+    const onMark = Math.abs(this.freq - ECHO.freq) <= LOCK_TOLERANCE;
+
+    if (!this.bloodLyricLive && onMark) {
+      this.#startBloodLyrics();
+    } else if (this.bloodLyricLive && !onMark) {
+      this.#stopBloodLyrics();
+      return;
+    }
+
+    if (!this.bloodLyricLive || !this.blood) return;
+
+    let t = 0;
+    try {
+      t = this.blood.currentTime || 0;
+    } catch {
+      return;
+    }
+
+    // Track looped
+    if (t + 0.35 < this.lyricLastT) {
+      this.#resetBloodLyricState({ keepRoot: true });
+    }
+    this.lyricLastT = t;
+
+    while (
+      this.lyricIndex < BLOOD_LYRICS.length &&
+      t >= BLOOD_LYRICS[this.lyricIndex].at
+    ) {
+      this.#cueBloodLyric(BLOOD_LYRICS[this.lyricIndex], t);
+      this.lyricIndex += 1;
+    }
+
+    this.#tickBloodTypewriter(t);
+  }
+
+  #startBloodLyrics() {
+    this.bloodLyricLive = true;
+    this.#resetBloodLyricState({ keepRoot: true });
+    if (this.lyricRoot) {
+      this.lyricRoot.hidden = false;
+      this.lyricRoot.replaceChildren();
+    }
+    if (this.blood) {
+      try {
+        this.blood.currentTime = 0;
+      } catch {
+        /* ignore seek race */
+      }
+    }
+  }
+
+  #stopBloodLyrics() {
+    this.bloodLyricLive = false;
+    this.lyricTyping = null;
+    if (!this.lyricRoot) return;
+    for (const el of this.lyricRoot.querySelectorAll(".blood-lyric__line")) {
+      el.classList.add("is-fading", "is-done");
+    }
+    window.setTimeout(() => {
+      if (!this.bloodLyricLive && this.lyricRoot) {
+        this.lyricRoot.replaceChildren();
+        this.lyricRoot.hidden = true;
+      }
+    }, 1200);
+  }
+
+  #resetBloodLyricState({ keepRoot = false } = {}) {
+    this.lyricIndex = 0;
+    this.lyricLastT = 0;
+    this.lyricTyping = null;
+    if (!keepRoot || !this.lyricRoot) return;
+    this.lyricRoot.replaceChildren();
+  }
+
+  #cueBloodLyric(line, nowT) {
+    if (!this.lyricRoot) return;
+
+    // Previous live line begins fading as the next arrives
+    for (const el of this.lyricRoot.querySelectorAll(
+      ".blood-lyric__line:not(.is-fading)"
+    )) {
+      el.classList.add("is-fading", "is-done");
+      const stale = el;
+      window.setTimeout(() => stale.remove(), 1200);
+    }
+
+    const el = document.createElement("p");
+    el.className = "blood-lyric__line";
+    el.dataset.full = line.text;
+    el.textContent = "";
+    this.lyricRoot.appendChild(el);
+
+    const next = BLOOD_LYRICS[this.lyricIndex + 1];
+    const until = next ? next.at : Math.max(nowT + 2.4, line.at + 2.4);
+    const span = Math.max(0.55, until - line.at);
+    // Finish typing a bit before the next cue
+    const typeFor = Math.min(span * 0.72, Math.max(0.9, line.text.length * 0.045));
+
+    this.lyricTyping = {
+      el,
+      full: line.text,
+      startAt: line.at,
+      typeFor,
+    };
+  }
+
+  #tickBloodTypewriter(nowT) {
+    const job = this.lyricTyping;
+    if (!job?.el) return;
+
+    const reduced =
+      typeof matchMedia === "function" &&
+      matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduced) {
+      job.el.textContent = job.full;
+      job.el.classList.add("is-done");
+      this.lyricTyping = null;
+      return;
+    }
+
+    const elapsed = Math.max(0, nowT - job.startAt);
+    const progress = Math.min(1, elapsed / job.typeFor);
+    const n = Math.floor(progress * job.full.length);
+    job.el.textContent = job.full.slice(0, n);
+
+    if (progress >= 1) {
+      job.el.textContent = job.full;
+      job.el.classList.add("is-done");
+      this.lyricTyping = null;
+    }
   }
 
   #renderFreq() {

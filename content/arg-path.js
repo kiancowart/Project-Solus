@@ -165,7 +165,7 @@ export const BAY_UNLOCKS = {
 /* ---------------------------------------------------------------------------
    Imperial Clearance — 9 slots (orbital inward → outward)
    Layer A: planet id · Layer B: fragment string (case-insensitive)
-   Journals folded onto nine primary worlds (see _internal/arg/main-path.md)
+   Journals folded onto nine primary worlds (see _internal/arg/README.md)
    --------------------------------------------------------------------------- */
 export const IMPERIAL_SLOTS = [
   {

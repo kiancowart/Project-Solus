@@ -41,9 +41,9 @@ System Chart dossiers (▽ NN // BIND)  ↔  Flight Log imperial fragments
 Imperial Clearance 9-slot assemble  →  Archives + Guest Channel
 ```
 
-Full solutions & slot map: [`arg/main-path.md`](arg/main-path.md) · editable in [`content/arg-path.js`](../content/arg-path.js).
+Full ARG overview (Discord → Imperial): [`arg/README.md`](arg/README.md) · editable solutions in [`content/arg-path.js`](../content/arg-path.js).
 
-1. **Off-site first** — [`intercept.html`](../intercept.html). Carriers: **097.9** · **051.2**.
+1. **Off-site first** — [`intercept.html`](../intercept.html). Carriers: **097.9** · **033.3**.
 2. **Pad `512`** — Opens hub; **STATUS** is the ARG board (Flight Log / Chart sealed until INNER puzzles).
 3. **STATUS puzzles** — FTH: `/outer` → `/inner` → click INNER bays for Chart / Log.
 4. **Chart + Log** — Planet dossiers teach slot order; journals yield ▽ fragments via exact keywords.
@@ -76,7 +76,7 @@ src/           ES modules (boot, clearance, whisper, flight-log, …)
 content/       boot-content.js · lore-catalog.js · flight-log.generated.js
 scripts/       build-lore-catalog.js · build-flight-log.js
 assets/        images · audio
-_internal/     author docs (this file, ARG stubs)
+_internal/     author docs — lore-index.md · arg/README.md (full ARG)
 lore/          → Obsidian Sol System
 ```
 
@@ -86,6 +86,4 @@ Entry: `index.html` → `src/main.js`
 
 ## Future hooks (not locked)
 
-See `_internal/arg/future-hooks.md` — Celeste / Hive Kharon, Nu Lunae expedition ↔ Solus.
-
-Off-site poem stub: `_internal/arg/offsite-poem-stub.md`
+Parked Celeste / Nu Lunae / partner-name notes live at the end of [`arg/README.md`](arg/README.md) §7.

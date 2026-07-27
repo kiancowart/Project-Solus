@@ -9,7 +9,7 @@
 
 ## audio/
 
-- `blood.mp3` — emergency carrier bed on intercept dial **033.3** (does not lock).
+- `newblood.mp3` — emergency carrier bed on intercept dial **033.3** (does not lock).
 - `TriadSignal.mp3` — greeting carrier on **097.9**.
 - `TrmnlAmbience.mp3` — site-wide looping terminal ambience (from open; silenced on 666 eyes). Wired via `AMBIENCE.src` in `content/boot-content.js`.
 - `keep-up.mp3` — post-pad looping soundtrack. Wired via `SOUNDTRACK.src` in `content/boot-content.js`.

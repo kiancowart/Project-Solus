@@ -4408,6 +4408,71 @@ body.page-intercept {
   overflow: auto;
 }
 
+/* Blood carrier poem — top-left typewriter while 033.3 is audible */
+.blood-lyric {
+  position: absolute;
+  top: clamp(0.85rem, 2.5vh, 1.35rem);
+  left: clamp(0.85rem, 2.5vw, 1.5rem);
+  z-index: 8;
+  width: min(28rem, calc(100vw - 2rem));
+  max-width: 42vw;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+  pointer-events: none;
+}
+
+.blood-lyric[hidden] {
+  display: none !important;
+}
+
+.blood-lyric__line {
+  margin: 0;
+  max-width: 100%;
+  color: var(--phosphor);
+  font-family: var(--font-mono);
+  font-size: clamp(0.62rem, 1.5vw, 0.78rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  text-shadow: var(--glow-soft);
+  opacity: 1;
+  transition: opacity 1.1s ease;
+}
+
+.blood-lyric__line.is-fading {
+  opacity: 0;
+}
+
+.blood-lyric__line.is-done::after {
+  content: none;
+}
+
+.blood-lyric__line:not(.is-done):not(.is-fading)::after {
+  content: "▋";
+  margin-left: 0.1em;
+  opacity: 0.7;
+  animation: blood-lyric-caret 0.9s steps(1) infinite;
+}
+
+@keyframes blood-lyric-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blood-lyric__line {
+    transition: none;
+  }
+
+  .blood-lyric__line:not(.is-done):not(.is-fading)::after {
+    animation: none;
+    opacity: 0.55;
+  }
+}
+
 /* —— Radio: viz baseline pinned to screen center; dial below —— */
 
 .radio {
@@ -5094,7 +5159,7 @@ body.page-intercept {
 .intercept__foot {
   position: absolute;
   left: 50%;
-  top: calc(50% + (var(--open-h) / 2) + 1.35rem);
+  top: calc(50% + (var(--open-h) / 2) + 1.15rem);
   transform: translateX(-50%);
   z-index: 6;
   width: min(36rem, 94vw);
@@ -5105,12 +5170,28 @@ body.page-intercept {
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .intercept__foot--in {
   visibility: visible;
   pointer-events: auto;
   animation: intercept-fade-in 0.85s ease both;
+}
+
+.intercept__report {
+  margin: 0;
+  max-width: 22rem;
+  padding: 0 0.5rem;
+  color: var(--phosphor-dim);
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1.45;
+  text-shadow: none;
 }
 
 .intercept__cta:hover,
