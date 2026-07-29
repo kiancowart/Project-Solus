@@ -169,7 +169,7 @@ export function initCartography() {
       showError();
       return;
     }
-    audio.play("select");
+    audio.play("dropdownToggle");
     if (stopWire) {
       stopWire();
       stopWire = null;
@@ -181,7 +181,7 @@ export function initCartography() {
   };
 
   const showSturm = () => {
-    audio.play("select");
+    audio.play("dropdownToggle");
     if (stopWire) {
       stopWire();
       stopWire = null;
@@ -205,7 +205,7 @@ export function initCartography() {
   };
 
   const showMystery = () => {
-    audio.play("select");
+    audio.play("dropdownToggle");
     if (stopWire) {
       stopWire();
       stopWire = null;

@@ -87,8 +87,13 @@
               data-heat="0"
             ></button>
             <div class="whisper__panel" id="whisper-panel" hidden>
-              <div class="whisper__head" id="whisper-head">Kharon-Celeste</div>
-              <div class="whisper__log" id="whisper-log" role="log" aria-live="polite"></div>
+              <div class="whisper__head" id="whisper-head">KHARON-CELESTE</div>
+              <div class="whisper__body">
+                <div class="whisper__log" id="whisper-log" role="log" aria-live="polite"></div>
+                <aside class="whisper__rail crt-rail" id="whisper-rail" hidden aria-hidden="true">
+                  <div class="crt-rail__fill" id="whisper-scroll-fill"></div>
+                </aside>
+              </div>
               <form class="whisper__form" id="whisper-form">
                 <span class="whisper__prompt" aria-hidden="true">&gt;</span>
                 <input
@@ -118,7 +123,12 @@
             <button type="button" class="gate__key" data-key="0">0</button>
             <button type="button" class="gate__key gate__key--action" data-key="enter" aria-label="Enter">✓</button>
           </div>
-          <a class="gate__intercept" href="intercept.html" aria-label="Return to tuner">←</a>
+          <a class="gate__intercept" href="intercept.html" aria-label="Return to tuner">
+            <svg class="route-icon route-icon--tuner" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" />
+              <line x1="12" y1="12" x2="10.1" y2="6.85" stroke="currentColor" stroke-linecap="round" />
+            </svg>
+          </a>
           <div class="gate__eyes" id="gate-eyes" hidden aria-hidden="true">
             <img class="gate__face" src="assets/images/666face.png" alt="" />
             <p class="gate__face-caption">I WEAR NO MASK</p>
@@ -188,6 +198,15 @@
             <nav class="nav-box__body">
               <button
                 type="button"
+                class="nav-item"
+                data-panel="terminal"
+                data-channel-title="FTHFLL // KERNEL SHELL"
+                data-sfx="select"
+              >
+                TERMINAL
+              </button>
+              <button
+                type="button"
                 class="nav-item is-active"
                 data-panel="overview"
                 data-channel-title="HULL TELEMETRY // CRAFT STATUS"
@@ -237,15 +256,38 @@
               >
                 SYSTEM CHART
               </button>
-              <button
-                type="button"
-                class="nav-item"
-                data-panel="auxiliary"
-                data-channel-title="EXTERNAL // GUEST CHANNEL"
-                data-sfx="select"
-              >
-                GUEST CHANNEL
-              </button>
+              <div class="nav-group nav-group--guest">
+                <button
+                  type="button"
+                  class="nav-item nav-item--toggle"
+                  aria-expanded="false"
+                  aria-controls="nav-guest-list"
+                  data-sfx="dropdownToggle"
+                >
+                  GUEST CHANNEL
+                  <span class="nav-item__caret" aria-hidden="true">▼</span>
+                </button>
+                <div class="nav-group__sub" id="nav-guest-list" hidden>
+                  <button
+                    type="button"
+                    class="nav-item nav-item--sub"
+                    data-panel="guest-campaign-1"
+                    data-channel-title="EXTERNAL // CAMPAIGN 1"
+                    data-sfx="select"
+                  >
+                    CAMPAIGN 1
+                  </button>
+                  <button
+                    type="button"
+                    class="nav-item nav-item--sub"
+                    data-panel="guest-corrupt"
+                    data-channel-title="EXTERNAL // CORRUPT SIGNAL"
+                    data-sfx="select"
+                  >
+                    <span class="nav-item__corrupt">▓█░4F2·92A</span>
+                  </button>
+                </div>
+              </div>
             </nav>
           </div>
 
@@ -291,7 +333,7 @@
                     aria-selected="true"
                     aria-controls="hull-view-outer"
                     data-hull-tab="outer"
-                    data-sfx="select"
+                    data-sfx="click"
                   >
                     OUTER
                   </button>
@@ -303,7 +345,7 @@
                     aria-selected="false"
                     aria-controls="hull-view-inner"
                     data-hull-tab="inner"
-                    data-sfx="select"
+                    data-sfx="click"
                   >
                     INNER
                   </button>
@@ -350,6 +392,7 @@
                                 style="left:50%;top:14%"
                                 data-station="fwd-cam"
                                 data-severity="ok"
+                                data-serial="FC1"
                               >
                                 <i></i><em>FWD·CAM</em>
                               </span>
@@ -358,6 +401,7 @@
                                 style="left:36%;top:28%"
                                 data-station="ndl-l"
                                 data-severity="ok"
+                                data-serial="NL2"
                               >
                                 <i></i><em>NDL·L</em>
                               </span>
@@ -386,6 +430,7 @@
                                 style="left:78%;top:48%"
                                 data-station="wings-r"
                                 data-severity="ok"
+                                data-serial="WR4"
                               >
                                 <i></i><em>WINGS R</em>
                               </span>
@@ -394,6 +439,7 @@
                                 style="left:50%;top:50%"
                                 data-station="msl-top"
                                 data-severity="ok"
+                                data-serial="MT6"
                               >
                                 <i></i><em>MSL·TOP</em>
                               </span>
@@ -402,6 +448,7 @@
                                 style="left:50%;top:80%"
                                 data-station="aft-cam"
                                 data-severity="ok"
+                                data-serial="AC7"
                               >
                                 <i></i><em>AFT·CAM</em>
                               </span>
@@ -420,6 +467,7 @@
                                 style="left:72%;top:90%"
                                 data-station="eng-r"
                                 data-severity="ok"
+                                data-serial="ER8"
                               >
                                 <i></i><em>ENG·R</em>
                               </span>
@@ -545,7 +593,7 @@
                       <p class="hull-inner__code">HM.INNER // STATUS=SEALED</p>
                       <p class="hull-await-copy">AWAITING DIAGNOSTIC RECOVERY CODE</p>
                       <p class="hull-inner__text hull-inner__text--dim">
-                        Feed serials through FTHFLL when OUTER stations are live.
+                        Feed serials through TERMINAL when OUTER stations are live.
                       </p>
                     </div>
                     <div class="hull-inner hull-inner--live" id="hull-inner-live" hidden>
@@ -565,7 +613,15 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </article>
 
+
+          <!-- =============================================================
+               CHANNEL — TERMINAL (FTHFLL)
+               ============================================================= -->
+          <article class="panel panel--terminal" id="panel-terminal" data-panel="terminal" hidden>
+            <div class="panel__body">
               <div class="fth-console" id="fth-console" aria-label="FTHFLL kernel console">
                 <div class="fth-console__head">
                   <span>FTHFLL · KERNEL SHELL</span>
@@ -656,27 +712,67 @@
               <div class="imperial-gate" id="imperial-gate" aria-live="polite">
                 <div class="imperial-gate__main">
                   <div class="imperial-assemble" id="imperial-assemble">
-                    <p class="imperial-assemble__label">IMPERIAL SEAL · NINE WELLS</p>
-                    <div class="imperial-grid" id="imperial-grid" role="group" aria-label="Nine clearance slots"></div>
-                    <p class="imperial-assemble__tray-label">RECOVERED FRAGMENTS</p>
-                    <div class="imperial-tray" id="imperial-tray" aria-label="Recovered seal fragments"></div>
-                    <p class="imperial-assemble__status" id="imperial-assemble-status" aria-live="polite"></p>
-                    <button type="button" class="imperial-submit" id="imperial-submit" data-sfx="select">
-                      BIND SEAL
-                    </button>
-                  </div>
-                  <div class="imperial-gate__stack imperial-gate__stack--granted">
-                    <div class="imperial-gate__state imperial-gate__state--open">
-                      <p class="imperial-gate__sigil" aria-hidden="true">△</p>
-                      <p class="imperial-gate__title">IMPERIAL CLEARANCE GRANTED</p>
-                      <p class="imperial-gate__body">
-                        Archives · Guest Channel — open for walk.
-                        Memory no longer pretends the ship will rise.
-                      </p>
+                    <div
+                      class="imperial-triad"
+                      id="imperial-triad"
+                      role="group"
+                      aria-label="Nine clearance seals on three inverted triangles"
+                    >
+                      <div class="imperial-tri imperial-tri--side" data-tri="left" id="imperial-tri-left">
+                        <svg class="imperial-tri__glyph" viewBox="0 0 100 87" aria-hidden="true" focusable="false">
+                          <polygon points="0,0 100,0 50,86.6" />
+                        </svg>
+                        <div class="imperial-tri__corners" data-slots="1,2,3"></div>
+                      </div>
+                      <div class="imperial-tri imperial-tri--mid" data-tri="mid" id="imperial-tri-mid">
+                        <div class="imperial-tri__stage">
+                          <div class="imperial-tri__banquet" id="imperial-banquet" aria-hidden="true">
+                            <img
+                              class="imperial-tri__banquet-img"
+                              src="assets/images/banquet.png"
+                              alt=""
+                              draggable="false"
+                            />
+                            <p class="imperial-tri__banquet-caption">
+                              412042414E51554554204F4620454E54524F5059
+                            </p>
+                          </div>
+                          <svg
+                            class="imperial-tri__glyph imperial-tri__glyph--hollow"
+                            viewBox="0 0 100 87"
+                            aria-hidden="true"
+                            focusable="false"
+                          >
+                            <polygon points="0,0 100,0 50,86.6" />
+                          </svg>
+                          <svg
+                            class="imperial-tri__glyph imperial-tri__glyph--fill"
+                            viewBox="0 0 100 87"
+                            aria-hidden="true"
+                            focusable="false"
+                          >
+                            <polygon points="0,0 100,0 50,86.6" />
+                          </svg>
+                        </div>
+                        <div class="imperial-tri__corners" data-slots="4,5,6"></div>
+                      </div>
+                      <div class="imperial-tri imperial-tri--side" data-tri="right" id="imperial-tri-right">
+                        <svg class="imperial-tri__glyph" viewBox="0 0 100 87" aria-hidden="true" focusable="false">
+                          <polygon points="0,0 100,0 50,86.6" />
+                        </svg>
+                        <div class="imperial-tri__corners" data-slots="7,8,9"></div>
+                      </div>
                     </div>
                   </div>
                 </div>
                 <div class="imperial-gate__footer">
+                  <div class="imperial-controls" id="imperial-controls">
+                    <p class="imperial-assemble__tray-label">RECOVERED FRAGMENTS</p>
+                    <div class="imperial-tray" id="imperial-tray" aria-label="Recovered seal fragments"></div>
+                    <button type="button" class="imperial-submit" id="imperial-submit" data-sfx="select">
+                      UNLOCK SEALS
+                    </button>
+                  </div>
                   <button
                     type="button"
                     class="imperial-purge"
@@ -684,6 +780,14 @@
                     data-sfx="select"
                   >
                     RESET
+                  </button>
+                  <button
+                    type="button"
+                    class="imperial-autofill"
+                    id="imperial-autofill"
+                    data-sfx="select"
+                  >
+                    AUTOFILL
                   </button>
                   <div
                     class="imperial-confirm"
@@ -844,9 +948,9 @@
                     aria-label="Music"
                     aria-valuemin="0"
                     aria-valuemax="100"
-                    aria-valuenow="15"
+                    aria-valuenow="40"
                   >
-                    <div class="fill-bar__fill" style="width: 15%"></div>
+                    <div class="fill-bar__fill" style="width: 40%"></div>
                   </div>
                 </div>
                 <div class="sys-row">
@@ -870,17 +974,30 @@
 
 
           <!-- =============================================================
-               CHANNEL AUX — GUEST CHANNEL
+               CHANNEL AUX — GUEST SUB-CHANNELS
                ============================================================= -->
-          <article class="panel" id="panel-auxiliary" data-panel="auxiliary" hidden>
+          <article
+            class="panel panel--guest"
+            id="panel-guest-campaign-1"
+            data-panel="guest-campaign-1"
+            hidden
+          >
             <div class="panel__body">
-              <div class="guest-roster" id="guest-roster" aria-label="Guest campaign roster">
-                <div class="locked-block locked-block--aux">
-                  <p class="locked-block__sigil" aria-hidden="true">▽</p>
-                  <p class="locked-block__text">
-                    GUEST CHANNEL SEALED — NO ACTIVE ROSTER
-                  </p>
-                </div>
+              <div class="guest-channel" aria-label="Campaign 1 channel">
+                <p class="guest-channel__message">We're waiting.</p>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="panel panel--guest"
+            id="panel-guest-corrupt"
+            data-panel="guest-corrupt"
+            hidden
+          >
+            <div class="panel__body">
+              <div class="guest-channel guest-channel--corrupt" aria-label="Corrupt signal channel">
+                <p class="guest-channel__noise" id="guest-corrupt-display"></p>
               </div>
             </div>
           </article>

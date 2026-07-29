@@ -302,7 +302,7 @@ export function initFlightLog() {
       const code = input?.value ?? "";
       const result = unlockJournalWithCode(journal, code);
       if (!result.ok) {
-        audio.play("click");
+        audio.play("deny");
         if (feedback) {
           feedback.textContent =
             result.reason === "unknown"
@@ -337,7 +337,7 @@ export function initFlightLog() {
     if (selectedBtn) selectedBtn.classList.remove("is-active");
     selectedBtn = btn;
     btn.classList.add("is-active");
-    audio.play("open");
+    audio.play("dropdownToggle");
 
     activeEntry = entry;
     pageIndex = 0;
@@ -488,6 +488,7 @@ export function initFlightLog() {
     committedQuery = q || null;
     searchFocused = false;
 
+    let playedStinger = false;
     if (q) {
       const hits = recoverByQuery(q, journals);
       if (hits.length) {
@@ -506,11 +507,30 @@ export function initFlightLog() {
         const last = hits[hits.length - 1];
         if (last?.grantedImperial) {
           audio.play("imperial");
+          playedStinger = true;
         }
       }
     }
 
     syncIndexVisibility();
+
+    if (q && !playedStinger) {
+      const hasResults = [...host.querySelectorAll(".flog-entry")].some(
+        (btn) => {
+          const journal = btn.closest(".flog-journal");
+          const li = btn.closest("li");
+          return (
+            journal &&
+            !journal.hidden &&
+            li &&
+            !li.hidden
+          );
+        }
+      );
+      if (hasResults) audio.play("flogSearchHit");
+      else audio.play("deny");
+    }
+
     searchInput?.blur();
   };
 
@@ -548,7 +568,7 @@ export function initFlightLog() {
         summary.addEventListener("click", (e) => {
           e.preventDefault();
           details.open = false;
-          audio.play("click");
+          audio.play("dropdownToggle");
           showJournalKeyPad(journal);
         });
         host.appendChild(details);
@@ -564,7 +584,6 @@ export function initFlightLog() {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "flog-entry";
-        btn.dataset.sfx = "open";
         btn.dataset.entryId = entry.id;
         const listTitle = entry.corrupted
           ? entry.title
@@ -593,11 +612,15 @@ export function initFlightLog() {
       });
 
       details.appendChild(list);
+      let silencingPeers = false;
       details.addEventListener("toggle", () => {
+        if (!silencingPeers) audio.play("dropdownToggle");
         if (!details.open) return;
+        silencingPeers = true;
         host.querySelectorAll(".flog-journal").forEach((other) => {
           if (other !== details) other.open = false;
         });
+        silencingPeers = false;
         requestAnimationFrame(updateRail);
       });
       host.appendChild(details);
@@ -673,6 +696,23 @@ export function initFlightLog() {
   host.replaceChildren();
   rebuildJournalList();
   showIdle();
+
+  initFlightLog.refreshAccess = () => {
+    journals.forEach((j) => {
+      (j.entries ?? []).forEach((e) => {
+        syncEntryDisplay(e);
+        if (
+          isEntryRecovered(e.id, e) &&
+          (e.fragmentId || e.imperialFragment)
+        ) {
+          markFragmentRecovered(e.fragmentId || e.imperialFragment);
+        }
+      });
+    });
+    rebuildJournalList();
+    updateJournalCount();
+    if (activeEntry) layoutEntry();
+  };
 
   host.addEventListener("scroll", updateRail, { passive: true });
   window.addEventListener("resize", () => {

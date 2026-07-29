@@ -6,6 +6,24 @@ import { AMBIENCE, SOUNDTRACK } from "../content/boot-content.js";
 
 const AMBIENCE_LIVE_KEY = "lattice.ambienceLive";
 
+/** Sampled UI SFX under assets/audio/ui-sfx/ */
+const UI_SFX = {
+  typewriter: ["assets/audio/ui-sfx/typewriter-a.ogg"],
+  keyInput: "assets/audio/ui-sfx/key-input.wav",
+  channelSwitch: "assets/audio/ui-sfx/channel-switch.ogg",
+  journalSelect: "assets/audio/ui-sfx/dropdown.ogg",
+  dropdownToggle: "assets/audio/ui-sfx/dropdown.ogg",
+  revealScan: "assets/audio/ui-sfx/reveal-scan.wav",
+  uiBeep: "assets/audio/ui-sfx/ui-beep.wav",
+  tunerNudge: "assets/audio/ui-sfx/tuner-nudge.wav",
+  uiDeny: "assets/audio/ui-sfx/ui-deny.wav",
+  codeSuccess: "assets/audio/ui-sfx/code-success.ogg",
+  imperialClearance: "assets/audio/ui-sfx/imperial-clearance.ogg",
+  imagoBoot: "assets/audio/ui-sfx/imago-boot.ogg",
+  imagoReset: "assets/audio/ui-sfx/imago-reset.ogg",
+  flogSearchHit: "assets/audio/ui-sfx/flog-search-hit.wav",
+};
+
 function readAmbienceLive() {
   try {
     return sessionStorage.getItem(AMBIENCE_LIVE_KEY) === "1";
@@ -24,7 +42,7 @@ function writeAmbienceLive(on) {
 }
 
 /* ==========================================================================
-   AUDIO — Web Audio API synthesizer
+   AUDIO — Web Audio API synthesizer + UI sample beds
    ========================================================================== */
 
 export class TerminalAudio {
@@ -35,7 +53,7 @@ export class TerminalAudio {
     this.deadSilent = false;
     this.sfxGain = 0.55;
     this.ambienceGain = Math.max(0, Math.min(1, AMBIENCE?.volume ?? 0.18));
-    this.musicGain = Math.max(0, Math.min(1, SOUNDTRACK?.volume ?? 0.15));
+    this.musicGain = Math.max(0, Math.min(1, SOUNDTRACK?.volume ?? 0.4));
 
     this.ambience = null;
     this.ambienceGainNode = null;
@@ -46,6 +64,41 @@ export class TerminalAudio {
     this.musicGainNode = null;
     this.soundtrackStarted = false;
     this.soundtrackRouted = false;
+
+    /** @type {AudioBuffer[]} */
+    this.typewriterBuffers = [];
+    /** @type {AudioBuffer | null} */
+    this.keyInputBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.channelSwitchBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.journalSelectBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.revealScanBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.uiBeepBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.tunerNudgeBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.uiDenyBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.codeSuccessBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.imperialClearanceBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.imagoBootBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.imagoResetBuffer = null;
+    /** @type {AudioBuffer | null} */
+    this.flogSearchHitBuffer = null;
+    this.sfxLoadPromise = null;
+    this.keyInputBound = false;
+    this._keyInputLastAt = 0;
+    this._typewriterLastAt = 0;
+    /** @type {Set<AudioBufferSourceNode>} */
+    this._typewriterSources = new Set();
+    /** @type {AudioBufferSourceNode | null} */
+    this._revealScanSource = null;
   }
 
   /** True when a prior page left ambience running (pad ↔ intercept). */
@@ -71,6 +124,8 @@ export class TerminalAudio {
     if (this.deadSilent) return;
     await this.ensure();
     this.enabled = true;
+    this.#bindKeyInputSfx();
+    void this.#loadUiSfx();
     await this.startAmbience();
     this.#syncAmbience();
     this.#syncSoundtrack();
@@ -308,8 +363,514 @@ export class TerminalAudio {
     }
   }
 
-  play(type = "click") {
+  async #loadUiSfx() {
+    if (this.sfxLoadPromise) return this.sfxLoadPromise;
+    this.sfxLoadPromise = (async () => {
+      await this.ensure();
+      const decode = async (url) => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`SFX fetch failed: ${url}`);
+        const raw = await res.arrayBuffer();
+        return await this.ctx.decodeAudioData(raw.slice(0));
+      };
+      try {
+        this.typewriterBuffers = await Promise.all(
+          UI_SFX.typewriter.map((url) => decode(url))
+        );
+      } catch {
+        this.typewriterBuffers = [];
+      }
+      try {
+        this.keyInputBuffer = await decode(UI_SFX.keyInput);
+      } catch {
+        this.keyInputBuffer = null;
+      }
+      try {
+        this.channelSwitchBuffer = await decode(UI_SFX.channelSwitch);
+      } catch {
+        this.channelSwitchBuffer = null;
+      }
+      try {
+        this.journalSelectBuffer = await decode(UI_SFX.journalSelect);
+      } catch {
+        this.journalSelectBuffer = null;
+      }
+      try {
+        this.revealScanBuffer = await decode(UI_SFX.revealScan);
+      } catch {
+        this.revealScanBuffer = null;
+      }
+      try {
+        this.uiBeepBuffer = await decode(UI_SFX.uiBeep);
+      } catch {
+        this.uiBeepBuffer = null;
+      }
+      try {
+        this.tunerNudgeBuffer = await decode(UI_SFX.tunerNudge);
+      } catch {
+        this.tunerNudgeBuffer = null;
+      }
+      try {
+        this.uiDenyBuffer = await decode(UI_SFX.uiDeny);
+      } catch {
+        this.uiDenyBuffer = null;
+      }
+      try {
+        this.codeSuccessBuffer = await decode(UI_SFX.codeSuccess);
+      } catch {
+        this.codeSuccessBuffer = null;
+      }
+      try {
+        this.imperialClearanceBuffer = await decode(UI_SFX.imperialClearance);
+      } catch {
+        this.imperialClearanceBuffer = null;
+      }
+      try {
+        this.imagoBootBuffer = await decode(UI_SFX.imagoBoot);
+      } catch {
+        this.imagoBootBuffer = null;
+      }
+      try {
+        this.imagoResetBuffer = await decode(UI_SFX.imagoReset);
+      } catch {
+        this.imagoResetBuffer = null;
+      }
+      try {
+        this.flogSearchHitBuffer = await decode(UI_SFX.flogSearchHit);
+      } catch {
+        this.flogSearchHitBuffer = null;
+      }
+    })();
+    return this.sfxLoadPromise;
+  }
+
+  /**
+   * Play a UI sample cleanly (no crush chain). Optional short window + fade
+   * keeps rapid typewriter ticks from stacking into clipped grit.
+   */
+  #playBuffer(
+    buffer,
+    gainScale = 1,
+    { maxDur = null, fade = 0.012, playbackRate = 1, track = null } = {}
+  ) {
+    if (!buffer || !this.ctx || this.deadSilent || !this.enabled) return null;
+    const t = this.ctx.currentTime;
+    const src = this.ctx.createBufferSource();
+    const gain = this.ctx.createGain();
+    src.buffer = buffer;
+    const rate = Math.max(0.05, Math.min(8, playbackRate));
+    src.playbackRate.value = rate;
+    const level = this.sfxGain * 0.22 * gainScale;
+    const natural =
+      maxDur != null
+        ? Math.min(buffer.duration, maxDur)
+        : buffer.duration;
+    const dur = natural / rate;
+    const fadeOut = Math.min(fade, Math.max(0.004, dur * 0.35));
+    gain.gain.setValueAtTime(level, t);
+    if (fadeOut > 0 && dur > fadeOut) {
+      gain.gain.setValueAtTime(level, t + dur - fadeOut);
+      gain.gain.linearRampToValueAtTime(0.0001, t + dur);
+    }
+    src.connect(gain);
+    gain.connect(this.ctx.destination);
+    if (track) {
+      track.add(src);
+      src.addEventListener("ended", () => track.delete(src));
+    }
+    src.start(t, 0, natural);
+    return src;
+  }
+
+  /** Halt in-flight typewriter ticks (e.g. sudoku fill aborted by pad success). */
+  stopTypewriter() {
+    for (const src of this._typewriterSources) {
+      try {
+        src.stop();
+      } catch {
+        /* already ended */
+      }
+    }
+    this._typewriterSources.clear();
+  }
+
+  /** Halt a stretched reveal-scan bed mid-play. */
+  stopRevealScan() {
+    if (!this._revealScanSource) return;
+    try {
+      this._revealScanSource.stop();
+    } catch {
+      /* already ended */
+    }
+    this._revealScanSource = null;
+  }
+
+  #playTypewriter() {
+    const now = performance.now();
+    // Samples are long; throttle so overlaps stay soft instead of crunching
+    if (now - this._typewriterLastAt < 38) return;
+    this._typewriterLastAt = now;
+
+    const bufs = this.typewriterBuffers;
+    if (!bufs.length) {
+      if (!this.ctx) return;
+      const master = this.ctx.createGain();
+      master.gain.value = this.sfxGain * 0.12;
+      master.connect(this.ctx.destination);
+      this.#tone(master, 180, 0.035, this.ctx.currentTime, "square");
+      return;
+    }
+    const buf = bufs[Math.floor(Math.random() * bufs.length)];
+    // Dry + quiet — stacking was what made it sound crushed
+    this.#playBuffer(buf, 0.69733125, {
+      maxDur: 0.09,
+      fade: 0.025,
+      track: this._typewriterSources,
+    });
+  }
+
+  #playKeyInput() {
+    if (this.keyInputBuffer) {
+      this.#playBuffer(this.keyInputBuffer, 0.91287);
+      return;
+    }
+    if (!this.ctx) return;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.3;
+    master.connect(this.ctx.destination);
+    this.#tone(master, 480, 0.03, this.ctx.currentTime, "square");
+  }
+
+  #playChannelSwitch() {
+    if (this.channelSwitchBuffer) {
+      this.#playBuffer(this.channelSwitchBuffer, 0.75);
+      return;
+    }
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.35;
+    master.connect(this.ctx.destination);
+    this.#tone(master, 420, 0.05, t, "triangle");
+    this.#tone(master, 640, 0.04, t + 0.04, "triangle");
+  }
+
+  #playDropdownToggle() {
+    if (this.journalSelectBuffer) {
+      // Match channel-switch perceived level (files differ ~7 dB RMS)
+      this.#playBuffer(this.journalSelectBuffer, 1.7);
+      return;
+    }
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.35;
+    master.connect(this.ctx.destination);
+    this.#tone(master, 280, 0.07, t, "sawtooth");
+    this.#noise(master, 0.05, t);
+  }
+
+  /** Stretch/compress scan SFX so it spans the stepped top-to-bottom reveal. */
+  #playRevealScan(durationMs, gainScale = 3.4) {
+    const buf = this.revealScanBuffer;
+    const targetSec = Math.max(0.08, (Number(durationMs) || 400) / 1000);
+    if (buf) {
+      this.stopRevealScan();
+      const rate = Math.max(0.12, Math.min(4, buf.duration / targetSec));
+      this._revealScanSource = this.#playBuffer(buf, gainScale, {
+        playbackRate: rate,
+        fade: 0.04,
+      });
+      if (this._revealScanSource) {
+        this._revealScanSource.addEventListener("ended", () => {
+          if (this._revealScanSource) this._revealScanSource = null;
+        });
+      }
+      return;
+    }
+    // Fallback: soft stepped tick if sample missing
+    if (!this.ctx) return;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.55;
+    master.connect(this.ctx.destination);
+    const t0 = this.ctx.currentTime;
+    const steps = Math.max(4, Math.round(targetSec / 0.08));
+    for (let i = 0; i < steps; i++) {
+      this.#tone(master, 180 + i * 18, 0.035, t0 + i * (targetSec / steps), "square");
+    }
+  }
+
+  #playUiBeep() {
+    if (this.uiBeepBuffer) {
+      this.#playBuffer(this.uiBeepBuffer, 0.8);
+      return;
+    }
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.35;
+    master.connect(this.ctx.destination);
+    this.#tone(master, 520, 0.035, t, "square");
+  }
+
+  /** Warped / chopped ui-beep for imperial mid-triangle fill ticks. */
+  #playGlitchClick() {
+    if (!this.ctx) return;
+    if (this.uiBeepBuffer) {
+      // Extreme rates — crushed / stretched button press
+      const rates = [0.08, 0.11, 0.15, 0.19, 0.24, 2.6, 3.4, 4.2, 5.1, 0.06];
+      const playbackRate = rates[Math.floor(Math.random() * rates.length)];
+      const gainScale = 2.4 + Math.random() * 1.4;
+      this.#playBuffer(this.uiBeepBuffer, gainScale, {
+        playbackRate,
+        maxDur: 0.06 + Math.random() * 0.1,
+        fade: 0.01,
+      });
+      // Harsh stacked ghost — almost always
+      const ghostRate =
+        playbackRate < 1
+          ? playbackRate * (0.4 + Math.random() * 0.3)
+          : playbackRate * (1.15 + Math.random() * 0.5);
+      window.setTimeout(() => {
+        if (this.deadSilent || !this.enabled || !this.uiBeepBuffer) return;
+        this.#playBuffer(this.uiBeepBuffer, gainScale * 0.85, {
+          playbackRate: ghostRate,
+          maxDur: 0.05 + Math.random() * 0.08,
+          fade: 0.008,
+        });
+      }, 12 + Math.floor(Math.random() * 35));
+      // Occasional third grit layer
+      if (Math.random() < 0.55) {
+        window.setTimeout(() => {
+          if (this.deadSilent || !this.enabled || !this.uiBeepBuffer) return;
+          this.#playBuffer(this.uiBeepBuffer, gainScale * 0.55, {
+            playbackRate: 0.05 + Math.random() * 0.12,
+            maxDur: 0.08 + Math.random() * 0.06,
+            fade: 0.01,
+          });
+        }, 40 + Math.floor(Math.random() * 60));
+      }
+      return;
+    }
+    const t = this.ctx.currentTime;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.75;
+    master.connect(this.ctx.destination);
+    const f = 55 + Math.random() * 380;
+    this.#tone(master, f, 0.05, t, "square");
+    this.#tone(master, f * 0.37, 0.07, t + 0.015, "sawtooth");
+    this.#tone(master, f * 2.7, 0.03, t + 0.03, "square");
+  }
+
+  #playTunerNudge() {
+    if (this.tunerNudgeBuffer) {
+      this.#playBuffer(this.tunerNudgeBuffer, 0.85);
+      return;
+    }
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.3;
+    master.connect(this.ctx.destination);
+    this.#tone(master, 880, 0.03, t, "sine");
+  }
+
+  #playDeny() {
+    if (this.uiDenyBuffer) {
+      this.#playBuffer(this.uiDenyBuffer, 0.9);
+      return;
+    }
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.35;
+    master.connect(this.ctx.destination);
+    this.#tone(master, 140, 0.08, t, "square");
+    this.#tone(master, 90, 0.1, t + 0.06, "sawtooth");
+  }
+
+  #playCodeSuccess() {
+    if (this.codeSuccessBuffer) {
+      this.#playBuffer(this.codeSuccessBuffer, 1.19);
+      return;
+    }
+    // Fall back to synth unlock arpeggio
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.35;
+    master.connect(this.ctx.destination);
+    this.#tone(master, 160, 0.1, t, "square");
+    this.#tone(master, 240, 0.1, t + 0.12, "square");
+    this.#tone(master, 360, 0.14, t + 0.26, "triangle");
+    this.#tone(master, 520, 0.18, t + 0.42, "triangle");
+    this.#noise(master, 0.08, t + 0.5);
+  }
+
+  #playImperialClearance() {
+    if (this.imperialClearanceBuffer) {
+      this.#playBuffer(this.imperialClearanceBuffer, 1.0);
+      return;
+    }
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.35;
+    master.connect(this.ctx.destination);
+    this.#tone(master, 180, 0.12, t, "square");
+    this.#tone(master, 270, 0.12, t + 0.14, "square");
+    this.#tone(master, 405, 0.16, t + 0.3, "triangle");
+    this.#tone(master, 540, 0.2, t + 0.48, "triangle");
+    this.#tone(master, 810, 0.22, t + 0.7, "sine");
+    this.#noise(master, 0.1, t + 0.85);
+  }
+
+  /** Stretch Imago sting so it spans the full on-screen logo window. */
+  #playImagoSting(variant, durationMs) {
+    const buf =
+      variant === "reset" ? this.imagoResetBuffer : this.imagoBootBuffer;
+    const targetSec = Math.max(0.12, (Number(durationMs) || 1000) / 1000);
+    if (buf) {
+      const rate = buf.duration / targetSec;
+      this.#playBuffer(buf, 0.9, { playbackRate: rate, fade: 0.04 });
+      return;
+    }
+    if (!this.ctx) return;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.2;
+    master.connect(this.ctx.destination);
+    this.#tone(master, 220, 0.08, this.ctx.currentTime, "triangle");
+  }
+
+  #playFlogSearchHit() {
+    if (this.flogSearchHitBuffer) {
+      this.#playBuffer(this.flogSearchHitBuffer, 0.85);
+      return;
+    }
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const master = this.ctx.createGain();
+    master.gain.value = this.sfxGain * 0.3;
+    master.connect(this.ctx.destination);
+    this.#tone(master, 640, 0.05, t, "triangle");
+    this.#tone(master, 880, 0.06, t + 0.05, "sine");
+  }
+
+  /** User typing / backspace in fields — throttled slightly for held keys. */
+  #bindKeyInputSfx() {
+    if (this.keyInputBound || typeof document === "undefined") return;
+    this.keyInputBound = true;
+
+    const isTypingTarget = (el) => {
+      if (!el || !(el instanceof Element)) return false;
+      const tag = el.tagName;
+      return (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        el.isContentEditable
+      );
+    };
+
+    const shouldPlay = (e) => {
+      if (!isTypingTarget(e.target)) return false;
+      if (e.metaKey || e.ctrlKey || e.altKey) return false;
+      if (e.key === "Backspace" || e.key === "Delete") return true;
+      if (e.key.length === 1) return true;
+      return false;
+    };
+
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        if (this.deadSilent || !this.enabled) return;
+        if (!shouldPlay(e)) return;
+        if (e.repeat) {
+          const now = performance.now();
+          if (now - this._keyInputLastAt < 45) return;
+          this._keyInputLastAt = now;
+        } else {
+          this._keyInputLastAt = performance.now();
+        }
+        void this.#loadUiSfx().then(() => this.#playKeyInput());
+      },
+      true
+    );
+  }
+
+  play(type = "click", opts = {}) {
     if (this.deadSilent || !this.enabled || !this.ctx) return;
+
+    if (type === "click") {
+      void this.#loadUiSfx().then(() => this.#playUiBeep());
+      return;
+    }
+
+    if (type === "glitchClick") {
+      void this.#loadUiSfx().then(() => this.#playGlitchClick());
+      return;
+    }
+
+    if (type === "tunerNudge") {
+      void this.#loadUiSfx().then(() => this.#playTunerNudge());
+      return;
+    }
+
+    if (type === "deny") {
+      void this.#loadUiSfx().then(() => this.#playDeny());
+      return;
+    }
+
+    if (type === "codeSuccess" || type === "unlock") {
+      void this.#loadUiSfx().then(() => this.#playCodeSuccess());
+      return;
+    }
+
+    if (type === "imperial") {
+      void this.#loadUiSfx().then(() => this.#playImperialClearance());
+      return;
+    }
+
+    if (type === "imagoBoot" || type === "imagoReset") {
+      const durationMs = opts?.durationMs ?? 2000;
+      const variant = type === "imagoReset" ? "reset" : "boot";
+      void this.#loadUiSfx().then(() =>
+        this.#playImagoSting(variant, durationMs)
+      );
+      return;
+    }
+
+    if (type === "flogSearchHit") {
+      void this.#loadUiSfx().then(() => this.#playFlogSearchHit());
+      return;
+    }
+
+    if (type === "typewriter") {
+      void this.#loadUiSfx().then(() => this.#playTypewriter());
+      return;
+    }
+
+    if (type === "keyInput") {
+      void this.#loadUiSfx().then(() => this.#playKeyInput());
+      return;
+    }
+
+    if (type === "channelSwitch") {
+      void this.#loadUiSfx().then(() => this.#playChannelSwitch());
+      return;
+    }
+
+    if (type === "journalSelect" || type === "dropdownToggle") {
+      void this.#loadUiSfx().then(() => this.#playDropdownToggle());
+      return;
+    }
+
+    if (type === "revealScan") {
+      const durationMs = opts?.durationMs ?? 400;
+      const gainScale = opts?.gainScale ?? 3.4;
+      void this.#loadUiSfx().then(() => this.#playRevealScan(durationMs, gainScale));
+      return;
+    }
 
     const t = this.ctx.currentTime;
     const master = this.ctx.createGain();

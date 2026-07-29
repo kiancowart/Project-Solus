@@ -5,6 +5,7 @@
 import { audio } from "./audio.js";
 import { typeText, revealPanel } from "./motion.js";
 import { CHANNEL_TITLES } from "./clearance.js";
+import { refreshGuestCorruptDisplay } from "./guest.js";
 
 /* ==========================================================================
    NAVIGATION — channel switching + typed banner title
@@ -34,18 +35,44 @@ export function initNav() {
   let revealing = false;
 
   rail.addEventListener("click", async (e) => {
-    const btn = e.target.closest(".nav-item");
+    const toggle = e.target.closest(".nav-item--toggle");
+    if (toggle && rail.contains(toggle)) {
+      if (revealing) return;
+      if (toggle.classList.contains("is-locked")) {
+        audio.play("deny");
+        return;
+      }
+      const group = toggle.closest(".nav-group");
+      const sub = group?.querySelector(".nav-group__sub");
+      const open = !group?.classList.contains("is-open");
+      group?.classList.toggle("is-open", open);
+      if (sub) sub.hidden = !open;
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      audio.play(toggle.dataset.sfx || "click");
+      return;
+    }
+
+    const btn = e.target.closest(".nav-item[data-panel]");
     if (!btn || !rail.contains(btn)) return;
     if (revealing) return;
     if (btn.classList.contains("is-locked")) {
-      audio.play("click");
+      audio.play("deny");
       return;
     }
 
     const id = btn.dataset.panel;
     if (!id) return;
 
-    rail.querySelectorAll(".nav-item").forEach((b) => {
+    const group = btn.closest(".nav-group");
+    if (group) {
+      group.classList.add("is-open");
+      const sub = group.querySelector(".nav-group__sub");
+      if (sub) sub.hidden = false;
+      const parentToggle = group.querySelector(".nav-item--toggle");
+      parentToggle?.setAttribute("aria-expanded", "true");
+    }
+
+    rail.querySelectorAll(".nav-item[data-panel]").forEach((b) => {
       b.classList.toggle("is-active", b === btn);
     });
 
@@ -57,7 +84,9 @@ export function initNav() {
       if (match) shown = panel;
     });
 
-    audio.play(btn.dataset.sfx || "select");
+    audio.play("channelSwitch");
+
+    if (id === "guest-corrupt") refreshGuestCorruptDisplay();
 
     revealing = true;
     try {

@@ -22,9 +22,13 @@ import {
   revealTopToBottom,
   revealPanel,
 } from "./motion.js";
-import { applyClearanceUI } from "./clearance.js";
+import { applyClearanceUI, grantImperialClearance } from "./clearance.js";
+import { unlockChannelsForImperialBind } from "./progress.js";
+import { initHullPlan } from "./hull.js";
+import { initFlightLog } from "./flight-log.js";
 import { setWhisperPadVisible, whisperPadControl } from "./whisper.js";
 import { typeChannelBanner, startChrono, updateAudioToggle } from "./nav.js";
+import { wipeLatticeProgress } from "./cold-start.js";
 
 /* ==========================================================================
    BOOT SEQUENCE — clearance keypad → log → logo → hub
@@ -57,7 +61,7 @@ export function prepareBootLogo() {
   return stage;
 }
 
-export async function playBootLogo() {
+export async function playBootLogo({ variant = "boot" } = {}) {
   if (!BOOT_LOGO.enabled) return;
 
   const log = document.getElementById("boot-log");
@@ -67,13 +71,17 @@ export async function playBootLogo() {
   void stage.offsetWidth;
 
   const loadMs = bootMs(BOOT_LOGO.loadMs ?? 1200);
+  const holdMs = bootMs(BOOT_LOGO.holdMs ?? 1400);
   const steps = Math.max(1, BOOT_LOGO.loadSteps ?? 5);
   const stepMs = loadMs / steps;
+  const onScreenMs = prefersReducedMotion() ? holdMs : loadMs + holdMs;
+
+  const sting = variant === "reset" ? "imagoReset" : "imagoBoot";
+  audio.play(sting, { durationMs: onScreenMs });
 
   // Stiff stepped load-in (not a smooth fade)
   stage.style.opacity = "0";
   stage.classList.add("is-loading");
-  audio.play("select");
 
   if (prefersReducedMotion()) {
     stage.style.opacity = "";
@@ -89,7 +97,7 @@ export async function playBootLogo() {
     stage.classList.add("is-visible");
   }
 
-  await sleep(bootMs(BOOT_LOGO.holdMs ?? 1400));
+  await sleep(holdMs);
 
   stage.classList.remove("is-visible");
   stage.style.opacity = "";
@@ -161,7 +169,7 @@ export function runClearanceGate(skippedRef) {
       status.textContent = message;
       status.className = "gate__status gate__status--deny";
       gate.classList.add("is-denied");
-      audio.play("open");
+      audio.play("deny");
       whisperPadControl.onDenied();
       setTimeout(() => {
         buffer = "";
@@ -212,7 +220,7 @@ export function runClearanceGate(skippedRef) {
       flash.classList.remove("is-fire");
       void flash.offsetWidth;
       flash.classList.add("is-fire");
-      audio.play("unlock");
+      audio.play("codeSuccess");
       void audio.startSoundtrack();
 
       // Skip is available immediately — aborts acceptance text + later boot stages
@@ -254,6 +262,22 @@ export function runClearanceGate(skippedRef) {
         return;
       }
       const egg = GATE_EASTER_EGGS?.[buffer];
+      if (egg?.type === "coldReset") {
+        locked = true;
+        wipeLatticeProgress();
+        window.location.reload();
+        return;
+      }
+      if (egg?.type === "devFullAccess") {
+        // Dev cheat: same hub path as 512, then full Imperial + STATUS unlocks
+        grantImperialClearance();
+        unlockChannelsForImperialBind();
+        applyClearanceUI();
+        initHullPlan.applyHullUI?.();
+        initFlightLog.refreshAccess?.();
+        succeed();
+        return;
+      }
       if (egg?.type === "eyes") {
         stare();
         return;
@@ -275,7 +299,7 @@ export function runClearanceGate(skippedRef) {
       buffer += digit;
       status.textContent = "";
       render();
-      audio.play("click");
+      audio.play("channelSwitch");
     };
 
     const clear = () => {
@@ -283,7 +307,7 @@ export function runClearanceGate(skippedRef) {
       buffer = "";
       status.textContent = "";
       render();
-      audio.play("click");
+      audio.play("channelSwitch");
     };
 
     const onPadClick = async (e) => {

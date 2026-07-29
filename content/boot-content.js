@@ -58,7 +58,7 @@ export const CLEARANCE = {
   deepValue: "deep",
   milestoneKey: "lattice.milestones",
   /** Sealed until Imperial Clearance */
-  lockedUntilImperial: ["archives", "auxiliary"],
+  lockedUntilImperial: ["archives", "guest-campaign-1", "guest-corrupt"],
   /** Sealed until STATUS puzzles set lattice.unlock.* */
   lockedUntilProgress: ["flightlog", "cartography"],
   seal: {
@@ -67,7 +67,7 @@ export const CLEARANCE = {
   },
   progressSeal: {
     title: "PARTITION LOCKED",
-    body: "Channel offline. Restore INNER diagnostics on STATUS — FTHFLL still listens.",
+    body: "Channel offline. Restore INNER diagnostics on STATUS — Terminal still listens.",
   },
 };
 
@@ -75,20 +75,20 @@ export const CLEARANCE = {
    AMBIENCE — terminal hum from site open (except 666 eyes)
    --------------------------------------------------------------------------- */
 export const AMBIENCE = {
-  src: "assets/audio/TrmnlAmbience.mp3",
+  src: "assets/audio/music/terminal-ambience.mp3",
   loop: true,
   /** Default 0–1 level (Diagnostics Ambience slider starts here) */
   volume: 0.18,
 };
 
 /* ---------------------------------------------------------------------------
-   SOUNDTRACK — loops after correct clearance (file under assets/audio/)
+   SOUNDTRACK — loops after correct clearance (file under assets/audio/music/)
    --------------------------------------------------------------------------- */
 export const SOUNDTRACK = {
-  src: "assets/audio/keep-up.mp3",
+  src: "assets/audio/music/soundtrack.wav",
   loop: true,
-  /** Default 0–1 level (Diagnostics Music slider starts here) */
-  volume: 0.15,
+  /** Default 0–1 level (Diagnostics Music slider starts at 40% of max) */
+  volume: 0.4,
   /** Lo-fi CRT crush — Web Audio chain (edit freely) */
   crush: {
     drive: 1.35,
@@ -102,13 +102,17 @@ export const SOUNDTRACK = {
    CLEARANCE EASTER EGGS — special codes (same length as ACCESS_CODE)
    --------------------------------------------------------------------------- */
 export const GATE_EASTER_EGGS = {
+  /** Dev/test: hub access + full Imperial Clearance + STATUS unlocks */
+  "111": { type: "devFullAccess" },
+  /** Wipe all ARG progress and reload to the number pad */
+  "222": { type: "coldReset" },
   "420": { type: "message", text: "YOU ARE NOT FUNNY" },
   "666": { type: "eyes" },
 };
 
 /**
  * Codes that flash the shared line below — just append new 3-digit strings.
- * (512 = access · 420 / 666 = special eggs above · everything else here.)
+ * (512 = access · 111 = dev full · 222 = cold reset · 420 / 666 = special eggs above · else here.)
  */
 export const GATE_NICE_TRY_CODES = ["311", "723", "814", "521"];
 export const GATE_NICE_TRY_TEXT = "NICE TRY";
@@ -117,7 +121,7 @@ export const GATE_NICE_TRY_TEXT = "NICE TRY";
    WHISPER TERMINAL — tiny corner ARG (edit prompts / answers here)
    --------------------------------------------------------------------------- */
 export const WHISPER = {
-  title: "Kharon-Celeste",
+  title: "KHARON-CELESTE",
   /** Shown once when the tab is opened after 3+ denied pad attempts */
   struggleLine: "I see you're struggling.",
   /** Persist guide progress across tuner trips (← / →) */
@@ -125,7 +129,7 @@ export const WHISPER = {
   doneKey: "lattice.whisperDone",
   identity: {
     match: ["who are you"],
-    reply: "Your guide.",
+    reply: "TURN AROUND",
   },
   /** Whole-word hit anywhere in the line → reply, then repeat last bot phrase */
   forbiddenName: {
@@ -205,7 +209,7 @@ export const WHISPER = {
       acceptMode: "affirmative",
       softReject: {
         matchMode: "negative",
-        text: "I think you do. Say it.",
+        text: "I think you do. Say yes.",
       },
     },
     {
@@ -219,48 +223,22 @@ export const WHISPER = {
     },
     {
       /**
-       * Sends them back to intercept.html → lock 033.3 (emergency frequency).
-       * Accept the dial reading only — not bare 512 (that's the gate).
+       * Sends them back to intercept.html → 033.3 (emergency frequency).
+       * Accept the one-word answer key from the blood carrier poem.
        */
       prompt:
-        "Good. I've directed the emergency frequency to you. Find it on the tuner.",
-      accept: [
-        "033.3",
-        "0333",
-        "33.3",
-        "033 3",
-        "33 3",
-        "0 33 3",
-        "zero three three point three",
-        "three three point three",
-        "oh three three point three",
-      ],
+        "The emergency frequency is on the tuner. Enter the answer key here.",
+      accept: ["blood"],
       acceptMode: "exact",
-      softReject: {
-        match: [
-          "512",
-          "g512",
-          "tuner",
-          "radio",
-          "dial",
-          "frequency",
-          "carrier",
-          "097.9",
-          "0979",
-          "97.9",
-          "979",
-          "051.2",
-          "0512",
-          "51.2",
-          "back",
-          "intercept",
-          "carapace",
-          "cara",
-        ],
-        matchMode: "contains",
-        text: "← on the gate. Lock the emergency frequency — then read me what the dial shows.",
-      },
-      success: "Yes. Now read the blanks.",
+      softRejects: [
+        {
+          match: ["033.3", "33.3", "0333", "333"],
+          matchMode: "exact",
+          text: "Ok. That's the frequency. But I need the key.",
+          cls: "whisper__line--prompt",
+        },
+      ],
+      success: "Key accepted.",
     },
     {
       /** 0 = blank. Blanks read 5-1-2 L→R, T→B (1 = center box, 2 = bottom-right box). */
@@ -276,17 +254,49 @@ export const WHISPER = {
         [3, 4, 5, 2, 8, 6, 1, 7, 9],
       ],
       accept: ["512"],
-      success: "Now you know. The Flight Log is waiting.",
-      /** Pad help only — Imperial Clearance comes from Flight Log finale */
+    },
+    {
+      prompt: "THE EMPRESS GIVES HER ______",
+      accept: ["reward"],
+      acceptMode: "exact",
+      softReject: {
+        match: ["blood", "empress"],
+        matchMode: "contains",
+        text: "Finish the line.",
+      },
+    },
+    {
+      prompt: "Do you really think she rewards her people?",
+      acceptMode: "negative",
+      success: "Correct.",
+      softReject: {
+        matchMode: "affirmative",
+        laughLock: true,
+      },
     },
   ],
   deny: "DENIED",
   unlockLine: "There's still so much more to know.",
   farewell: [
-    "I'm done with you now. I just wanna watch you delve into hell.",
+    "I'm done helping.",
     "Don't make me repeat myself.",
     "Fine.",
   ],
+  /**
+   * If they paste the pad code before the sudoku beat, dismiss the guide.
+   * Next inputs use `farewell` (starting with "I'm done helping.").
+   */
+  earlyCode: {
+    match: ["512", "g512"],
+    text: "So you already know. Stop wasting my time.",
+  },
+};
+
+/* ---------------------------------------------------------------------------
+   GUEST CHANNEL — sub-channels under External dropdown
+   --------------------------------------------------------------------------- */
+export const GUEST_SUBCHANNELS = {
+  corruptLabel: "▓█░4F2·92A",
 };
 
 /* ---------------------------------------------------------------------------
@@ -515,6 +525,24 @@ function makeCorruptionBlob(len = 360) {
   return out;
 }
 
+function sortFlightEntries(a, b) {
+  return (
+    (a.tellOrder ?? 9999) - (b.tellOrder ?? 9999) ||
+    (a.year ?? 0) - (b.year ?? 0) ||
+    (a.cycle ?? 0) - (b.cycle ?? 0)
+  );
+}
+
+/** Tutorial / Sturm arc lives under Uros and is not capped to three partitions. */
+function capJournalEntries(journalId, entries, slot) {
+  if (journalId === "j-uros-belt" || entries.length <= 3) return entries;
+  const fragId = slot ? `${slot.planetId}-imperial-key` : null;
+  const imperial = fragId ? entries.find((e) => e.id === fragId) : null;
+  const rest = entries.filter((e) => e.id !== fragId).sort(sortFlightEntries);
+  const keep = rest.slice(0, imperial ? 2 : 3);
+  return imperial ? [...keep, imperial] : keep;
+}
+
 function buildFlightLog() {
   const corruption = makeCorruptionBlob(flightRand(1400, 2200));
   const sourceJournals = FLIGHT_LOG_SOURCE?.journals ?? [];
@@ -582,6 +610,8 @@ function buildFlightLog() {
         corrupted: true,
       });
     }
+
+    entries = capJournalEntries(journal.id, entries, slot);
 
     return {
       id: journal.id,

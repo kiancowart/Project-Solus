@@ -5,7 +5,7 @@
  */
 
 /** Spoken Presage Projection intercept (Celeste). */
-export const INTERCEPT_MESSAGE_AUDIO = "assets/audio/KCintercept.mp3";
+export const INTERCEPT_MESSAGE_AUDIO = "assets/audio/voice/intercept-message.wav";
 
 function setRailFill(el, amount) {
   if (!el) return;

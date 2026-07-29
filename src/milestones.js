@@ -69,6 +69,7 @@ export function grantDeepClearance() {
 
 export function isEntryRecovered(entryId, entryMeta = {}) {
   if (entryMeta.seedAfterPad) return true;
+  if (hasImperialClearance()) return true;
   return readMilestones().has(entryId);
 }
 
@@ -174,6 +175,6 @@ export function unlockJournalWithCode(journal, code) {
   const newly = !set.has(journal.id);
   set.add(journal.id);
   writeUnlockedJournals(set);
-  if (newly) audio.play("unlock");
+  if (newly) audio.play("codeSuccess");
   return { ok: true, newly };
 }

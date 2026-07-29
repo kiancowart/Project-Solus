@@ -22,13 +22,15 @@ export {
 
 /** Red channel-banner copy — keyed by nav `data-panel` */
 export const CHANNEL_TITLES = {
+  terminal: "FTHFLL // KERNEL SHELL",
   overview: "HULL TELEMETRY // CRAFT STATUS",
   flightlog: "FLIGHT LOG // PERSONAL RECORD",
   imperial: "IMPERIAL CLEARANCE // AUTHORIZATION",
   archives: "ARCHIVES // SHIP MEMORY",
   cartography: "CARTOGRAPHY // STELLAR FIX",
   diagnostics: "FIDELITY BUS // SIGNAL DIAGNOSTICS",
-  auxiliary: "EXTERNAL // GUEST CHANNEL",
+  "guest-campaign-1": "EXTERNAL // CAMPAIGN 1",
+  "guest-corrupt": "EXTERNAL // CORRUPT SIGNAL",
 };
 
 const LOCKED_UNTIL_IMPERIAL =
@@ -67,6 +69,42 @@ export function sealMarkup(kind = "imperial") {
     </div>`;
 }
 
+/** Classes snapped on when Imperial Clearance is already granted. */
+export const IMPERIAL_GATE_BOUND_CLASSES = [
+  "is-binding",
+  "is-sides-out",
+  "is-mid-filled",
+  "is-banquet-in",
+  "is-seal-bound",
+  "is-reset-in",
+  "is-reset-ready",
+];
+
+const IMPERIAL_GATE_TRANSIENT_CLASSES = ["is-mid-filling", "is-mid-glitch"];
+
+/** Sync #imperial-gate to the final bound (or cleared) visual state. */
+export function syncImperialGateVisual(granted) {
+  const gate = document.getElementById("imperial-gate");
+  if (!gate) return;
+
+  gate.classList.toggle("is-granted", granted);
+  const assemble = document.getElementById("imperial-assemble");
+  if (assemble) assemble.hidden = false;
+
+  for (const cls of IMPERIAL_GATE_TRANSIENT_CLASSES) {
+    gate.classList.remove(cls);
+  }
+
+  if (granted) {
+    gate.classList.add(...IMPERIAL_GATE_BOUND_CLASSES);
+  } else {
+    gate.classList.remove(...IMPERIAL_GATE_BOUND_CLASSES);
+  }
+
+  const fillEl = gate.querySelector(".imperial-tri__glyph--fill");
+  if (fillEl) fillEl.style.clipPath = "";
+}
+
 export function applyClearanceUI() {
   const imperial = hasImperialClearance();
   document.body.classList.toggle("has-deep-clearance", imperial);
@@ -74,6 +112,13 @@ export function applyClearanceUI() {
 
   document.querySelectorAll(".nav-item[data-panel]").forEach((btn) => {
     const locked = isPanelLocked(btn.dataset.panel);
+    btn.classList.toggle("is-locked", locked);
+    if (locked) btn.setAttribute("aria-disabled", "true");
+    else btn.removeAttribute("aria-disabled");
+  });
+
+  document.querySelectorAll(".nav-group--guest .nav-item--toggle").forEach((btn) => {
+    const locked = isPanelLocked("guest-campaign-1");
     btn.classList.toggle("is-locked", locked);
     if (locked) btn.setAttribute("aria-disabled", "true");
     else btn.removeAttribute("aria-disabled");
@@ -97,6 +142,8 @@ export function applyClearanceUI() {
       seal?.remove();
     }
   });
+
+  syncImperialGateVisual(imperial);
 
   if (imperial) initGuestChannel();
 

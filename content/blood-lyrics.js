@@ -1,6 +1,6 @@
 /**
  * Blood carrier poem — typed on intercept when tuned near 033.3
- * `at` = seconds into assets/audio/newblood.mp3 (tweak freely)
+ * `at` = seconds into assets/audio/music/carrier-0333.mp3 (tweak freely)
  */
 export const BLOOD_LYRICS = [
   { at: 0.21, text: "THE EMPRESS GIVES HER REWARD" },

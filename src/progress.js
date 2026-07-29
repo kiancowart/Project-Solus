@@ -77,6 +77,18 @@ export function isChannelUnlocked(panelId) {
   return true;
 }
 
+/** Same STATUS / channel flags a successful Imperial 9-slot bind writes. */
+export function unlockChannelsForImperialBind() {
+  setChannelUnlock("cartography", true);
+  setChannelUnlock("flightlog", true);
+  setHullProgress({
+    chartPuzzle: true,
+    logPuzzle: true,
+    optics: true,
+    inner: true,
+  });
+}
+
 export function getClearanceDraft() {
   return readJson(DRAFT_KEY, draftRef, { slots: {} });
 }

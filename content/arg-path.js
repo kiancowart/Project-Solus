@@ -45,7 +45,7 @@ export const OUTER_STATIONS = [
     id: "fwd-cam",
     name: "FWD·CAM",
     severity: "ok",
-    serial: null,
+    serial: "FC1",
     damageOrder: null,
     damageTime: null,
   },
@@ -53,7 +53,7 @@ export const OUTER_STATIONS = [
     id: "ndl-l",
     name: "NDL·L",
     severity: "ok",
-    serial: null,
+    serial: "NL2",
     damageOrder: null,
     damageTime: null,
   },
@@ -77,7 +77,7 @@ export const OUTER_STATIONS = [
     id: "wings-r",
     name: "WINGS R",
     severity: "ok",
-    serial: null,
+    serial: "WR4",
     damageOrder: null,
     damageTime: null,
   },
@@ -85,7 +85,7 @@ export const OUTER_STATIONS = [
     id: "msl-top",
     name: "MSL·TOP",
     severity: "ok",
-    serial: null,
+    serial: "MT6",
     damageOrder: null,
     damageTime: null,
   },
@@ -93,7 +93,7 @@ export const OUTER_STATIONS = [
     id: "aft-cam",
     name: "AFT·CAM",
     severity: "ok",
-    serial: null,
+    serial: "AC7",
     damageOrder: null,
     damageTime: null,
   },
@@ -109,7 +109,7 @@ export const OUTER_STATIONS = [
     id: "eng-r",
     name: "ENG·R",
     severity: "ok",
-    serial: null,
+    serial: "ER8",
     damageOrder: null,
     damageTime: null,
   },
@@ -165,7 +165,7 @@ export const BAY_UNLOCKS = {
 /* ---------------------------------------------------------------------------
    Imperial Clearance — 9 slots (orbital inward → outward)
    Layer A: planet id · Layer B: fragment string (case-insensitive)
-   Journals folded onto nine primary worlds (see _internal/arg/README.md)
+   Journals folded onto nine primary worlds (see _internal/arg/MASTER.md)
    --------------------------------------------------------------------------- */
 export const IMPERIAL_SLOTS = [
   {
@@ -244,9 +244,9 @@ export const IMPERIAL_SLOTS = [
     slot: 9,
     planetId: "vol",
     planetName: "Vol",
-    journalId: "j-sturm",
+    journalId: "j-vol",
     fragment: "I9",
-    volumeCode: null,
+    volumeCode: "980",
     keywords: ["vol", "edge"],
   },
 ];

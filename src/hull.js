@@ -113,17 +113,24 @@ export function initHullPlan() {
     sevLine.innerHTML = `<span class="hull-detail__k">STATE</span><span class="hull-detail__v${sevCls ? ` ${sevCls}` : ""}">${String(station.severity).toUpperCase()}</span>`;
     partDetail.appendChild(sevLine);
 
-    if (station.serial && station.damageTime) {
+    if (station.serial) {
       const serialLine = document.createElement("p");
       serialLine.className = "hull-detail__line";
       serialLine.innerHTML = `<span class="hull-detail__k">SERIAL</span><span class="hull-detail__v">${station.serial}</span>`;
       partDetail.appendChild(serialLine);
+    } else {
+      const serialLine = document.createElement("p");
+      serialLine.className = "hull-detail__line";
+      serialLine.innerHTML = `<span class="hull-detail__k">SERIAL</span><span class="hull-detail__v">—</span>`;
+      partDetail.appendChild(serialLine);
+    }
 
-      const todHead = document.createElement("p");
-      todHead.className = "hull-mon__section hull-mon__section--spaced";
-      todHead.textContent = "TIME OF DAMAGE";
-      partDetail.appendChild(todHead);
+    const todHead = document.createElement("p");
+    todHead.className = "hull-mon__section hull-mon__section--spaced";
+    todHead.textContent = "TIME OF DAMAGE";
+    partDetail.appendChild(todHead);
 
+    if (station.damageTime) {
       const stampLine = document.createElement("p");
       stampLine.className = "hull-detail__line";
       stampLine.innerHTML = `<span class="hull-detail__k">TIMESTAMP</span><span class="hull-detail__v">${station.damageTime} UTC</span>`;
@@ -139,16 +146,6 @@ export function initHullPlan() {
       aeLine.innerHTML = `<span class="hull-detail__k">AE</span><span class="hull-detail__v">${DAMAGE_EPOCH.ae}</span>`;
       partDetail.appendChild(aeLine);
     } else {
-      const serialLine = document.createElement("p");
-      serialLine.className = "hull-detail__line";
-      serialLine.innerHTML = `<span class="hull-detail__k">SERIAL</span><span class="hull-detail__v">—</span>`;
-      partDetail.appendChild(serialLine);
-
-      const todHead = document.createElement("p");
-      todHead.className = "hull-mon__section hull-mon__section--spaced";
-      todHead.textContent = "TIME OF DAMAGE";
-      partDetail.appendChild(todHead);
-
       const timeLine = document.createElement("p");
       timeLine.className = "hull-detail__line";
       timeLine.innerHTML = `<span class="hull-detail__k">EVENT</span><span class="hull-detail__v">NONE</span>`;
@@ -300,7 +297,6 @@ export function initHullPlan() {
         inner.hidden = which !== "inner";
         inner.classList.toggle("is-active", which === "inner");
       }
-      audio.play("select");
     });
   });
 
@@ -422,7 +418,7 @@ export function initFthConsole() {
       } else {
         setHullProgress({ optics: true });
         push(PUZZLE_A.successLine, "fth-console__line--ok");
-        audio.play("unlock");
+        audio.play("codeSuccess");
         refreshHull();
       }
       resetPrompt();
@@ -445,12 +441,13 @@ export function initFthConsole() {
       if (code !== ok) {
         // Flat deny — no coaching
         push(PUZZLE_B.denyLine, "fth-console__line--err");
+        audio.play("deny");
         resetPrompt();
         return;
       }
       setHullProgress({ inner: true });
       push(PUZZLE_B.successLine, "fth-console__line--ok");
-      audio.play("unlock");
+      audio.play("codeSuccess");
       refreshHull();
       resetPrompt();
     }

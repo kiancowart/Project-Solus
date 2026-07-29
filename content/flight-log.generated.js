@@ -141,41 +141,7 @@ export const FLIGHT_LOG_SOURCE = {
       "title": "Kaph — Prison Moon",
       "yearStart": 1523,
       "yearEnd": 1526,
-      "entries": [
-        {
-          "id": "kaph-01",
-          "title": null,
-          "year": 1523,
-          "cycle": 2,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "kaph-02",
-          "title": null,
-          "year": 1524,
-          "cycle": 5,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "kaph-03",
-          "title": null,
-          "year": 1525,
-          "cycle": 9,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        }
-      ]
+      "entries": []
     },
     {
       "id": "j-deshret",
@@ -195,18 +161,23 @@ export const FLIGHT_LOG_SOURCE = {
           "tellOrder": 9999
         },
         {
-          "id": "desh-02",
-          "title": null,
+          "id": "desh-kaph",
+          "title": "Kaph",
           "year": 1531,
           "cycle": 6,
           "body": null,
           "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
+          "unlockKeywords": [
+            "kaph"
+          ],
+          "writeOrder": 35,
+          "tellOrder": 35,
+          "stinger": "milestone",
+          "partnerReveal": false,
+          "grantsImperial": false
         },
         {
-          "id": "desh-03",
+          "id": "desh-02",
           "title": null,
           "year": 1532,
           "cycle": 2,
@@ -262,10 +233,75 @@ export const FLIGHT_LOG_SOURCE = {
     },
     {
       "id": "j-uros-belt",
-      "title": "Uros Belt — Sweep Pattern",
+      "title": "Uros — Outer Belt",
       "yearStart": 1546,
-      "yearEnd": 1550,
+      "yearEnd": 1557,
+      "startsOpen": true,
       "entries": [
+        {
+          "id": "sturm-impact",
+          "title": "Impact",
+          "year": 1557,
+          "cycle": 11,
+          "body": "I've crashed. Fuck.\n\nCara's still humming — half of her, anyway. The rest of the log looks like someone took a shredder to my years.\n\nI can almost hear them laugh at me for staring at corrupted packets like a prayer.\n\n\"You don't pry them open with your hands, Spike. You ask. You search. Old keys wake old files.\"\n\nFine. There's a query line. If Lattice still remembers anything worth keeping, it'll answer a keyword.",
+          "seedAfterPad": true,
+          "unlockKeywords": [],
+          "writeOrder": 100,
+          "tellOrder": 1,
+          "stinger": "milestone",
+          "partnerReveal": false,
+          "grantsImperial": false
+        },
+        {
+          "id": "sturm-wake",
+          "title": "Wake",
+          "year": 1557,
+          "cycle": 11,
+          "body": "Cara's ribs are singing wrong. Emergency bus only. Hive unreachable. Guest channel still \"repairing\" like a prayer that forgot the words.\n\nOutside: Sturm. Splinter dust and old crusade weather. The kind of sky that makes Empire hymns sound like someone else's problem.\n\nI unbuckle. Spike is warm against my thigh. For a second I hear them say my name the soft way.\n\nThen just wind.",
+          "seedAfterPad": false,
+          "unlockKeywords": [
+            "wake",
+            "cara"
+          ],
+          "writeOrder": 110,
+          "tellOrder": 3,
+          "stinger": "milestone",
+          "partnerReveal": false,
+          "grantsImperial": false
+        },
+        {
+          "id": "uros-sturm",
+          "title": "Sturm",
+          "year": 1557,
+          "cycle": 11,
+          "body": null,
+          "seedAfterPad": false,
+          "unlockKeywords": [
+            "sturm"
+          ],
+          "writeOrder": 115,
+          "tellOrder": 4,
+          "stinger": "milestone",
+          "partnerReveal": false,
+          "grantsImperial": false
+        },
+        {
+          "id": "sturm-dust",
+          "title": "Dust Road",
+          "year": 1557,
+          "cycle": 12,
+          "body": "Walked until the wreck stopped looking like a grave and started looking like a job.\n\nLocals on the ridge — not Empire, not clean Nivian either. Outcast geometry. They watched a Khan crawl out of a Carapace like it was weather.\n\nI tipped my brim. Didn't have a brim. Did it anyway.\n\nCowboy work now: salvage, barter, keep Cara breathing, decide whether Her light still reaches this far or if I'm just stubborn bone under a dead relay.\n\nFaith is a long road. Sturm is longer.",
+          "seedAfterPad": false,
+          "unlockKeywords": [
+            "dust",
+            "cowboy"
+          ],
+          "writeOrder": 120,
+          "tellOrder": 7,
+          "stinger": "milestone",
+          "partnerReveal": false,
+          "grantsImperial": false
+        },
         {
           "id": "belt-01",
           "title": null,
@@ -293,6 +329,28 @@ export const FLIGHT_LOG_SOURCE = {
           "title": null,
           "year": 1549,
           "cycle": 2,
+          "body": null,
+          "seedAfterPad": false,
+          "unlockKeywords": [],
+          "writeOrder": 9999,
+          "tellOrder": 9999
+        },
+        {
+          "id": "uros-01",
+          "title": null,
+          "year": 1555,
+          "cycle": 3,
+          "body": null,
+          "seedAfterPad": false,
+          "unlockKeywords": [],
+          "writeOrder": 9999,
+          "tellOrder": 9999
+        },
+        {
+          "id": "uros-02",
+          "title": null,
+          "year": 1556,
+          "cycle": 6,
           "body": null,
           "seedAfterPad": false,
           "unlockKeywords": [],
@@ -359,116 +417,11 @@ export const FLIGHT_LOG_SOURCE = {
       ]
     },
     {
-      "id": "j-sturm",
-      "title": "Sturm — Moon of Uros",
-      "yearStart": 1555,
+      "id": "j-vol",
+      "title": "Vol — Edge",
+      "yearStart": 1550,
       "yearEnd": 1557,
-      "startsOpen": true,
-      "entries": [
-        {
-          "id": "sturm-impact",
-          "title": "Impact",
-          "year": 1557,
-          "cycle": 11,
-          "body": "I've crashed. Fuck.\n\nCara's still humming — half of her, anyway. The rest of the log looks like someone took a shredder to my years.\n\nI can almost hear them laugh at me for staring at corrupted packets like a prayer.\n\n\"You don't pry them open with your hands, Spike. You ask. You search. Old keys wake old files.\"\n\nFine. There's a query line. If Lattice still remembers anything worth keeping, it'll answer a keyword.",
-          "seedAfterPad": true,
-          "unlockKeywords": [],
-          "writeOrder": 100,
-          "tellOrder": 1,
-          "stinger": "milestone",
-          "partnerReveal": false,
-          "grantsImperial": false
-        },
-        {
-          "id": "sturm-wake",
-          "title": "Wake",
-          "year": 1557,
-          "cycle": 11,
-          "body": "Cara's ribs are singing wrong. Emergency bus only. Hive unreachable. Guest channel still \"repairing\" like a prayer that forgot the words.\n\nOutside: Sturm. Splinter dust and old crusade weather. The kind of sky that makes Empire hymns sound like someone else's problem.\n\nI unbuckle. Spike is warm against my thigh. For a second I hear them say my name the soft way.\n\nThen just wind.",
-          "seedAfterPad": false,
-          "unlockKeywords": [
-            "wake",
-            "cara"
-          ],
-          "writeOrder": 110,
-          "tellOrder": 3,
-          "stinger": "milestone",
-          "partnerReveal": false,
-          "grantsImperial": false
-        },
-        {
-          "id": "sturm-dust",
-          "title": "Dust Road",
-          "year": 1557,
-          "cycle": 12,
-          "body": "Walked until the wreck stopped looking like a grave and started looking like a job.\n\nLocals on the ridge — not Empire, not clean Nivian either. Outcast geometry. They watched a Khan crawl out of a Carapace like it was weather.\n\nI tipped my brim. Didn't have a brim. Did it anyway.\n\nCowboy work now: salvage, barter, keep Cara breathing, decide whether Her light still reaches this far or if I'm just stubborn bone under a dead relay.\n\nFaith is a long road. Sturm is longer.",
-          "seedAfterPad": false,
-          "unlockKeywords": [
-            "dust",
-            "cowboy"
-          ],
-          "writeOrder": 120,
-          "tellOrder": 7,
-          "stinger": "milestone",
-          "partnerReveal": false,
-          "grantsImperial": false
-        },
-        {
-          "id": "sturm-01",
-          "title": null,
-          "year": 1555,
-          "cycle": 3,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "sturm-02",
-          "title": null,
-          "year": 1556,
-          "cycle": 6,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "sturm-03",
-          "title": null,
-          "year": 1556,
-          "cycle": 10,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "sturm-04",
-          "title": null,
-          "year": 1557,
-          "cycle": 13,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        },
-        {
-          "id": "sturm-05",
-          "title": null,
-          "year": 1557,
-          "cycle": 14,
-          "body": null,
-          "seedAfterPad": false,
-          "unlockKeywords": [],
-          "writeOrder": 9999,
-          "tellOrder": 9999
-        }
-      ]
+      "entries": []
     }
   ]
 };

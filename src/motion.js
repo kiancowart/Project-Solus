@@ -50,7 +50,8 @@ export async function typeText(el, fullText, skippedRef = null, onTick = null, p
     out += fullText[i];
     el.textContent = out;
     onTick?.();
-    if (i % 8 === 0) audio.play("boot");
+    // Skip pure whitespace ticks so spaces don't spam the bed
+    if (fullText[i].trim()) audio.play("typewriter");
     let wait = typeMs;
     if (hitchEvery > 0 && i > 0 && i % hitchEvery === 0) wait += hitchMs;
     await sleep(wait);
@@ -82,7 +83,7 @@ export async function blinkBootDots(dotsEl, durationMs, skippedRef = null) {
   if (!skippedRef?.skipped) dotsEl.textContent = "...";
 }
 
-export async function revealTopToBottom(container) {
+export async function revealTopToBottom(container, abortedRef = null) {
   if (!container) return;
 
   const blocks = [...container.children].filter(
@@ -97,16 +98,24 @@ export async function revealTopToBottom(container) {
     return;
   }
 
+  if (!blocks.length) return;
+
   blocks.forEach((el) => {
     el.classList.remove("is-shown");
     el.classList.add("is-pending");
   });
 
   const step = MOTION.blockStepMs ?? 70;
+  const totalMs = Math.max(step, blocks.length * step);
+  audio.play("revealScan", { durationMs: totalMs });
+
   for (const el of blocks) {
+    if (abortedRef?.aborted) {
+      audio.stopRevealScan();
+      return;
+    }
     el.classList.remove("is-pending");
     el.classList.add("is-shown");
-    audio.play("boot");
     await sleep(step);
   }
 }

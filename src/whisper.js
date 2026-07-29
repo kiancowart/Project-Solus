@@ -2,9 +2,9 @@
  * LATTICE.OS — Whisper ARG
  */
 
-import { WHISPER } from "../content/boot-content.js";
+import { WHISPER, MOTION } from "../content/boot-content.js";
 import { audio } from "./audio.js";
-import { sleep, typeText } from "./motion.js";
+import { sleep, typeText, revealTopToBottom, prefersReducedMotion } from "./motion.js";
 
 /* ==========================================================================
    WHISPER — Kharon-Celeste corner ARG (pad screen only)
@@ -31,6 +31,8 @@ export function initWhisper() {
   const panel = document.getElementById("whisper-panel");
   const head = document.getElementById("whisper-head");
   const log = document.getElementById("whisper-log");
+  const rail = document.getElementById("whisper-rail");
+  const railFill = document.getElementById("whisper-scroll-fill");
   const form = document.getElementById("whisper-form");
   const input = document.getElementById("whisper-input");
   if (!root || !tab || !panel || !log || !form || !input) return;
@@ -42,12 +44,31 @@ export function initWhisper() {
   const steps = WHISPER?.steps ?? [];
   const deny = WHISPER?.deny ?? "DENIED";
   const farewell = WHISPER?.farewell ?? [
-    "I'm done with you now. I just wanna watch you delve into hell.",
+    "I'm done helping.",
     "Don't make me repeat myself.",
     "Fine.",
   ];
   const progressKey = WHISPER?.progressKey ?? "lattice.whisperStep";
   const doneKey = WHISPER?.doneKey ?? "lattice.whisperDone";
+  const sealedKey = WHISPER?.sealedKey ?? "lattice.whisperSealed";
+
+  const readSealed = () => {
+    try {
+      return localStorage.getItem(sealedKey) === "1";
+    } catch {
+      return false;
+    }
+  };
+
+  const writeSealed = () => {
+    try {
+      localStorage.setItem(sealedKey, "1");
+      localStorage.setItem(doneKey, "1");
+      localStorage.setItem(progressKey, String(steps.length));
+    } catch {
+      /* private mode */
+    }
+  };
 
   const readProgress = () => {
     try {
@@ -93,6 +114,21 @@ export function initWhisper() {
   let denyHeat = 0;
   let strugglePending = false;
   let struggleSaid = false;
+  let sealed = readSealed();
+  if (sealed) {
+    tab.disabled = true;
+    tab.setAttribute("aria-hidden", "true");
+  }
+  /** Bumped to abort in-flight sudoku reveal / fill (and its SFX). */
+  let motionEpoch = 0;
+  const motionAbort = { aborted: false };
+
+  const cancelMotion = () => {
+    motionEpoch += 1;
+    motionAbort.aborted = true;
+    audio.stopTypewriter();
+    audio.stopRevealScan();
+  };
 
   let { step, done } = readProgress();
 
@@ -145,20 +181,121 @@ export function initWhisper() {
     return [band(0), sep, band(3), sep, band(6)].join("\n");
   };
 
-  const stick = () => {
-    log.scrollTop = log.scrollHeight;
+  const updateRail = () => {
+    if (!rail || !railFill) return;
+    const max = log.scrollHeight - log.clientHeight;
+    if (max <= 0) {
+      rail.hidden = true;
+      railFill.style.transform = "scaleY(0)";
+      return;
+    }
+    rail.hidden = false;
+    const fill = log.scrollTop / max;
+    railFill.style.transform = `scaleY(${Math.max(0, Math.min(1, fill))})`;
   };
 
-  const typeLine = async (text, cls = "", { record = true } = {}) => {
+  const stick = () => {
+    log.scrollTop = log.scrollHeight;
+    updateRail();
+  };
+
+  const typeLine = async (text, cls = "", { record = true, pace = 1 } = {}) => {
     const line = document.createElement("div");
     line.className = `whisper__line${cls ? ` ${cls}` : ""}`;
     log.appendChild(line);
     stick();
-    await typeText(line, text, null, stick);
+    await typeText(line, text, null, stick, pace);
     stick();
     if (record && !text.startsWith("> ")) {
       lastBot = { text, cls, grid: null };
     }
+  };
+
+  const softRejectList = (stepObj) => {
+    if (Array.isArray(stepObj?.softRejects)) return stepObj.softRejects;
+    if (stepObj?.softReject) return [stepObj.softReject];
+    return [];
+  };
+
+  const findSoftReject = (stepObj, raw) => {
+    for (const soft of softRejectList(stepObj)) {
+      const mode = soft.matchMode ?? stepObj.acceptMode ?? "exact";
+      if (matchesStepList(raw, soft.match ?? [], mode)) return soft;
+    }
+    return null;
+  };
+
+  const sealTerminal = () => {
+    sealed = true;
+    writeSealed();
+    done = true;
+    step = steps.length;
+    cancelMotion();
+    closePanel({ silent: true });
+    root.hidden = true;
+    tab.disabled = true;
+    tab.setAttribute("aria-hidden", "true");
+  };
+
+  /** Type HAHA L→R with wrap until the viewport is packed, then seal. */
+  const runLaughLock = async () => {
+    log.replaceChildren();
+    lastBot = null;
+    if (rail) rail.hidden = true;
+    log.scrollTop = 0;
+
+    const block = document.createElement("div");
+    block.className = "whisper__line whisper__line--deny whisper__line--laugh";
+    log.appendChild(block);
+
+    const styles = getComputedStyle(log);
+    const padY =
+      (parseFloat(styles.paddingTop) || 0) +
+      (parseFloat(styles.paddingBottom) || 0);
+    const fillH = () => Math.max(1, log.clientHeight - padY);
+    const isPacked = () => block.scrollHeight >= fillH() - 1;
+
+    if (prefersReducedMotion()) {
+      let text = "";
+      while (!isPacked() && text.length < 8000) {
+        text += "HAHA";
+        block.textContent = text;
+      }
+      log.scrollTop = 0;
+      await sleep(350);
+      sealTerminal();
+      return;
+    }
+
+    // Start slower than normal typewriter so the ramp is obvious, then
+    // add +0.3 speed each "HAHA" (wait = baseMs / speed).
+    const baseMs = Math.max(28, (MOTION.typeMs ?? 8) * 3.5);
+    const stream = "HAHA";
+    let speed = 1;
+    let text = "";
+    let typed = 0;
+    let guard = 0;
+
+    while (!isPacked() && guard < 12000) {
+      const ch = stream[typed % stream.length];
+      typed += 1;
+      guard += 1;
+      text += ch;
+      block.textContent = text;
+      log.scrollTop = 0;
+      if (ch.trim()) audio.play("typewriter");
+
+      const wait = Math.max(0, baseMs / speed);
+      if (wait > 0) await sleep(wait);
+
+      if (typed % stream.length === 0) {
+        speed += 0.3;
+      }
+    }
+
+    log.scrollTop = 0;
+    await sleep(280);
+    sealTerminal();
   };
 
   const buildSudokuBoard = (grid) => {
@@ -166,15 +303,18 @@ export function initWhisper() {
     board.className = "whisper__line whisper__sudoku whisper__line--prompt";
     const cells = [];
     for (let r = 0; r < 9; r++) {
+      const row = document.createElement("div");
+      row.className = "whisper__sudoku-row";
       for (let c = 0; c < 9; c++) {
         const n = grid[r][c] ?? 0;
         const cell = document.createElement("span");
         cell.className = `whisper__sudoku-cell${n ? "" : " is-blank"}`;
         cell.dataset.target = String(n);
         cell.textContent = "";
-        board.appendChild(cell);
+        row.appendChild(cell);
         cells.push(cell);
       }
+      board.appendChild(row);
     }
     return { board, cells };
   };
@@ -194,6 +334,14 @@ export function initWhisper() {
     stick();
 
     if (animate) {
+      motionAbort.aborted = false;
+      const epoch = motionEpoch;
+      const dead = () => epoch !== motionEpoch || motionAbort.aborted;
+
+      // Frame loads top→bottom (same reveal-scan bed as the clearance pad)
+      await revealTopToBottom(board, motionAbort);
+      if (dead()) return;
+
       const filled = cells.filter((cell) => Number(cell.dataset.target) > 0);
       const blanks = cells.filter((cell) => Number(cell.dataset.target) === 0);
 
@@ -208,37 +356,46 @@ export function initWhisper() {
       };
 
       // Random order; start gaps begin long and tighten (slow → fast kickoffs)
+      // Fill pace: prior 40% faster, then another 50% faster
+      const fillPace = 1 / (1.4 * 1.5);
       const order = shuffle(filled);
       const startDelays = [];
       let cursor = 0;
       for (let i = 0; i < order.length; i++) {
         startDelays.push(cursor);
         const t = i / Math.max(1, order.length - 1);
-        cursor += Math.round(lerp(311, 21, t * t));
+        cursor += Math.round(lerp(311, 21, t * t) * fillPace);
       }
 
       await Promise.all(
         order.map(async (cell, i) => {
+          if (dead()) return;
           const target = Number(cell.dataset.target);
           await sleep(startDelays[i]);
+          if (dead()) return;
           for (let v = 1; v <= target; v++) {
+            if (dead()) return;
             cell.textContent = String(v);
+            audio.play("typewriter");
             stick();
             const cellProg = (v - 1) / Math.max(1, target - 1);
             const globalProg = (i + cellProg) / Math.max(1, order.length);
             const tick = Math.round(
-              lerp(163, 30, Math.min(1, globalProg) ** 0.9)
+              lerp(163, 30, Math.min(1, globalProg) ** 0.9) * fillPace
             );
             await sleep(tick);
           }
         })
       );
 
+      if (dead()) return;
+
       blanks.forEach((cell) => {
         cell.textContent = "·";
         cell.classList.add("is-blink");
       });
-      await sleep(560);
+      await sleep(Math.round(560 * fillPace));
+      if (dead()) return;
       blanks.forEach((cell) => cell.classList.remove("is-blink"));
     } else {
       paintSudokuFinal(cells);
@@ -262,7 +419,7 @@ export function initWhisper() {
   };
 
   const isIdentityAsk = (raw) =>
-    matchesExact(raw, WHISPER?.identity?.match ?? ["who are you"]);
+    containsPhrase(raw, WHISPER?.identity?.match ?? ["who are you"]);
 
   const hasForbiddenName = (raw) => {
     const word = normalizeAnswer(WHISPER?.forbiddenName?.word ?? "Kian");
@@ -339,7 +496,7 @@ export function initWhisper() {
     panel.hidden = false;
     tab.setAttribute("aria-expanded", "true");
     root.classList.add("is-open");
-    audio.play("select");
+    audio.play("revealScan", { durationMs: 850 });
 
     const firstOpen = !log.childElementCount;
     if (firstOpen) {
@@ -383,6 +540,11 @@ export function initWhisper() {
 
   whisperPadControl = {
     show() {
+      if (sealed) {
+        root.hidden = true;
+        tab.disabled = true;
+        return;
+      }
       root.hidden = false;
       // Gate reveal may leave this stuck pending / clipped from view
       root.classList.remove("is-pending");
@@ -390,15 +552,22 @@ export function initWhisper() {
       paintHeat();
     },
     hide() {
+      cancelMotion();
       closePanel({ silent: true });
       root.hidden = true;
     },
     onDenied() {
+      if (sealed) return;
       denyHeat += 1;
       if (denyHeat >= 3) strugglePending = true;
       paintHeat();
     },
     resetHeat() {
+      if (sealed) {
+        root.hidden = true;
+        tab.disabled = true;
+        return;
+      }
       // Deny heat only — guide step persists across tuner trips
       denyHeat = 0;
       strugglePending = false;
@@ -417,7 +586,7 @@ export function initWhisper() {
   };
 
   tab.addEventListener("click", () => {
-    if (root.hidden) return;
+    if (root.hidden || sealed || tab.disabled) return;
     if (open) closePanel();
     else openPanel();
   });
@@ -427,31 +596,50 @@ export function initWhisper() {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (busy) return;
+    if (busy || sealed) return;
 
     const raw = input.value.trim();
     input.value = "";
     if (!raw) return;
 
     setBusy(true);
+    let keepBusy = false;
     try {
       await typeLine(`> ${raw}`, "", { record: false });
 
       // Name forbid — works at any point (before other interrupts)
       if (hasForbiddenName(raw)) {
         const reply = WHISPER?.forbiddenName?.reply ?? "Don't say that name.";
-        audio.play("select");
         await typeLine(reply, "whisper__line--prompt", { record: false });
         await repeatLastBot();
         return;
       }
 
-      // Identity interrupt — works at any point
+      // Identity interrupt — phrase may sit among other words; no follow-up
       if (isIdentityAsk(raw)) {
-        const reply = WHISPER?.identity?.reply ?? "Your guide.";
-        audio.play("select");
+        const reply = WHISPER?.identity?.reply ?? "TURN AROUND";
         await typeLine(reply, "whisper__line--prompt", { record: false });
-        await repeatLastBot();
+        return;
+      }
+
+      // Pad code before sudoku — dismiss guide into farewell mode
+      const sudokuStep = steps.findIndex((s) => s?.grid);
+      const early = WHISPER?.earlyCode;
+      if (
+        !done &&
+        sudokuStep >= 0 &&
+        step < sudokuStep &&
+        containsPhrase(raw, early?.match ?? ["512", "g512"])
+      ) {
+        audio.play("deny");
+        await typeLine(
+          early?.text ?? "So you already know. Stop wasting my time.",
+          "whisper__line--deny"
+        );
+        done = true;
+        step = steps.length;
+        farewellIndex = 0;
+        writeProgress(step, true);
         return;
       }
 
@@ -459,20 +647,13 @@ export function initWhisper() {
       if (done || step >= steps.length) {
         const idx = Math.min(farewellIndex, farewell.length - 1);
         farewellIndex = Math.min(farewellIndex + 1, farewell.length - 1);
-        audio.play("open");
+        audio.play("deny");
         await typeLine(farewell[idx], "whisper__line--deny");
         return;
       }
 
       const current = steps[step];
-      const soft = current.softReject;
-      const softHit =
-        soft &&
-        matchesStepList(
-          raw,
-          soft.match ?? [],
-          soft.matchMode ?? current.acceptMode ?? "exact"
-        );
+      const soft = findSoftReject(current, raw);
       const accepted = matchesStepList(
         raw,
         current.accept ?? [],
@@ -480,30 +661,42 @@ export function initWhisper() {
       );
 
       // Negatives win over affirmatives when both could match
-      if (softHit && !accepted) {
-        audio.play("open");
-        await typeLine(soft.text, "whisper__line--deny");
+      if (soft && !accepted) {
+        if (soft.laughLock) {
+          keepBusy = true;
+          await runLaughLock();
+          return;
+        }
+        audio.play("deny");
+        await typeLine(
+          soft.text,
+          soft.cls || "whisper__line--deny"
+        );
         return;
       }
 
       if (accepted) {
-        audio.play("select");
         await advanceAfterAccept(current, raw);
         return;
       }
 
-      if (softHit) {
-        audio.play("open");
-        await typeLine(soft.text, "whisper__line--deny");
-        return;
-      }
-
-      audio.play("open");
+      audio.play("deny");
       await typeLine(deny, "whisper__line--deny");
       await showStepPrompt(current, { animateGrid: false });
     } finally {
-      setBusy(false);
-      if (open) input.focus();
+      if (!keepBusy && !sealed) {
+        setBusy(false);
+        if (open) input.focus();
+      }
     }
   });
+
+  log.addEventListener("scroll", updateRail, { passive: true });
+  window.addEventListener("resize", updateRail);
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(updateRail);
+    ro.observe(log);
+    if (panel) ro.observe(panel);
+  }
+  updateRail();
 }

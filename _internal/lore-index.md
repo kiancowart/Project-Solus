@@ -41,12 +41,12 @@ System Chart dossiers (▽ NN // BIND)  ↔  Flight Log imperial fragments
 Imperial Clearance 9-slot assemble  →  Archives + Guest Channel
 ```
 
-Full ARG overview (Discord → Imperial): [`arg/README.md`](arg/README.md) · editable solutions in [`content/arg-path.js`](../content/arg-path.js).
+Full ARG bible (engagement, funnels, deep board, phases): [`arg/MASTER.md`](arg/MASTER.md) · day-of pins/solutions: [`arg/README.md`](arg/README.md) · editable answers: [`content/arg-path.js`](../content/arg-path.js).
 
 1. **Off-site first** — [`intercept.html`](../intercept.html). Carriers: **097.9** · **033.3**.
-2. **Pad `512`** — Opens hub; **STATUS** is the ARG board (Flight Log / Chart sealed until INNER puzzles).
+2. **Pad `512`** — Opens hub; **STATUS** + **TERMINAL** available; Flight Log / Chart sealed until INNER puzzles.
 3. **STATUS puzzles** — FTH: `/outer` → `/inner` → click INNER bays for Chart / Log.
-4. **Chart + Log** — Planet dossiers teach slot order; journals yield ▽ fragments via exact keywords.
+4. **Chart + Log** — Dominion Seal ordinals teach bind order (see MASTER); journals yield ▽ fragments via exact keywords.
 5. **Imperial Clearance** — 3×3 wells (planet + fragment). Wrong bind → `SEAL HOLDS` (brief). Grants `lattice.clearance=imperial`.
 6. **Whisper** — Pad guide only; does **not** grant Imperial.
 7. **Shareable** — Clues are words/docs; each browser keeps its own progress.
@@ -76,7 +76,7 @@ src/           ES modules (boot, clearance, whisper, flight-log, …)
 content/       boot-content.js · lore-catalog.js · flight-log.generated.js
 scripts/       build-lore-catalog.js · build-flight-log.js
 assets/        images · audio
-_internal/     author docs — lore-index.md · arg/README.md (full ARG)
+_internal/     author docs — lore-index.md · arg/MASTER.md · arg/README.md
 lore/          → Obsidian Sol System
 ```
 
@@ -86,4 +86,4 @@ Entry: `index.html` → `src/main.js`
 
 ## Future hooks (not locked)
 
-Parked Celeste / Nu Lunae / partner-name notes live at the end of [`arg/README.md`](arg/README.md) §7.
+Parked Celeste / Nu Lunae / partner-name notes live in [`arg/MASTER.md`](arg/MASTER.md) §9.

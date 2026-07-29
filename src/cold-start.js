@@ -12,6 +12,7 @@ const COLD_KEYS = [
   "lattice.interceptEcho",
   "lattice.whisperStep",
   "lattice.whisperDone",
+  "lattice.whisperSealed",
   ...PROGRESS_STORAGE_KEYS,
 ];
 

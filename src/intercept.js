@@ -41,10 +41,12 @@ const DETENT_RANGE = 0.75;
 const DETENT_MAX_ACCEL = 0.28;
 const DETENT_PULL = 1.05;
 const DETENT_SPEED_FLOOR = 0.55;
-const SIGNAL_SRC = "assets/audio/TriadSignal.mp3";
-const BLOOD_SRC = "assets/audio/newblood.mp3";
-/** Both carriers are silent outside this ±MHz band */
+const SIGNAL_SRC = "assets/audio/music/carrier-0979.mp3";
+const BLOOD_SRC = "assets/audio/music/carrier-0333.mp3";
+/** Puzzle carriers are silent outside this ±MHz band */
 const SIGNAL_HEAR_WINDOW = 15;
+/** Easter-egg beds — audible only inside this ±MHz band */
+const EGG_HEAR_WINDOW = 10;
 /**
  * Clarity curve inside the hear window — higher = static hangs on longer;
  * only near/exact center reads either bed clearly.
@@ -70,6 +72,16 @@ const ECHO = {
   kind: "echo",
   lockable: false,
 };
+
+/**
+ * Soft easter-egg beds — waveform + audio only.
+ * No glow, detent, snap, or lock (kept out of CARRIERS).
+ */
+const EASTER_BEDS = [
+  { id: "song1", freq: 10.5, src: "assets/audio/music/egg-0105.mp3" },
+  { id: "curiosity", freq: 51.2, src: "assets/audio/voice/egg-0512.mp3" },
+  { id: "song2", freq: 66.6, src: "assets/audio/music/egg-0666.mp3" },
+];
 
 const CARRIERS = [GREETING, ECHO];
 const TUNED_KEY = GREETING.storageKey;
@@ -107,11 +119,32 @@ function nearestCarrier(freq) {
   return { carrier: best, dist: bestDist };
 }
 
-/** 0 outside ±SIGNAL_HEAR_WINDOW; rises late so the bed stays buried until close. */
-function carrierClarity(dist) {
-  if (!Number.isFinite(dist) || dist > SIGNAL_HEAR_WINDOW) return 0;
-  const t = 1 - dist / SIGNAL_HEAR_WINDOW;
+/** 0 outside ±window; rises late so the bed stays buried until close. */
+function clarityInWindow(dist, window) {
+  if (!Number.isFinite(dist) || dist > window) return 0;
+  const t = 1 - dist / window;
   return Math.pow(clamp(t, 0, 1), SIGNAL_CLARITY_CURVE);
+}
+
+function carrierClarity(dist) {
+  return clarityInWindow(dist, SIGNAL_HEAR_WINDOW);
+}
+
+function eggClarity(dist) {
+  return clarityInWindow(dist, EGG_HEAR_WINDOW);
+}
+
+function nearestEasterBed(freq) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const bed of EASTER_BEDS) {
+    const d = Math.abs(freq - bed.freq);
+    if (d < bestDist) {
+      bestDist = d;
+      best = bed;
+    }
+  }
+  return { bed: best, dist: bestDist };
 }
 
 function storageFlag(key) {
@@ -159,6 +192,8 @@ class RadioTuner {
     this.flatViz = false;
     this.hideBars = false;
     this.clarity = 0;
+    /** Drives scope motion without CSS glow (includes easter beds). */
+    this.vizClarity = 0;
     this.bloodLyricLive = false;
     this.lyricIndex = 0;
     this.lyricLastT = 0;
@@ -175,6 +210,8 @@ class RadioTuner {
     this.signalGain = null;
     this.blood = null;
     this.bloodGain = null;
+    /** @type {{ id: string, freq: number, el: HTMLAudioElement, gain: GainNode }[]} */
+    this.eggBeds = [];
     this.muffLp = null;
     this.muffHp = null;
     this.noiseGain = null;
@@ -257,6 +294,8 @@ class RadioTuner {
       this.holdMs = 0;
       setActiveBtn(dir);
       void this.#ensureAudio();
+      if (audio.enabled) audio.play("channelSwitch");
+      else void audio.enable().then(() => audio.play("channelSwitch"));
       this.root?.classList.add("radio--spinning");
     };
     const stop = () => {
@@ -323,6 +362,11 @@ class RadioTuner {
       if (this.blood?.paused && !this.locked) {
         this.blood.play().catch(() => {});
       }
+      for (const bed of this.eggBeds) {
+        if (bed.el.paused && !this.locked) {
+          bed.el.play().catch(() => {});
+        }
+      }
       return;
     }
 
@@ -381,7 +425,7 @@ class RadioTuner {
     noiseMix.gain.value = 1;
 
     this.noiseGain = this.ctx.createGain();
-    this.noiseGain.gain.value = 0.72;
+    this.noiseGain.gain.value = 0.54;
 
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 256;
@@ -400,6 +444,18 @@ class RadioTuner {
 
     bloodSource.connect(this.bloodGain);
 
+    this.eggBeds = EASTER_BEDS.map((def) => {
+      const eggEl = new Audio(def.src);
+      eggEl.loop = true;
+      eggEl.preload = "auto";
+      const eggSource = this.ctx.createMediaElementSource(eggEl);
+      const gain = this.ctx.createGain();
+      gain.gain.value = 0;
+      eggSource.connect(gain);
+      gain.connect(this.analyser);
+      return { id: def.id, freq: def.freq, el: eggEl, gain };
+    });
+
     this.noiseNode.connect(this.noiseDull);
     this.noiseNode.connect(this.noiseBright);
     this.noiseDull.connect(noiseMix);
@@ -414,7 +470,11 @@ class RadioTuner {
 
     this.noiseNode.start();
     try {
-      await Promise.all([el.play(), bloodEl.play()]);
+      await Promise.all([
+        el.play(),
+        bloodEl.play(),
+        ...this.eggBeds.map((b) => b.el.play()),
+      ]);
     } catch {
       /* retry on next spin */
     }
@@ -444,34 +504,60 @@ class RadioTuner {
     this.#applyAudioMix(this.clarity);
   }
 
-  #applyAudioMix(clarity) {
+  #applyAudioMix(puzzleClarity) {
     if (!this.audioReady) return;
     const t = this.ctx.currentTime;
-    const mud = 1 - clarity;
 
     const greetClarity = carrierClarity(Math.abs(this.freq - GREETING.freq));
     const bloodClarity = carrierClarity(Math.abs(this.freq - ECHO.freq));
+    const { bed: nearEgg, dist: eggDist } = nearestEasterBed(this.freq);
+    const nearEggClarity = nearEgg ? eggClarity(eggDist) : 0;
 
-    if (bloodClarity > 0) {
-      this.bloodGain?.gain.setTargetAtTime(0.45 + bloodClarity * 1.55, t, 0.08);
-      this.signalGain.gain.setTargetAtTime(0.015 * (1 - bloodClarity), t, 0.12);
-    } else if (greetClarity > 0) {
+    const { carrier: nearPuzzle, dist: puzzleDist } = nearestCarrier(this.freq);
+    // Prefer the closer mark so easter beds don't fight puzzle carriers
+    const eggPriority =
+      nearEgg &&
+      nearEggClarity > 0 &&
+      (!nearPuzzle || eggDist < puzzleDist - 0.05);
+
+    let audioClarity = puzzleClarity;
+
+    if (eggPriority) {
+      audioClarity = nearEggClarity;
       this.bloodGain?.gain.setTargetAtTime(0, t, 0.08);
-      this.signalGain.gain.setTargetAtTime(0.04 + greetClarity * 0.96, t, 0.1);
+      this.signalGain.gain.setTargetAtTime(0.015 * (1 - nearEggClarity), t, 0.12);
+      for (const bed of this.eggBeds) {
+        const c = eggClarity(Math.abs(this.freq - bed.freq));
+        bed.gain.gain.setTargetAtTime(c > 0 ? 0.35 + c * 1.2 : 0, t, 0.1);
+      }
     } else {
-      this.bloodGain?.gain.setTargetAtTime(0, t, 0.08);
-      this.signalGain.gain.setTargetAtTime(0.02, t, 0.12);
+      for (const bed of this.eggBeds) {
+        bed.gain.gain.setTargetAtTime(0, t, 0.08);
+      }
+      if (bloodClarity > 0) {
+        this.bloodGain?.gain.setTargetAtTime(0.45 + bloodClarity * 1.55, t, 0.08);
+        this.signalGain.gain.setTargetAtTime(0.015 * (1 - bloodClarity), t, 0.12);
+      } else if (greetClarity > 0) {
+        this.bloodGain?.gain.setTargetAtTime(0, t, 0.08);
+        this.signalGain.gain.setTargetAtTime(0.04 + greetClarity * 0.96, t, 0.1);
+      } else {
+        this.bloodGain?.gain.setTargetAtTime(0, t, 0.08);
+        this.signalGain.gain.setTargetAtTime(0.02, t, 0.12);
+      }
     }
+
+    this.vizClarity = eggPriority ? nearEggClarity : puzzleClarity;
+    const mud = 1 - audioClarity;
 
     // Static falls off gently — still present until you're nearly on-carrier
-    this.noiseGain.gain.setTargetAtTime(0.26 + mud * 0.52, t, 0.12);
-    this.muffLp.frequency.setTargetAtTime(420 + clarity * 5200, t, 0.14);
-    this.muffHp.frequency.setTargetAtTime(130 - clarity * 80, t, 0.14);
+    this.noiseGain.gain.setTargetAtTime(0.195 + mud * 0.39, t, 0.12);
+    this.muffLp.frequency.setTargetAtTime(420 + audioClarity * 5200, t, 0.14);
+    this.muffHp.frequency.setTargetAtTime(130 - audioClarity * 80, t, 0.14);
     if (this.noiseBright) {
-      this.noiseBright.frequency.setTargetAtTime(3000 - clarity * 700, t, 0.15);
+      this.noiseBright.frequency.setTargetAtTime(3000 - audioClarity * 700, t, 0.15);
     }
     if (this.noiseDull) {
-      this.noiseDull.frequency.setTargetAtTime(1100 + clarity * 350, t, 0.15);
+      this.noiseDull.frequency.setTargetAtTime(1100 + audioClarity * 350, t, 0.15);
     }
   }
 
@@ -513,12 +599,28 @@ class RadioTuner {
 
     if (!this.locked) {
       const { carrier, dist } = nearestCarrier(this.freq);
-      this.#setClarity(carrierClarity(dist));
+      const { bed: nearEgg, dist: eggDist } = nearestEasterBed(this.freq);
+      const onEgg =
+        nearEgg &&
+        eggClarity(eggDist) > 0 &&
+        (!carrier || eggDist < dist - 0.05);
 
-      if (carrier && dist <= LOCK_TOLERANCE) {
+      // Easter beds never raise CSS --clarity (no phosphor lock glow)
+      this.#setClarity(onEgg ? 0 : carrierClarity(dist));
+
+      if (!onEgg && carrier && dist <= LOCK_TOLERANCE) {
         this.root?.classList.add("radio--on-signal");
-        if (carrier.kind === "echo") this.root?.classList.add("radio--on-echo");
-        else this.root?.classList.remove("radio--on-echo");
+        if (carrier.kind === "echo") {
+          this.root?.classList.add("radio--on-echo");
+          this.root?.classList.remove("radio--freq-gold");
+        } else {
+          this.root?.classList.remove("radio--on-echo");
+          // Gold only when the display reads exactly 097.9
+          const onGreetingExact =
+            carrier.id === GREETING.id &&
+            formatFreq(this.freq) === formatFreq(GREETING.freq);
+          this.root?.classList.toggle("radio--freq-gold", onGreetingExact);
+        }
 
         if (carrier.lockable === false) {
           this.lockHoldMs = 0;
@@ -533,7 +635,11 @@ class RadioTuner {
         this.lockHoldMs =
           this.direction === 0 ? Math.max(0, this.lockHoldMs - dt * 1000 * 1.5) : 0;
         if (this.lockHoldMs === 0) {
-          this.root?.classList.remove("radio--on-signal", "radio--on-echo");
+          this.root?.classList.remove(
+            "radio--on-signal",
+            "radio--on-echo",
+            "radio--freq-gold"
+          );
         }
       }
     }
@@ -705,7 +811,8 @@ class RadioTuner {
 
     const mid = (BAR_COUNT - 1) / 2;
     const phase = this.lastTs * 0.009;
-    const c = this.clarity;
+    // Egg beds drive scope motion without raising CSS --clarity (no lock glow)
+    const c = Math.max(this.clarity, this.vizClarity || 0);
     // Push mid-clarity toward static so only a hard lock looks “alive”
     const signalWeight = Math.pow(c, 1.65);
     const staticWeight = 1 - signalWeight;
@@ -784,6 +891,9 @@ class RadioTuner {
     if (this.bloodGain && this.ctx) {
       this.bloodGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
     }
+    for (const bed of this.eggBeds) {
+      bed.gain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
+    }
     await this.#lockGreeting();
   }
 
@@ -806,7 +916,10 @@ class RadioTuner {
 
     this.root?.classList.add("radio--splitting");
     this.stage?.classList.add("intercept-stage--opening");
-    await this.#wait(1150);
+    const openMs = 1150;
+    if (audio.enabled) audio.play("revealScan", { durationMs: openMs });
+    else void audio.enable().then(() => audio.play("revealScan", { durationMs: openMs }));
+    await this.#wait(openMs);
 
     this.#revealMessage();
   }
@@ -815,7 +928,7 @@ class RadioTuner {
     if (!this.signal || !this.ctx) return;
 
     const t = this.ctx.currentTime;
-    this.noiseGain.gain.setTargetAtTime(0.012, t, 0.08);
+    this.noiseGain.gain.setTargetAtTime(0.009, t, 0.08);
     this.signalGain.gain.setTargetAtTime(1, t, 0.08);
     this.muffLp.frequency.setTargetAtTime(14000, t, 0.08);
     this.muffHp.frequency.setTargetAtTime(40, t, 0.08);
