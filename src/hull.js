@@ -11,6 +11,7 @@ import {
   DAMAGE_EPOCH,
   FTH_HUB,
   IMPERIAL_SLOTS,
+  getIkephPassageLines,
 } from "../content/arg-path.js";
 import {
   getHullProgress,
@@ -128,13 +129,6 @@ export function initHullPlan() {
       serialLine.className = "hull-detail__line";
       serialLine.innerHTML = `<span class="hull-detail__k">SERIAL</span><span class="hull-detail__v">—</span>`;
       partDetail.appendChild(serialLine);
-    }
-
-    if (station.cradleGlyph) {
-      const glyphLine = document.createElement("p");
-      glyphLine.className = "hull-detail__line";
-      glyphLine.innerHTML = `<span class="hull-detail__k">CRADLE</span><span class="hull-detail__v">GLYPH ${station.serial}</span>`;
-      partDetail.appendChild(glyphLine);
     }
 
     const todHead = document.createElement("p");
@@ -561,8 +555,16 @@ export function initFthConsole() {
       return;
     }
 
-    if (verb === "whoami") {
-      FTH_HUB.whoami.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
+    if (verb === "landing" || verb === "land") {
+      FTH_HUB.landing.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
+      return;
+    }
+
+    if (verb === "passage") {
+      push("PASSAGE // EMPRESS REWARD VERSE", "fth-console__line--sys");
+      getIkephPassageLines().forEach((line) =>
+        push(line, "fth-console__line--sys")
+      );
       return;
     }
 

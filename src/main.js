@@ -10,6 +10,7 @@ import { initNav, initSystems } from "./nav.js";
 import { initImagoReturn, runBoot } from "./boot.js";
 import { initWhisper } from "./whisper.js";
 import { initCartography } from "./cartography.js";
+import { initCompass } from "./compass.js";
 import { initHullPlan, initFthConsole } from "./hull.js";
 import { initFlightLog } from "./flight-log.js";
 import { initArchives } from "./archives.js";
@@ -23,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initSystems();
   initImagoReturn();
   initWhisper();
+  initCompass();
   initCartography();
   initHullPlan();
   initFthConsole();

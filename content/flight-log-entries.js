@@ -59,7 +59,7 @@ export const FLIGHT_LOG_ENTRIES = [
     date: "1541.06.22",
     planetId: "terra",
     fragment: FRAG_BY_PLANET.terra,
-    body: `Terra workshops remember more than people do. I keep saying her name into the recorder — [[${FRAG_BY_PLANET.terra}]] — like a machine prayer.\n\nSed convallis tristique sem. Proin ut ligula vel nunc egestas porttitor. Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula laciniae aliquet.`,
+    body: `Terra workshops remember more than people do. Machines dreaming of flesh, flesh dreaming of machines — and I keep saying her name into the recorder — [[${FRAG_BY_PLANET.terra}]] — like a machine prayer.\n\nResolution is not a sermon here. It is a hull that refuses to fold. Cara taught me the Chart purge in two soft words: HOLD FAST.\n\nSTATUS still stamps ok stations FC1 · NL2 · WR4 like cradle noise. Pretty serials. Ignore them for the seal — they are just the ship remembering how to stand.\n\nJunk: glyph · neon · triad · outerbelt · 870.`,
   },
   {
     id: "flog-06",

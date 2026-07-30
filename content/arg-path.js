@@ -29,7 +29,7 @@ export const PUZZLE_A = {
   promptKhan: "ENTR KHAN ID",
   successLine: "OUTER AUTH OK — OPTICS BUS ARMED",
   helpLine:
-    "CMDS: /help · /outer · /inner · /whoami · /volume · /protocol · /echo · /moon · /edge",
+    "CMDS: /help · /outer · /inner · /landing · /volume · /protocol · /echo · /moon · /edge",
   unknownLine: "CMD NOT RECOGNIZED — TYPE /help FOR COMMAND LIST",
 };
 
@@ -37,11 +37,14 @@ export const PUZZLE_A = {
    Terminal hub — purposeful instruments only (logic in src/hull.js)
    --------------------------------------------------------------------------- */
 export const FTH_HUB = {
-  whoami: [
-    "OPERATOR // GUEST TRAFFIC ON CARAPACE G512 · KHAN LINE: S. RAEI",
-    "SIDEARM PLATE // KSP-512 · PLATE CODE 870",
-    "OPTICS FLARE SEQ // B · A · C  (QAMOR BAY LOCK)",
-    "SEALS // VEIL: Devotion·Erudition·Resolution · NEUTRAL: Communion·Justice·Ambition · SCOURGE: Dominance·Sacrifice·Vengeance",
+  landing: [
+    "LANDING GEAR BUS // LEGS L-1 … L-6",
+    "PROFILE · PAD-GRADE APRON (MARKED BERTH)",
+    "  ACTUATION // L-1 · L-4 · L-5 · L-2",
+    "PROFILE · SPOIL / BROKEN STRATA (ROUGH TERRAIN)",
+    "  ACTUATION // L-2 · L-1 · L-3 · L-5",
+    "PROFILE · DUST-FLAT BERTH (UNMARKED NATURAL)",
+    "  ACTUATION // L-3 · L-5 · L-6 · L-4",
   ].join("\n"),
   volumeSealed: "VOLUME INDEX SEALED — CLAIM THAT WORLD'S FRAGMENT FIRST",
   volumeUsage: "USAGE: /volume <planet>  — confirms fragment after claim",
@@ -96,7 +99,6 @@ export const OUTER_STATIONS = [
     serial: "FC1",
     damageOrder: null,
     damageTime: null,
-    cradleGlyph: true,
   },
   {
     id: "ndl-l",
@@ -105,7 +107,6 @@ export const OUTER_STATIONS = [
     serial: "NL2",
     damageOrder: null,
     damageTime: null,
-    cradleGlyph: true,
   },
   {
     id: "ndl-r",
@@ -130,7 +131,6 @@ export const OUTER_STATIONS = [
     serial: "WR4",
     damageOrder: null,
     damageTime: null,
-    cradleGlyph: true,
   },
   {
     id: "msl-top",
@@ -220,33 +220,46 @@ export const CHART_PUZZLES = {
   qamor: {
     type: "sequence",
     prompt: "CORRUPTION PURGE QUERY",
-    hint: "Optics residue: /whoami lists FLARE SEQ.",
+    hint: "Recompile mining planet landing profile",
     nodes: [
-      { id: "A", label: "A" },
-      { id: "B", label: "B" },
-      { id: "C", label: "C" },
+      { id: "L-1", label: "L-1" },
+      { id: "L-2", label: "L-2" },
+      { id: "L-3", label: "L-3" },
+      { id: "L-4", label: "L-4" },
+      { id: "L-5", label: "L-5" },
+      { id: "L-6", label: "L-6" },
     ],
-    /** Click order: B, A, C */
-    answer: ["B", "A", "C"],
+    /** Spoil / broken strata (rough) actuation from /landing */
+    answer: ["L-2", "L-1", "L-3", "L-5"],
   },
   ikeph: {
     type: "reorder",
     prompt: "CORRUPTION PURGE QUERY",
-    hint: "Terminal leaf after volume open, or hymn scraps in Ikeph log.",
+    hint: "Recompile archive anchor passage",
     lines: [
-      { id: "l0", text: "understory sweet with Her name" },
-      { id: "l1", text: "table fed by every leaf" },
-      { id: "l2", text: "first the canopy remembers" },
+      { id: "l5", text: "THE IRON RED WITHIN" },
+      { id: "l1", text: "SO THE FAITHFUL MAY FILL THEIR CUPS" },
+      { id: "l7", text: "THE RESULT WOULD BE A SHAME" },
+      { id: "l0", text: "THE EMPRESS GIVES HER REWARD" },
+      { id: "l3", text: "SHE CUTS PURITY POURS" },
+      { id: "l8", text: "BLOOD IS WHAT IS BEING SPILLED" },
+      { id: "l2", text: "A WINE ONLY SHE CAN GIVE" },
+      { id: "l6", text: "WERE WE TO DO THE SAME" },
+      { id: "l4", text: "FROM BENEATH THE SKIN" },
     ],
-    /** Correct order: first / table / understory */
-    answer: ["l2", "l1", "l0"],
+    /** Blood carrier verse — final line restated (not a question) */
+    answer: ["l0", "l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8"],
   },
   terra: {
-    type: "assemble",
+    type: "text",
     prompt: "CORRUPTION PURGE QUERY",
-    hint: "STATUS outer ok stations carry cradle glyphs: FC1 · NL2 · WR4.",
-    pieces: ["FC1", "NL2", "WR4"],
-    answer: ["FC1", "NL2", "WR4"],
+    hint: "Flight Log remembers what endures.",
+    answers: [
+      "hold fast",
+      "holdfast",
+      "HOLD FAST",
+      "hold-fast",
+    ],
   },
   deshret: {
     type: "dial",
@@ -256,11 +269,11 @@ export const CHART_PUZZLES = {
     answer: 5,
   },
   teavicta: {
-    type: "flag",
-    prompt: "CORRUPTION PURGE QUERY // TERMINAL GATED",
-    hint: "Run /protocol on Terminal. The red storm is the watchful eye of the Empress's justice.",
-    hullFlag: "teavictaProtocol",
-    terminalGated: true,
+    type: "cardinal-eye",
+    prompt: "CORRUPTION PURGE QUERY",
+    hint: "Cardinal realignment required.",
+    /** Compass starts East; each correct look advances the ribbon. */
+    answer: ["E", "W", "N", "S"],
   },
   uros: {
     type: "text",
@@ -289,6 +302,14 @@ export const CHART_PUZZLES = {
     terminalGated: true,
   },
 };
+
+/** Correct Ikeph reorder verse (Empress reward / blood passage). */
+export function getIkephPassageLines() {
+  const puzzle = CHART_PUZZLES.ikeph;
+  if (!puzzle?.answer?.length) return [];
+  const byId = Object.fromEntries((puzzle.lines ?? []).map((l) => [l.id, l.text]));
+  return puzzle.answer.map((id) => byId[id]).filter(Boolean);
+}
 
 /* ---------------------------------------------------------------------------
    Empire seals — Empress purity facets + planet associations

@@ -16,6 +16,12 @@ import {
   markDossierUnlocked,
 } from "./progress.js";
 import { hasImperialClearance } from "./milestones.js";
+import {
+  getCompassCardinal,
+  glitchCompass,
+  resetCompass,
+  setCompassCardinal,
+} from "./compass.js";
 
 /* ==========================================================================
    CARTOGRAPHY — The Nine orbital chart
@@ -55,12 +61,28 @@ export function initCartography() {
   const idle = SYSTEM_CHART.idle ?? "SELECT ORBITAL BODY";
   const errorText = SYSTEM_CHART.error ?? "GYROSCOPIC DATA SYNC ERROR";
 
-  if (archiveEl && archiveBody && archive) {
+  const IKEPH_ARCHIVE = {
+    code: "CART.ARCHIVE // STATUS=PARTIAL · ANCHOR BLEED",
+    body:
+      "Corrupt extract hitch on Ikeph. Latched residue overheard — Terminal accepts hidden command /passage.",
+  };
+
+  const paintArchive = (forPlanetId = null) => {
+    if (!archiveBody || !archive) return;
+    const showPassageHint =
+      forPlanetId === "ikeph" && !isDossierUnlocked("ikeph");
+    const code = showPassageHint ? IKEPH_ARCHIVE.code : (archive.code ?? "");
+    const body = showPassageHint ? IKEPH_ARCHIVE.body : (archive.body ?? "");
+    archiveBody.innerHTML = `
+      <p class="chart-archive__code">${code}</p>
+      <p class="chart-archive__text">${body}</p>`;
+    archiveEl?.classList.toggle("is-live", showPassageHint);
+  };
+
+  if (archiveEl && archive) {
     const title = archiveEl.querySelector(".chart-archive__title");
     if (title && archive.title) title.textContent = archive.title;
-    archiveBody.innerHTML = `
-      <p class="chart-archive__code">${archive.code ?? ""}</p>
-      <p class="chart-archive__text">${archive.body ?? ""}</p>`;
+    paintArchive(null);
   }
 
   const vb = 520;
@@ -169,6 +191,7 @@ export function initCartography() {
     if (selectedG) selectedG.classList.remove("is-selected");
     selectedId = null;
     selectedG = null;
+    paintArchive(null);
   };
 
   const showIdle = () => {
@@ -176,6 +199,7 @@ export function initCartography() {
       stopWire();
       stopWire = null;
     }
+    paintArchive(null);
     readout.innerHTML = `<p class="chart__idle">${idle}</p>`;
   };
 
@@ -185,6 +209,7 @@ export function initCartography() {
       stopWire();
       stopWire = null;
     }
+    paintArchive(null);
     readout.innerHTML = `<p class="chart__error">${errorText}</p>`;
   };
 
@@ -199,6 +224,7 @@ export function initCartography() {
       stopWire();
       stopWire = null;
     }
+    paintArchive(planetId);
     const seal = sealById(d.sealId) ?? null;
     const showSealHeader = hasImperialClearance() && seal;
     const sealLine = showSealHeader
@@ -228,7 +254,9 @@ export function initCartography() {
   const unlockAndShow = (planetId) => {
     markDossierUnlocked(planetId);
     audio.play("unlock");
+    paintArchive(planetId);
     showDossier(planetId);
+    if (planetId === "teavicta") resetCompass({ animate: true });
     window.dispatchEvent(
       new CustomEvent("lattice:dossier", { detail: { planetId } })
     );
@@ -249,6 +277,22 @@ export function initCartography() {
     audio.play("deny");
   };
 
+  /** Match number-pad DENIED flash duration (src/boot.js). */
+  const DENY_FLASH_MS = 700;
+  let denyFlashTimer = 0;
+
+  const flashDenyFeedback = (feedback, message = "DENIED") => {
+    if (!feedback) return;
+    window.clearTimeout(denyFlashTimer);
+    feedback.textContent = message;
+    feedback.classList.add("is-deny");
+    denyFlashTimer = window.setTimeout(() => {
+      feedback.textContent = "";
+      feedback.classList.remove("is-deny");
+      denyFlashTimer = 0;
+    }, DENY_FLASH_MS);
+  };
+
   const showPuzzle = (planetId) => {
     const puzzle = CHART_PUZZLES[planetId];
     const name = PLANET_DOSSIERS[planetId]?.title ?? planetId.toUpperCase();
@@ -262,6 +306,7 @@ export function initCartography() {
       stopWire();
       stopWire = null;
     }
+    paintArchive(planetId);
 
     if (puzzle.type === "flag") {
       const prog = getHullProgress();
@@ -278,6 +323,101 @@ export function initCartography() {
       if (ok) {
         requestAnimationFrame(() => unlockAndShow(planetId));
       }
+      return;
+    }
+
+    if (puzzle.type === "cardinal-eye") {
+      const answer = puzzle.answer ?? ["E", "W", "N", "S"];
+      let step = 0;
+      resetCompass({ animate: false });
+
+      readout.innerHTML = `
+        <div class="chart-lock chart-lock--eye" id="chart-lock">
+          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__prompt">${puzzle.prompt}</p>
+          <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+          <div class="chart-eye" id="chart-eye">
+            <svg
+              class="chart-eye__svg"
+              viewBox="0 0 220 180"
+              aria-hidden="true"
+            >
+              <!-- Diamond eye -->
+              <polygon
+                class="chart-eye__lid"
+                points="110,42 188,90 110,138 32,90"
+                fill="none"
+              />
+              <!-- Inverted triangle pupil (outline) -->
+              <polygon
+                class="chart-eye__pupil"
+                id="chart-eye-pupil"
+                points="110,108 92,74 128,74"
+              />
+              <!-- Cardinal chevrons outside vertices -->
+              <path class="chart-eye__chevron" data-dir="N" d="M98 30 L110 16 L122 30" fill="none" />
+              <path class="chart-eye__chevron" data-dir="E" d="M196 78 L210 90 L196 102" fill="none" />
+              <path class="chart-eye__chevron" data-dir="S" d="M98 150 L110 164 L122 150" fill="none" />
+              <path class="chart-eye__chevron" data-dir="W" d="M24 78 L10 90 L24 102" fill="none" />
+            </svg>
+            <button type="button" class="chart-eye__arrow chart-eye__arrow--n" data-dir="N" aria-label="Look north"></button>
+            <button type="button" class="chart-eye__arrow chart-eye__arrow--e" data-dir="E" aria-label="Look east"></button>
+            <button type="button" class="chart-eye__arrow chart-eye__arrow--s" data-dir="S" aria-label="Look south"></button>
+            <button type="button" class="chart-eye__arrow chart-eye__arrow--w" data-dir="W" aria-label="Look west"></button>
+          </div>
+          <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
+        </div>`;
+
+      const lock = readout.querySelector("#chart-lock");
+      const eye = readout.querySelector("#chart-eye");
+      const pupil = readout.querySelector("#chart-eye-pupil");
+      const feedback = readout.querySelector("#chart-lock-feedback");
+
+      const lookOffsets = {
+        N: "0 -8",
+        E: "10 0",
+        S: "0 8",
+        W: "-10 0",
+      };
+
+      const setLook = (dir) => {
+        eye?.setAttribute("data-look", dir || "");
+        eye?.querySelectorAll(".chart-eye__chevron").forEach((c) => {
+          c.classList.toggle("is-active", Boolean(dir) && c.dataset.dir === dir);
+        });
+        const off = lookOffsets[dir] ?? "0 0";
+        if (pupil) {
+          pupil.style.transform = dir
+            ? `translate(${off.split(" ")[0]}px, ${off.split(" ")[1]}px)`
+            : "";
+        }
+      };
+
+      readout.querySelectorAll(".chart-eye__arrow").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const dir = btn.dataset.dir;
+          if (!dir) return;
+          setLook(dir);
+          const needed = answer[step];
+          const facing = getCompassCardinal();
+          // Required look matches current compass facing (starts East)
+          if (dir === needed && dir === facing) {
+            audio.play("click");
+            glitchCompass();
+            step += 1;
+            if (step >= answer.length) {
+              unlockAndShow(planetId);
+              return;
+            }
+            setCompassCardinal(answer[step], { animate: true });
+            return;
+          }
+          shakeLock(lock);
+          step = 0;
+          resetCompass({ animate: true });
+          window.setTimeout(() => setLook(""), 280);
+        });
+      });
       return;
     }
 
@@ -313,7 +453,7 @@ export function initCartography() {
               const ok = seq.every((id, i) => id === puzzle.answer[i]);
               if (ok) unlockAndShow(planetId);
               else {
-                if (feedback) feedback.textContent = "SEQUENCE REJECTED";
+                flashDenyFeedback(feedback);
                 shakeLock(lock);
                 seq = [];
                 host.querySelectorAll(".chart-lock__node").forEach((n) =>
@@ -328,7 +468,12 @@ export function initCartography() {
       paint();
       readout.querySelector("#chart-lock-reset")?.addEventListener("click", () => {
         seq = [];
-        if (feedback) feedback.textContent = "";
+        window.clearTimeout(denyFlashTimer);
+        denyFlashTimer = 0;
+        if (feedback) {
+          feedback.textContent = "";
+          feedback.classList.remove("is-deny");
+        }
         paint();
         audio.play("click");
       });
@@ -525,6 +670,7 @@ export function initCartography() {
       stopWire();
       stopWire = null;
     }
+    paintArchive(null);
     readout.innerHTML = `
       <div class="chart-sturm">
         <div class="wire-globe" aria-hidden="true">
@@ -549,6 +695,7 @@ export function initCartography() {
       stopWire();
       stopWire = null;
     }
+    paintArchive(null);
     const text =
       mystery?.readout ??
       "NU LUNAE // AUX bleed — not Imperial.";
