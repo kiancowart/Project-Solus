@@ -22,12 +22,12 @@ export {
 
 /** Red channel-banner copy — keyed by nav `data-panel` */
 export const CHANNEL_TITLES = {
-  terminal: "FTHFLL // KERNEL SHELL",
-  overview: "HULL TELEMETRY // CRAFT STATUS",
-  flightlog: "FLIGHT LOG // PERSONAL RECORD",
-  imperial: "IMPERIAL CLEARANCE // AUTHORIZATION",
+  terminal: "FTHFLL // KERNEL INTERFACE",
+  overview: "HULL TELEMETRY // CRAFT FUNCTIONALITY",
+  flightlog: "INTERNAL DATABASE // PERSONAL RECORD",
+  imperial: "EMERGENCY OVERRIDE // RECOVERY AUTHORIZATION",
   archives: "ARCHIVES // SHIP MEMORY",
-  cartography: "CARTOGRAPHY // STELLAR FIX",
+  cartography: "CARTOGRAPHY // STELLAR CHART",
   diagnostics: "FIDELITY BUS // SIGNAL DIAGNOSTICS",
   "guest-campaign-1": "EXTERNAL // CAMPAIGN 1",
   "guest-corrupt": "EXTERNAL // CORRUPT SIGNAL",
@@ -145,7 +145,17 @@ export function applyClearanceUI() {
 
   syncImperialGateVisual(imperial);
 
+  document.querySelectorAll(".lattice-route--nav, .nav-route").forEach((el) => {
+    el.hidden = !imperial;
+  });
+  const gateHub = document.getElementById("gate-hub");
+  if (gateHub) gateHub.hidden = !imperial;
+
   if (imperial) initGuestChannel();
+
+  window.dispatchEvent(
+    new CustomEvent("lattice:clearance", { detail: { imperial } })
+  );
 
   const meta = document.getElementById("adb-meta");
   if (meta && LORE_CATALOG) {

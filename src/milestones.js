@@ -97,23 +97,38 @@ export function recoverEntry(entryMeta) {
   };
 }
 
-/** Match Flight Log search query against unlock keywords (exact, case-insensitive). */
-export function recoverByQuery(query, journals) {
+/**
+ * Match Flight Log search against unlock keywords (exact, case-insensitive).
+ * Her Story–style: recovers at most `limit` hits (default 5). Prefer unlocked journals.
+ */
+export function recoverByQuery(query, journals, { limit = 5, unlockedOnly = true } = {}) {
   const q = String(query ?? "")
     .trim()
     .toLowerCase();
   if (!q) return [];
 
-  const recovered = [];
+  const candidates = [];
   for (const journal of journals ?? []) {
+    if (unlockedOnly && !isJournalUnlocked(journal)) continue;
     for (const entry of journal.entries ?? []) {
       const keys = entry.unlockKeywords ?? [];
       if (!keys.length) continue;
       const hit = keys.some((k) => String(k).toLowerCase() === q);
       if (!hit) continue;
-      const result = recoverEntry(entry);
-      if (result.newly) recovered.push({ entry, ...result });
+      candidates.push(entry);
     }
+  }
+
+  candidates.sort(
+    (a, b) =>
+      (a.tellOrder ?? 9999) - (b.tellOrder ?? 9999) ||
+      String(a.id).localeCompare(String(b.id))
+  );
+
+  const recovered = [];
+  for (const entry of candidates.slice(0, Math.max(0, limit))) {
+    const result = recoverEntry(entry);
+    if (result.newly) recovered.push({ entry, ...result });
   }
   return recovered;
 }

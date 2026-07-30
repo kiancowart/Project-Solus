@@ -51,12 +51,29 @@ export function initWhisper() {
   const progressKey = WHISPER?.progressKey ?? "lattice.whisperStep";
   const doneKey = WHISPER?.doneKey ?? "lattice.whisperDone";
   const sealedKey = WHISPER?.sealedKey ?? "lattice.whisperSealed";
+  const sudokuSeenKey = WHISPER?.sudokuSeenKey ?? "lattice.whisperSudokuSeen";
 
   const readSealed = () => {
     try {
       return localStorage.getItem(sealedKey) === "1";
     } catch {
       return false;
+    }
+  };
+
+  const readSudokuSeen = () => {
+    try {
+      return localStorage.getItem(sudokuSeenKey) === "1";
+    } catch {
+      return false;
+    }
+  };
+
+  const writeSudokuSeen = () => {
+    try {
+      localStorage.setItem(sudokuSeenKey, "1");
+    } catch {
+      /* private mode */
     }
   };
 
@@ -225,7 +242,7 @@ export function initWhisper() {
     return null;
   };
 
-  const sealTerminal = () => {
+  const sealTerminal = async () => {
     sealed = true;
     writeSealed();
     done = true;
@@ -235,6 +252,39 @@ export function initWhisper() {
     root.hidden = true;
     tab.disabled = true;
     tab.setAttribute("aria-hidden", "true");
+    await corruptNumberPad({ animate: true });
+  };
+
+  const padGateEl = () => document.getElementById("boot-gate");
+
+  /** Stuck off-kilter pad after HAHA seal (still usable). */
+  const applyStuckPadGlitch = () => {
+    const gate = padGateEl();
+    if (!gate) return;
+    gate.classList.remove("is-pad-glitching");
+    gate.classList.add("is-pad-glitched");
+  };
+
+  const corruptNumberPad = async ({ animate = true } = {}) => {
+    const gate = padGateEl();
+    if (!gate) return;
+
+    if (!animate || prefersReducedMotion()) {
+      applyStuckPadGlitch();
+      return;
+    }
+
+    gate.classList.remove("is-pad-glitched");
+    gate.classList.add("is-pad-glitching");
+    try {
+      if (!audio.enabled) await audio.enable();
+    } catch {
+      /* ignore */
+    }
+    audio.playGlitchBurst({ count: 6, gapMs: 70 });
+    await sleep(900);
+    gate.classList.remove("is-pad-glitching");
+    gate.classList.add("is-pad-glitched");
   };
 
   /** Type HAHA L→R with wrap until the viewport is packed, then seal. */
@@ -243,6 +293,8 @@ export function initWhisper() {
     lastBot = null;
     if (rail) rail.hidden = true;
     log.scrollTop = 0;
+    root.classList.add("is-laugh-lock");
+    root.style.setProperty("--laugh-glitch", "0");
 
     const block = document.createElement("div");
     block.className = "whisper__line whisper__line--deny whisper__line--laugh";
@@ -262,8 +314,11 @@ export function initWhisper() {
         block.textContent = text;
       }
       log.scrollTop = 0;
+      root.style.setProperty("--laugh-glitch", "1");
       await sleep(350);
-      sealTerminal();
+      root.classList.remove("is-laugh-lock");
+      root.style.removeProperty("--laugh-glitch");
+      await sealTerminal();
       return;
     }
 
@@ -275,6 +330,7 @@ export function initWhisper() {
     let text = "";
     let typed = 0;
     let guard = 0;
+    let hahaCount = 0;
 
     while (!isPacked() && guard < 12000) {
       const ch = stream[typed % stream.length];
@@ -283,19 +339,38 @@ export function initWhisper() {
       text += ch;
       block.textContent = text;
       log.scrollTop = 0;
-      if (ch.trim()) audio.play("typewriter");
+
+      // Pack progress → glitch intensity (slow ramp, then aggressive)
+      const pack =
+        fillH() > 1 ? Math.min(1, block.scrollHeight / fillH()) : 0;
+      const glitch = Math.min(1, pack * pack * 0.55 + hahaCount * 0.012);
+      root.style.setProperty("--laugh-glitch", glitch.toFixed(3));
+      root.classList.toggle("is-laugh-harsh", glitch > 0.45);
+      root.classList.toggle("is-laugh-critical", glitch > 0.75);
+
+      if (ch.trim()) audio.play("typewriter", { glitch });
 
       const wait = Math.max(0, baseMs / speed);
       if (wait > 0) await sleep(wait);
 
       if (typed % stream.length === 0) {
         speed += 0.3;
+        hahaCount += 1;
       }
     }
 
     log.scrollTop = 0;
+    root.style.setProperty("--laugh-glitch", "1");
+    root.classList.add("is-laugh-critical");
+    audio.playGlitchBurst({ count: 4, gapMs: 55 });
     await sleep(280);
-    sealTerminal();
+    root.classList.remove(
+      "is-laugh-lock",
+      "is-laugh-harsh",
+      "is-laugh-critical"
+    );
+    root.style.removeProperty("--laugh-glitch");
+    await sealTerminal();
   };
 
   const buildSudokuBoard = (grid) => {
@@ -333,7 +408,12 @@ export function initWhisper() {
     log.appendChild(board);
     stick();
 
-    if (animate) {
+    // First animated show marks seen immediately so a leave mid-fill
+    // still returns to the finished board (tuner / Imago).
+    const shouldAnimate = animate && !readSudokuSeen();
+    if (shouldAnimate) writeSudokuSeen();
+
+    if (shouldAnimate) {
       motionAbort.aborted = false;
       const epoch = motionEpoch;
       const dead = () => epoch !== motionEpoch || motionAbort.aborted;
@@ -543,6 +623,8 @@ export function initWhisper() {
       if (sealed) {
         root.hidden = true;
         tab.disabled = true;
+        tab.setAttribute("aria-hidden", "true");
+        applyStuckPadGlitch();
         return;
       }
       root.hidden = false;
@@ -566,6 +648,8 @@ export function initWhisper() {
       if (sealed) {
         root.hidden = true;
         tab.disabled = true;
+        tab.setAttribute("aria-hidden", "true");
+        applyStuckPadGlitch();
         return;
       }
       // Deny heat only — guide step persists across tuner trips

@@ -6,6 +6,7 @@ import { applyColdStartFromQuery } from "./cold-start.js";
 import { initInterceptMessageAudio } from "./intercept-audio.js";
 import { audio } from "./audio.js";
 import { BLOOD_LYRICS } from "../content/blood-lyrics.js";
+import { hasImperialClearance } from "./milestones.js";
 
 applyColdStartFromQuery();
 
@@ -175,7 +176,12 @@ class RadioTuner {
     this.message = $(".intercept");
     this.ctaFoot = $(".intercept__foot");
     this.frame = $(".radio__frame");
-    this.clearanceBtn = $(".radio__clearance");
+    this.clearanceBtn = null;
+    this.hubBtn = null;
+    this.footHubBtn = null;
+    this.tunerRoutes = $("#tuner-routes");
+    this.padBtns = [...document.querySelectorAll('.lattice-route[data-route="pad"]')];
+    this.hubBtns = [...document.querySelectorAll('.lattice-route[data-route="hub"]')];
     this.skipBtn = $("#intercept-skip");
     this.messageAudio = null;
     this.lyricRoot = $("#blood-lyric");
@@ -245,24 +251,35 @@ class RadioTuner {
   }
 
   #syncClearanceExit() {
-    if (!this.clearanceBtn) return;
-    const show = !this.locked && this.#hasTunedBefore();
-    if (show) {
-      this.clearanceBtn.hidden = false;
-      this.root?.classList.add("radio--has-clearance");
-    } else {
-      this.clearanceBtn.hidden = true;
-      this.root?.classList.remove("radio--has-clearance");
+    const tuned = this.#hasTunedBefore();
+    const imperial = hasImperialClearance();
+
+    // Under-dial strip: pad after 097.9 lock; hub after Imperial
+    if (this.tunerRoutes) {
+      this.tunerRoutes.hidden = !tuned;
+      this.root?.classList.toggle("radio--has-clearance", tuned);
+      const hub = this.tunerRoutes.querySelector('[data-route="hub"]');
+      if (hub) hub.hidden = !(tuned && imperial);
+    }
+
+    // Message-foot hub only (pad there is always present)
+    for (const el of this.hubBtns) {
+      if (el.closest(".intercept__foot")) el.hidden = !imperial;
     }
   }
 
   #bindClearanceHandoff() {
-    if (!this.clearanceBtn || this.clearanceBtn.dataset.ambienceBound) return;
-    this.clearanceBtn.dataset.ambienceBound = "1";
-    this.clearanceBtn.addEventListener("click", () => {
-      // Carry ambient bed across full-page jump to the link-override pad
-      audio.markAmbienceLive();
-    });
+    const links = [
+      ...this.padBtns,
+      ...this.hubBtns,
+    ];
+    for (const el of links) {
+      if (!el || el.dataset.ambienceBound) continue;
+      el.dataset.ambienceBound = "1";
+      el.addEventListener("click", () => {
+        audio.markAmbienceLive();
+      });
+    }
   }
 
   #buildBars() {
@@ -901,6 +918,14 @@ class RadioTuner {
     // Dial / arrows / freq leave; visualizer stays through the playback
     await this.#wait(280);
     this.root?.classList.add("radio--controls-out");
+    if (!audio.enabled) {
+      try {
+        await audio.enable();
+      } catch {
+        /* ignore */
+      }
+    }
+    audio.playGlitchBurst({ count: 5, gapMs: 75 });
     await this.#wait(900);
     this.root?.classList.add("radio--controls-gone");
 
@@ -912,7 +937,8 @@ class RadioTuner {
 
     this.hideBars = true;
     this.root?.classList.add("radio--bars-gone");
-    await this.#wait(700);
+    audio.playGlitchBurst({ count: 5, gapMs: 75 });
+    await this.#wait(900);
 
     this.root?.classList.add("radio--splitting");
     this.stage?.classList.add("intercept-stage--opening");

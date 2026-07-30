@@ -123,15 +123,29 @@
             <button type="button" class="gate__key" data-key="0">0</button>
             <button type="button" class="gate__key gate__key--action" data-key="enter" aria-label="Enter">✓</button>
           </div>
-          <a class="gate__intercept" href="intercept.html" aria-label="Return to tuner">
-            <svg class="route-icon route-icon--tuner" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" />
-              <line x1="12" y1="12" x2="10.1" y2="6.85" stroke="currentColor" stroke-linecap="round" />
-            </svg>
-          </a>
+          <nav class="lattice-routes lattice-routes--gate" id="gate-routes" aria-label="Site routes">
+            <a class="lattice-route" data-route="tuner" href="intercept.html" aria-label="Return to tuner">
+              <svg class="route-icon route-icon--tuner" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" />
+                <line x1="12" y1="12" x2="10.1" y2="6.85" stroke="currentColor" stroke-linecap="round" />
+              </svg>
+            </a>
+            <button
+              type="button"
+              class="lattice-route"
+              data-route="hub"
+              id="gate-hub"
+              aria-label="Return to terminal"
+              hidden
+            >
+              <svg class="route-icon route-icon--hub" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4.5 5.5 L19.5 5.5 L12 18.5 Z" fill="none" stroke="currentColor" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </nav>
           <div class="gate__eyes" id="gate-eyes" hidden aria-hidden="true">
             <img class="gate__face" src="assets/images/666face.png" alt="" />
-            <p class="gate__face-caption">I WEAR NO MASK</p>
+            <button type="button" class="gate__face-caption">I WEAR NO MASK</button>
           </div>
         </div>
       </div>
@@ -200,7 +214,7 @@
                 type="button"
                 class="nav-item"
                 data-panel="terminal"
-                data-channel-title="FTHFLL // KERNEL SHELL"
+                data-channel-title="FTHFLL // KERNEL INTERFACE"
                 data-sfx="select"
               >
                 TERMINAL
@@ -209,7 +223,7 @@
                 type="button"
                 class="nav-item is-active"
                 data-panel="overview"
-                data-channel-title="HULL TELEMETRY // CRAFT STATUS"
+                data-channel-title="HULL TELEMETRY // CRAFT FUNCTIONALITY"
                 data-sfx="select"
               >
                 STATUS
@@ -218,7 +232,7 @@
                 type="button"
                 class="nav-item"
                 data-panel="flightlog"
-                data-channel-title="FLIGHT LOG // PERSONAL RECORD"
+                data-channel-title="INTERNAL DATABASE // PERSONAL RECORD"
                 data-sfx="select"
               >
                 FLIGHT LOG
@@ -227,7 +241,7 @@
                 type="button"
                 class="nav-item"
                 data-panel="imperial"
-                data-channel-title="IMPERIAL CLEARANCE // AUTHORIZATION"
+                data-channel-title="EMERGENCY OVERRIDE // RECOVERY AUTHORIZATION"
                 data-sfx="select"
               >
                 IMPERIAL CLEARANCE
@@ -251,10 +265,10 @@
                 type="button"
                 class="nav-item"
                 data-panel="cartography"
-                data-channel-title="CARTOGRAPHY // STELLAR FIX"
+                data-channel-title="CARTOGRAPHY // STELLAR CHART"
                 data-sfx="select"
               >
-                SYSTEM CHART
+                SYSTEM MAP
               </button>
               <div class="nav-group nav-group--guest">
                 <button
@@ -292,15 +306,52 @@
           </div>
 
           <div class="nav-settings">
-            <button
-              type="button"
-              class="nav-item nav-item--settings"
-              data-panel="diagnostics"
-              data-channel-title="FIDELITY BUS // SIGNAL DIAGNOSTICS"
-              data-sfx="select"
-            >
-              DIAGNOSTICS
-            </button>
+            <div class="nav-settings__row">
+              <button
+                type="button"
+                class="nav-item nav-item--settings"
+                data-panel="diagnostics"
+                data-channel-title="FIDELITY BUS // SIGNAL DIAGNOSTICS"
+                data-sfx="select"
+              >
+                DIAGNOSTICS
+              </button>
+              <button
+                type="button"
+                class="lattice-route lattice-route--nav"
+                data-route="pad"
+                id="nav-goto-pad"
+                aria-label="Open clearance pad"
+                data-sfx="select"
+                hidden
+              >
+                <svg class="route-icon route-icon--pad" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <rect x="4.5" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
+                  <rect x="10" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
+                  <rect x="15.5" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
+                  <rect x="4.5" y="10" width="4" height="4" fill="none" stroke="currentColor" />
+                  <rect x="10" y="10" width="4" height="4" fill="none" stroke="currentColor" />
+                  <rect x="15.5" y="10" width="4" height="4" fill="none" stroke="currentColor" />
+                  <rect x="4.5" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
+                  <rect x="10" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
+                  <rect x="15.5" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
+                </svg>
+              </button>
+              <a
+                class="lattice-route lattice-route--nav"
+                data-route="tuner"
+                id="nav-goto-tuner"
+                href="intercept.html"
+                aria-label="Open tuner"
+                data-sfx="select"
+                hidden
+              >
+                <svg class="route-icon route-icon--tuner" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" />
+                  <line x1="12" y1="12" x2="10.1" y2="6.85" stroke="currentColor" stroke-linecap="round" />
+                </svg>
+              </a>
+            </div>
           </div>
         </aside>
 
@@ -320,7 +371,7 @@
             <div class="panel__body">
               <div class="hull-mon" aria-label="Hull stress monitoring display">
                 <header class="hull-mon__head">
-                  <span class="hull-mon__title">HM · LIVE</span>
+                  <span class="hull-mon__title">HT · LIVE</span>
                   <span class="hull-mon__meta">G512-CARA // FTHFLL</span>
                 </header>
 
@@ -481,7 +532,7 @@
 
                       <aside class="hull-mon__detail" id="hull-mon-detail">
                         <div class="hull-mon__await" id="hull-detail-await">
-                          <p class="hull-mon__section">HM · FEED</p>
+                          <p class="hull-mon__section">HT · FEED</p>
                           <p class="hull-await-copy">AWAITING RECOVERY</p>
                         </div>
                         <div class="hull-mon__live" id="hull-detail-live">
@@ -590,23 +641,33 @@
                     <div class="hull-inner hull-inner--sealed" id="hull-inner-sealed">
                       <p class="hull-inner__sigil" aria-hidden="true">▽</p>
                       <p class="hull-inner__title">INNER DIAGNOSTICS</p>
-                      <p class="hull-inner__code">HM.INNER // STATUS=SEALED</p>
-                      <p class="hull-await-copy">AWAITING DIAGNOSTIC RECOVERY CODE</p>
-                      <p class="hull-inner__text hull-inner__text--dim">
-                        Feed serials through TERMINAL when OUTER stations are live.
-                      </p>
+                      <p class="hull-inner__code">HT.INNER | STATUS // CORRUPTED</p>
+                      <p class="hull-await-copy">AWAITING TERMINAL RECOVERY CODE</p>
                     </div>
                     <div class="hull-inner hull-inner--live" id="hull-inner-live" hidden>
+                      <div class="hull-inner__theatre" aria-hidden="true">
+                        <p class="hull-inner__sigil hull-inner__sigil--live">▽</p>
+                        <p class="hull-inner__scan is-scan">SCAN · INNER BUS</p>
+                      </div>
+                      <p class="hull-inner__title">INNER DIAGNOSTICS</p>
+                      <p class="hull-inner__code">HT.INNER // STATUS=LIVE</p>
+                      <ul class="hull-inner__telemetry" aria-label="Inner partition telemetry">
+                        <li>PARTITION HASH · RESTORED</li>
+                        <li>DIAG BUS · ARMED</li>
+                        <li>CANOPY CHECKSUM · IKEPH VOL 215</li>
+                        <li>SIDEARM PLATE · KSP-512 · CODE 870</li>
+                        <li>BAY LATCHES · AWAITING OPERATOR</li>
+                      </ul>
                       <div class="hull-inner__bays">
                         <button type="button" class="hull-bay" data-bay="stellar" data-sfx="select">
-                          <p class="hull-bay__label">STELLAR FIX BAY</p>
-                          <p class="hull-bay__code">GYRO · ORBIT RING · DEAD CHART GLYPH</p>
-                          <p class="hull-bay__hint">Open bay to restore stellar fix.</p>
+                          <p class="hull-bay__label">SYSTEM MAP RESTORATION</p>
+                          <p class="hull-bay__code">ORBIT INDEX · CHART PARTITION</p>
+                          <p class="hull-bay__hint">MANUAL SYSTEM MAP CORRUPTION PURGE</p>
                         </button>
                         <button type="button" class="hull-bay" data-bay="personal" data-sfx="select">
-                          <p class="hull-bay__label">PERSONAL RECORD BAY</p>
-                          <p class="hull-bay__code">BUNK · RECORDER · CORRUPTED SCROLL</p>
-                          <p class="hull-bay__hint">Open bay to restore personal record.</p>
+                          <p class="hull-bay__label">FLIGHT LOG RESTORATION</p>
+                          <p class="hull-bay__code">JOURNAL INDEX · RECORD PARTITION</p>
+                          <p class="hull-bay__hint">MANUAL FLIGHT LOG CORRUPTION PURGE</p>
                         </button>
                       </div>
                     </div>
@@ -624,7 +685,7 @@
             <div class="panel__body">
               <div class="fth-console" id="fth-console" aria-label="FTHFLL kernel console">
                 <div class="fth-console__head">
-                  <span>FTHFLL · KERNEL SHELL</span>
+                  <span>FTHFLL · KERNEL INTERFACE</span>
                   <span class="fth-console__mode">RECOVERY</span>
                 </div>
                 <div class="fth-console__log" id="fth-console-log" role="log" aria-live="polite"></div>
@@ -654,13 +715,13 @@
           <article class="panel panel--flightlog" id="panel-flightlog" data-panel="flightlog" hidden>
             <div class="panel__body">
               <div class="flog" id="flog">
-                <aside class="flog__index" aria-label="Journal index">
+                <aside class="flog__index" aria-label="Log index">
                   <p class="flog__index-label">
-                    JOURNALS
+                    LOG INDEX
                     <span class="flog__index-count" id="flog-journal-count">0/0</span>
                   </p>
                   <form class="flog__search" id="flog-search" role="search">
-                    <label class="visually-hidden" for="flog-query">Search journal entries</label>
+                    <label class="visually-hidden" for="flog-query">Search log entries</label>
                     <span class="flog__ps" aria-hidden="true">&gt;</span>
                     <input
                       class="flog__input"
@@ -669,23 +730,24 @@
                       name="q"
                       autocomplete="off"
                       spellcheck="false"
-                      placeholder="recovery key…"
-                      aria-description="Enter a recovery keyword to decrypt corrupted journal partitions"
+                      placeholder="search entries…"
+                      aria-description="Filter flight log entries by title, date, location, or text"
                     />
                   </form>
                   <div class="flog__scroll">
                     <div class="flog__list">
+                      <p class="flog__index-ping" id="flog-index-ping" hidden role="status"></p>
                       <div class="flog__journals" id="flog-journals"></div>
                       <p class="flog__index-await" id="flog-index-await" hidden role="status">
                         AWAITING SEARCH KEY
                       </p>
                       <p class="flog__index-miss" id="flog-index-miss" hidden role="status">
-                        INDEX MISS // NO PARTITION MATCHES QUERY
+                        INDEX MISS // NO ENTRIES MATCH QUERY
                       </p>
                     </div>
-                    <div class="flog__rail" aria-hidden="true">
-                      <div class="flog__rail-fill" id="flog-rail-fill"></div>
-                    </div>
+                    <aside class="flog__rail crt-rail" id="flog-rail" hidden aria-hidden="true">
+                      <div class="crt-rail__fill" id="flog-rail-fill"></div>
+                    </aside>
                   </div>
                 </aside>
                 <div
@@ -693,11 +755,11 @@
                   id="flog-split"
                   role="separator"
                   aria-orientation="vertical"
-                  aria-label="Resize journal panels"
+                  aria-label="Resize log panels"
                   tabindex="0"
                 ></div>
                 <section class="flog__reader" id="flog-reader" aria-live="polite">
-                  <p class="flog__idle">SELECT JOURNAL ENTRY</p>
+                  <p class="flog__idle">SELECT LOG ENTRY</p>
                 </section>
               </div>
             </div>
@@ -952,6 +1014,21 @@
                   >
                     <div class="fill-bar__fill" style="width: 40%"></div>
                   </div>
+                </div>
+                <div class="sys-row sys-row--track" id="music-track-row" hidden>
+                  <span class="sys-row__label">Track</span>
+                  <label class="sys-select-wrap">
+                    <span class="visually-hidden">Music track</span>
+                    <select
+                      class="sys-select"
+                      id="music-track"
+                      aria-label="Music track"
+                      data-sfx="dropdownToggle"
+                    >
+                      <option value="recursion">Recursion</option>
+                      <option value="ascendancy">Ascendancy</option>
+                    </select>
+                  </label>
                 </div>
                 <div class="sys-row">
                   <span class="sys-row__label">Scanline Intensity</span>

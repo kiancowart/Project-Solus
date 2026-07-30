@@ -12,7 +12,8 @@
 Beds, ambience, and soundtrack (no spoken dialogue).
 
 - `terminal-ambience.mp3` — site-wide looping terminal hum. Wired via `AMBIENCE.src`.
-- `soundtrack.wav` — post-clearance looping soundtrack (Recursion). Wired via `SOUNDTRACK.src`.
+- `Recursion.wav` — hub music after pad **512** until Imperial bind. Wired via `MUSIC.tracks` / `hubDefault`.
+- `Ascendancy.wav` — default music after Imperial Clearance (was `soundtrack.wav`). Wired via `MUSIC.postImperialDefault`. Diagnostics Track dropdown can switch beds after clearance.
 - `carrier-0979.mp3` — greeting carrier on dial **097.9**.
 - `carrier-0333.mp3` — emergency / blood carrier on **033.3** (does not lock).
 - `egg-0105.mp3` — easter-egg bed on **010.5** (audio + waveform only; no glow/lock; ±10 hear).

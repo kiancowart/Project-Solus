@@ -1,11 +1,21 @@
 /**
- * LATTICE.OS — Cartography / wire globe
+ * LATTICE.OS — Cartography / wire globe / Chart puzzles
  */
 
 import { SYSTEM_CHART } from "../content/boot-content.js";
-import { PLANET_DOSSIERS } from "../content/arg-path.js";
+import {
+  CHART_PUZZLES,
+  PLANET_DOSSIERS,
+  sealById,
+} from "../content/arg-path.js";
 import { audio } from "./audio.js";
 import { prefersReducedMotion } from "./motion.js";
+import {
+  getHullProgress,
+  isDossierUnlocked,
+  markDossierUnlocked,
+} from "./progress.js";
+import { hasImperialClearance } from "./milestones.js";
 
 /* ==========================================================================
    CARTOGRAPHY — The Nine orbital chart
@@ -14,6 +24,21 @@ import { prefersReducedMotion } from "./motion.js";
 export function polarToXY(cx, cy, r, angleDeg) {
   const a = (angleDeg * Math.PI) / 180;
   return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+
+function normalizeAnswer(s) {
+  return String(s ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function answersMatch(input, answers) {
+  const n = normalizeAnswer(input).replace(/[.\-]/g, "");
+  return (answers ?? []).some((a) => {
+    const t = normalizeAnswer(a).replace(/[.\-]/g, "");
+    return t === n || normalizeAnswer(a) === normalizeAnswer(input);
+  });
 }
 
 export function initCartography() {
@@ -174,10 +199,324 @@ export function initCartography() {
       stopWire();
       stopWire = null;
     }
+    const seal = sealById(d.sealId) ?? null;
+    const showSealHeader = hasImperialClearance() && seal;
+    const sealLine = showSealHeader
+      ? `<p class="chart-dossier__slot">SEAL OF ${seal.name}</p>`
+      : "";
+    const facts = d.facts ?? d.body ?? "";
+    const why = d.sealWhy ?? "";
     readout.innerHTML = `
-      <p class="chart__dossier-title">${d.title}</p>
-      <p class="chart__dossier-slot">${d.slotMark}</p>
-      <p class="chart__dossier-body">${d.body}</p>`;
+      <div class="chart-dossier">
+        <div class="wire-globe" aria-hidden="true">
+          <svg class="wire-globe__svg" viewBox="0 0 100 100">
+            <circle class="wire-globe__rim" cx="50" cy="50" r="44" fill="none" />
+            <g class="wire-globe__lats"></g>
+            <g class="wire-globe__lons"></g>
+          </svg>
+          <div class="wire-globe__scan"></div>
+        </div>
+        <p class="chart-dossier__title">${d.title}</p>
+        ${sealLine}
+        <p class="chart-dossier__body">${facts}</p>
+        ${why ? `<p class="chart-dossier__body chart-dossier__body--seal">${why}</p>` : ""}
+      </div>`;
+    const globeSvg = readout.querySelector(".wire-globe__svg");
+    if (globeSvg) stopWire = startWireGlobe(globeSvg);
+  };
+
+  const unlockAndShow = (planetId) => {
+    markDossierUnlocked(planetId);
+    audio.play("unlock");
+    showDossier(planetId);
+    window.dispatchEvent(
+      new CustomEvent("lattice:dossier", { detail: { planetId } })
+    );
+    initFlightLogRefresh();
+  };
+
+  const initFlightLogRefresh = () => {
+    import("./flight-log.js")
+      .then((m) => m.initFlightLog.refreshAccess?.())
+      .catch(() => {});
+  };
+
+  const shakeLock = (el) => {
+    if (!el) return;
+    el.classList.remove("is-shake");
+    void el.offsetWidth;
+    el.classList.add("is-shake");
+    audio.play("deny");
+  };
+
+  const showPuzzle = (planetId) => {
+    const puzzle = CHART_PUZZLES[planetId];
+    const name = PLANET_DOSSIERS[planetId]?.title ?? planetId.toUpperCase();
+    if (!puzzle) {
+      showError();
+      return;
+    }
+
+    audio.play("dropdownToggle");
+    if (stopWire) {
+      stopWire();
+      stopWire = null;
+    }
+
+    if (puzzle.type === "flag") {
+      const prog = getHullProgress();
+      const ok = Boolean(prog[puzzle.hullFlag]);
+      readout.innerHTML = `
+        <div class="chart-lock" id="chart-lock">
+          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__prompt">${puzzle.prompt}</p>
+          <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+          <p class="chart-lock__feedback" id="chart-lock-feedback">${
+            ok ? "FLAG SET — OPENING…" : "AWAITING TERMINAL FLAG"
+          }</p>
+        </div>`;
+      if (ok) {
+        requestAnimationFrame(() => unlockAndShow(planetId));
+      }
+      return;
+    }
+
+    if (puzzle.type === "sequence") {
+      let seq = [];
+      readout.innerHTML = `
+        <div class="chart-lock" id="chart-lock">
+          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__prompt">${puzzle.prompt}</p>
+          <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+          <div class="chart-lock__nodes" id="chart-lock-nodes"></div>
+          <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
+          <button type="button" class="chart-lock__reset" id="chart-lock-reset">RESET</button>
+        </div>`;
+      const host = readout.querySelector("#chart-lock-nodes");
+      const feedback = readout.querySelector("#chart-lock-feedback");
+      const lock = readout.querySelector("#chart-lock");
+      const paint = () => {
+        host.replaceChildren();
+        (puzzle.nodes ?? []).forEach((node) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "chart-lock__node";
+          btn.textContent = node.label;
+          btn.dataset.id = node.id;
+          if (seq.includes(node.id)) btn.classList.add("is-lit");
+          btn.addEventListener("click", () => {
+            if (seq.includes(node.id)) return;
+            seq.push(node.id);
+            btn.classList.add("is-lit");
+            audio.play("click");
+            if (seq.length === puzzle.answer.length) {
+              const ok = seq.every((id, i) => id === puzzle.answer[i]);
+              if (ok) unlockAndShow(planetId);
+              else {
+                if (feedback) feedback.textContent = "SEQUENCE REJECTED";
+                shakeLock(lock);
+                seq = [];
+                host.querySelectorAll(".chart-lock__node").forEach((n) =>
+                  n.classList.remove("is-lit")
+                );
+              }
+            }
+          });
+          host.appendChild(btn);
+        });
+      };
+      paint();
+      readout.querySelector("#chart-lock-reset")?.addEventListener("click", () => {
+        seq = [];
+        if (feedback) feedback.textContent = "";
+        paint();
+        audio.play("click");
+      });
+      return;
+    }
+
+    if (puzzle.type === "reorder") {
+      let order = (puzzle.lines ?? []).map((l) => l.id);
+      const byId = Object.fromEntries((puzzle.lines ?? []).map((l) => [l.id, l]));
+      const render = () => {
+        readout.innerHTML = `
+          <div class="chart-lock" id="chart-lock">
+            <p class="chart-lock__title">${name}</p>
+            <p class="chart-lock__prompt">${puzzle.prompt}</p>
+            <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+            <ul class="chart-lock__lines" id="chart-lock-lines"></ul>
+            <button type="button" class="chart-lock__submit" id="chart-lock-submit">COMMIT ORDER</button>
+            <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
+          </div>`;
+        const list = readout.querySelector("#chart-lock-lines");
+        order.forEach((id, idx) => {
+          const li = document.createElement("li");
+          li.className = "chart-lock__line";
+          li.innerHTML = `
+            <span class="chart-lock__line-text">${byId[id]?.text ?? id}</span>
+            <span class="chart-lock__line-ops">
+              <button type="button" data-dir="up" data-idx="${idx}" aria-label="Move up">↑</button>
+              <button type="button" data-dir="down" data-idx="${idx}" aria-label="Move down">↓</button>
+            </span>`;
+          list.appendChild(li);
+        });
+        list.querySelectorAll("button[data-dir]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const i = Number(btn.dataset.idx);
+            const dir = btn.dataset.dir;
+            const j = dir === "up" ? i - 1 : i + 1;
+            if (j < 0 || j >= order.length) return;
+            const next = [...order];
+            [next[i], next[j]] = [next[j], next[i]];
+            order = next;
+            audio.play("click");
+            render();
+          });
+        });
+        readout.querySelector("#chart-lock-submit")?.addEventListener("click", () => {
+          const ok = order.every((id, i) => id === puzzle.answer[i]);
+          if (ok) unlockAndShow(planetId);
+          else {
+            const feedback = readout.querySelector("#chart-lock-feedback");
+            if (feedback) feedback.textContent = "HYMN REJECTED";
+            shakeLock(readout.querySelector("#chart-lock"));
+          }
+        });
+      };
+      render();
+      return;
+    }
+
+    if (puzzle.type === "assemble") {
+      let slots = Array(puzzle.answer.length).fill(null);
+      const pool = [...(puzzle.pieces ?? [])];
+      const render = () => {
+        readout.innerHTML = `
+          <div class="chart-lock" id="chart-lock">
+            <p class="chart-lock__title">${name}</p>
+            <p class="chart-lock__prompt">${puzzle.prompt}</p>
+            <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+            <div class="chart-lock__slots" id="chart-lock-slots"></div>
+            <div class="chart-lock__pool" id="chart-lock-pool"></div>
+            <button type="button" class="chart-lock__submit" id="chart-lock-submit">SEAL SIGIL</button>
+            <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
+          </div>`;
+        const slotsEl = readout.querySelector("#chart-lock-slots");
+        const poolEl = readout.querySelector("#chart-lock-pool");
+        slots.forEach((piece, i) => {
+          const slot = document.createElement("button");
+          slot.type = "button";
+          slot.className = "chart-lock__slot";
+          slot.textContent = piece ?? "·";
+          slot.addEventListener("click", () => {
+            if (!slots[i]) return;
+            pool.push(slots[i]);
+            slots[i] = null;
+            audio.play("click");
+            render();
+          });
+          slotsEl.appendChild(slot);
+        });
+        pool.forEach((piece) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "chart-lock__piece";
+          btn.textContent = piece;
+          btn.addEventListener("click", () => {
+            const empty = slots.findIndex((s) => s == null);
+            if (empty < 0) return;
+            slots[empty] = piece;
+            const pi = pool.indexOf(piece);
+            if (pi >= 0) pool.splice(pi, 1);
+            audio.play("click");
+            render();
+          });
+          poolEl.appendChild(btn);
+        });
+        readout.querySelector("#chart-lock-submit")?.addEventListener("click", () => {
+          const ok = slots.every((p, i) => p === puzzle.answer[i]);
+          if (ok) unlockAndShow(planetId);
+          else {
+            const feedback = readout.querySelector("#chart-lock-feedback");
+            if (feedback) feedback.textContent = "SIGIL REJECTED";
+            shakeLock(readout.querySelector("#chart-lock"));
+          }
+        });
+      };
+      render();
+      return;
+    }
+
+    if (puzzle.type === "dial") {
+      let step = 0;
+      const render = () => {
+        readout.innerHTML = `
+          <div class="chart-lock" id="chart-lock">
+            <p class="chart-lock__title">${name}</p>
+            <p class="chart-lock__prompt">${puzzle.prompt}</p>
+            <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+            <div class="chart-lock__dial">
+              <button type="button" class="chart-lock__dial-btn" id="chart-dial-ccw" aria-label="Rotate counter-clockwise">↺</button>
+              <p class="chart-lock__dial-readout">TICK ${step} / ${puzzle.steps - 1}</p>
+              <button type="button" class="chart-lock__dial-btn" id="chart-dial-cw" aria-label="Rotate clockwise">↻</button>
+            </div>
+            <button type="button" class="chart-lock__submit" id="chart-lock-submit">LOCK ALIGNMENT</button>
+            <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
+          </div>`;
+        const wrap = (n) => ((n % puzzle.steps) + puzzle.steps) % puzzle.steps;
+        readout.querySelector("#chart-dial-cw")?.addEventListener("click", () => {
+          step = wrap(step + 1);
+          audio.play("click");
+          render();
+        });
+        readout.querySelector("#chart-dial-ccw")?.addEventListener("click", () => {
+          step = wrap(step - 1);
+          audio.play("click");
+          render();
+        });
+        readout.querySelector("#chart-lock-submit")?.addEventListener("click", () => {
+          if (step === puzzle.answer) unlockAndShow(planetId);
+          else {
+            const feedback = readout.querySelector("#chart-lock-feedback");
+            if (feedback) feedback.textContent = "SHADOW MISALIGNED";
+            shakeLock(readout.querySelector("#chart-lock"));
+          }
+        });
+      };
+      render();
+      return;
+    }
+
+    // text
+    readout.innerHTML = `
+      <div class="chart-lock" id="chart-lock">
+        <p class="chart-lock__title">${name}</p>
+        <p class="chart-lock__prompt">${puzzle.prompt}</p>
+        <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+        <form class="chart-lock__form" id="chart-lock-form" autocomplete="off">
+          <label class="visually-hidden" for="chart-lock-input">Puzzle answer</label>
+          <input class="chart-lock__input" id="chart-lock-input" type="text" spellcheck="false" />
+          <button type="submit" class="chart-lock__submit">SUBMIT</button>
+        </form>
+        <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
+      </div>`;
+    const form = readout.querySelector("#chart-lock-form");
+    const input = readout.querySelector("#chart-lock-input");
+    input?.focus();
+    form?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (answersMatch(input?.value, puzzle.answers)) unlockAndShow(planetId);
+      else {
+        const feedback = readout.querySelector("#chart-lock-feedback");
+        if (feedback) feedback.textContent = "REJECTED";
+        shakeLock(readout.querySelector("#chart-lock"));
+      }
+    });
+  };
+
+  const selectPlanet = (planetId) => {
+    if (isDossierUnlocked(planetId)) showDossier(planetId);
+    else showPuzzle(planetId);
   };
 
   const showSturm = () => {
@@ -210,7 +549,9 @@ export function initCartography() {
       stopWire();
       stopWire = null;
     }
-    const text = mystery?.readout ?? "A mystery in the orbit of Unconquered Storm...";
+    const text =
+      mystery?.readout ??
+      "NU LUNAE // AUX bleed — not Imperial.";
     readout.innerHTML = `<p class="chart__mystery">${text}</p>`;
   };
 
@@ -229,7 +570,6 @@ export function initCartography() {
 
   const sunHit = add("circle", { class: "chart-svg__hit", cx, cy, r: 14 });
   sunHit.addEventListener("click", () => {
-    // Primary is not a labeled body — always error, no sticky box
     clearSelection();
     showError();
   });
@@ -259,13 +599,21 @@ export function initCartography() {
     const { x, y } = polarToXY(cx, cy, body.r, body.angle);
 
     add("rect", { class: "chart-svg__box", x: 0, y: 0, width: 1, height: 1 }, g);
-    add("circle", { class: "chart-svg__hit", cx: 0, cy: 0, r: Math.max(12, body.size + 8) }, g);
+    add(
+      "circle",
+      { class: "chart-svg__hit", cx: 0, cy: 0, r: Math.max(12, body.size + 8) },
+      g
+    );
     const content = add("g", { class: "chart-svg__content" }, g);
     add("circle", { class: "chart-svg__dot", cx: 0, cy: 0, r: body.size }, content);
-    const label = add("text", { class: "chart-svg__label", x: body.size + 4, y: 2.5 }, content);
+    const label = add(
+      "text",
+      { class: "chart-svg__label", x: body.size + 4, y: 2.5 },
+      content
+    );
     label.textContent = body.name;
     g.setAttribute("transform", `translate(${x} ${y})`);
-    bindBody(g, body.id, () => showDossier(body.id));
+    bindBody(g, body.id, () => selectPlanet(body.id));
 
     movers.push({
       g,
@@ -287,13 +635,24 @@ export function initCartography() {
     g.dataset.body = cfg.id;
 
     const parent = bodies.find((b) => b.id === cfg.parent);
-    const parentXY = parent ? polarToXY(cx, cy, parent.r, parent.angle) : { x: cx, y: cy };
-    const xy = polarToXY(parentXY.x, parentXY.y, cfg.offset ?? 16, cfg.angle ?? 0);
+    const parentXY = parent
+      ? polarToXY(cx, cy, parent.r, parent.angle)
+      : { x: cx, y: cy };
+    const xy = polarToXY(
+      parentXY.x,
+      parentXY.y,
+      cfg.offset ?? 16,
+      cfg.angle ?? 0
+    );
 
     add("rect", { class: "chart-svg__box", x: 0, y: 0, width: 1, height: 1 }, g);
     add("circle", { class: "chart-svg__hit", cx: 0, cy: 0, r: 14 }, g);
     const content = add("g", { class: "chart-svg__content" }, g);
-    const mark = add("text", { class: "chart-svg__mark", x: 0, y: 4, "text-anchor": "middle" }, content);
+    const mark = add(
+      "text",
+      { class: "chart-svg__mark", x: 0, y: 4, "text-anchor": "middle" },
+      content
+    );
     mark.textContent = cfg.mark ?? "▽";
     if (cfg.name) {
       const label = add(
@@ -325,12 +684,11 @@ export function initCartography() {
   const mysteryMover = makeSatellite(
     mystery,
     "chart-svg__mystery",
-    "Unidentified object in Teavicta orbit",
+    "Nu Lunae anomaly in Teavicta orbit",
     showMystery
   );
 
   mapHost.replaceChildren(svg);
-  // Boxes need layout after mount (getComputedTextLength / fonts)
   const refitAll = () => {
     svg
       .querySelectorAll(".chart-svg__body, .chart-svg__sturm, .chart-svg__mystery")
@@ -341,6 +699,15 @@ export function initCartography() {
   if (document.fonts?.ready) document.fonts.ready.then(refitAll);
 
   showIdle();
+
+  // Re-check flag puzzles when returning from Terminal
+  window.addEventListener("lattice:hull", () => {
+    if (!selectedId || !CHART_PUZZLES[selectedId]) return;
+    if (isDossierUnlocked(selectedId)) return;
+    if (CHART_PUZZLES[selectedId].type === "flag") {
+      selectPlanet(selectedId);
+    }
+  });
 
   if (!prefersReducedMotion()) {
     let last = performance.now();
@@ -381,7 +748,6 @@ export function initCartography() {
 
 /**
  * 2D wireframe globe with sphere-projected (bowed) latitudes & longitudes.
- * Meridians sweep L→R; poles remapped onto the rim circle.
  */
 export function startWireGlobe(svg) {
   const svgNS = "http://www.w3.org/2000/svg";
@@ -395,7 +761,6 @@ export function startWireGlobe(svg) {
   const tilt = 0.42;
   const cosT = Math.cos(tilt);
   const sinT = Math.sin(tilt);
-  // Stretch Y so tilted poles land on the outer circle
   const yScale = 1 / cosT;
   const latCount = 5;
   const lonCount = 7;
@@ -420,7 +785,6 @@ export function startWireGlobe(svg) {
     return d;
   };
 
-  // Clip grid to the rim so stretch never spills outside the sphere
   let clip = svg.querySelector("#wire-globe-clip");
   if (!clip) {
     const defs = document.createElementNS(svgNS, "defs");
@@ -473,7 +837,7 @@ export function startWireGlobe(svg) {
   let raf = 0;
   let alive = true;
   const t0 = performance.now();
-  const periodMs = 11000; // slower spin
+  const periodMs = 11000;
 
   const draw = (now) => {
     if (!alive) return;
@@ -504,4 +868,3 @@ export function startWireGlobe(svg) {
     cancelAnimationFrame(raf);
   };
 }
-

@@ -37,8 +37,7 @@
  * =============================================================================
  */
 
-import { FLIGHT_LOG_SOURCE } from "./flight-log.generated.js";
-import { IMPERIAL_SLOTS } from "./arg-path.js";
+import { buildFlatFlightLog } from "./flight-log-entries.js";
 
 /* ---------------------------------------------------------------------------
    CLEARANCE CODE — number pad gate (plain digits only)
@@ -82,12 +81,11 @@ export const AMBIENCE = {
 };
 
 /* ---------------------------------------------------------------------------
-   SOUNDTRACK — loops after correct clearance (file under assets/audio/music/)
+   MUSIC — hub beds after pad / Imperial (files under assets/audio/music/)
+   Recursion: pad → until Imperial bind. Ascendancy: default after Imperial.
    --------------------------------------------------------------------------- */
-export const SOUNDTRACK = {
-  src: "assets/audio/music/soundtrack.wav",
-  loop: true,
-  /** Default 0–1 level (Diagnostics Music slider starts at 40% of max) */
+export const MUSIC = {
+  /** Default 0–1 level (Diagnostics Music slider starts at 40%) */
   volume: 0.4,
   /** Lo-fi CRT crush — Web Audio chain (edit freely) */
   crush: {
@@ -96,6 +94,32 @@ export const SOUNDTRACK = {
     highpassHz: 60,
     lowpassHz: 7000,
   },
+  /** After correct pad code (pre-Imperial) */
+  hubDefault: "recursion",
+  /** After Imperial Clearance bind completes */
+  postImperialDefault: "ascendancy",
+  tracks: [
+    {
+      id: "recursion",
+      title: "Recursion",
+      src: "assets/audio/music/Recursion.wav",
+      loop: true,
+    },
+    {
+      id: "ascendancy",
+      title: "Ascendancy",
+      src: "assets/audio/music/Ascendancy.wav",
+      loop: true,
+    },
+  ],
+};
+
+/** @deprecated use MUSIC — kept so older imports don't break */
+export const SOUNDTRACK = {
+  src: MUSIC.tracks.find((t) => t.id === MUSIC.postImperialDefault)?.src,
+  loop: true,
+  volume: MUSIC.volume,
+  crush: MUSIC.crush,
 };
 
 /* ---------------------------------------------------------------------------
@@ -127,6 +151,8 @@ export const WHISPER = {
   /** Persist guide progress across tuner trips (← / →) */
   progressKey: "lattice.whisperStep",
   doneKey: "lattice.whisperDone",
+  /** Sudoku fill plays once; return visits show the finished board */
+  sudokuSeenKey: "lattice.whisperSudokuSeen",
   identity: {
     match: ["who are you"],
     reply: "TURN AROUND",
@@ -472,16 +498,17 @@ export const SYSTEM_CHART = {
     offset: 16,
     angle: 48,
     blurb:
-      "Splinter-Nation Moon of Uros — formerly apart of the Zezura belt Empire. After the first Belt War, it became one of the first Uros moons to become contested between the young Nivian Replubic and the Arkhidian Empire. As conflicts extended, it became abandoned as a territory, now a Splinter-Nation territory comprised of generations of unwanted Nivian rebels, Arkhidian outcasts, and even those that have been born and raised there. The majority of the moon's surface is comprised of deserts, though there are bursts of randomly generated woodland and bodies of water as a result of failed Arkhidian Crusades.",
+      "Splinter-Nation Moon of Uros — formerly a part of the Zezura belt Empire. After the first Belt War, it became one of the first Uros moons contested between the young Nivian Republic and the Arkhidian Empire. As conflicts extended, it was abandoned as a territory — now a Splinter-Nation of unwanted Nivian rebels, Arkhidian outcasts, and those born under crusade weather. Most of the surface is desert, with bursts of woodland and water from failed Arkhidian Crusades. Lattice local fix after impact: VX-48. Prison-moon shadows on Deshret still count five ticks from dawn when the brand aligns.",
   },
-  /** Unlabeled anomaly on Teavicta's orbit */
+  /** Nu Lunae / Enkidu-1 — non-Imperial easter egg framework */
   mystery: {
     id: "teavicta-mystery",
     parent: "teavicta",
     offset: 18,
     angle: -72,
     mark: "?",
-    readout: "A mystery in the orbit of Unconquered Storm...",
+    readout:
+      "NU LUNAE // ENKIDU-1 — AUX bleed on Teavicta's shoulder. Not an Imperial well. Guest Channel may answer later. Do not bind this mark.",
   },
   /** Shared archive bay under the chart — filled by planetary extracts later */
   archive: {
@@ -493,153 +520,7 @@ export const SYSTEM_CHART = {
 };
 
 /* =============================================================================
-   FLIGHT LOG — built from Obsidian (do not hand-edit journals here)
-   =============================================================================
-   Write entries in: lore/Player Facing/Flight Log/entries/*.md
-   Journal shells:   lore/Player Facing/Flight Log/journals.json
-   Regenerate:       node scripts/build-flight-log.js
+   FLIGHT LOG — flat chronological entries (content/flight-log-entries.js)
    ============================================================================= */
 
-const FLIGHT_CORRUPT_CHARS =
-  "ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghijkmnopqrstuvwxyz0123456789/·#";
-
-function flightRand(min, max) {
-  return min + Math.floor(Math.random() * (max - min + 1));
-}
-
-function makeCorruptToken(len = 6) {
-  let out = "";
-  for (let i = 0; i < len; i++) {
-    out += FLIGHT_CORRUPT_CHARS[flightRand(0, FLIGHT_CORRUPT_CHARS.length - 1)];
-  }
-  return out;
-}
-
-function makeCorruptionBlob(len = 360) {
-  let out = "";
-  for (let i = 0; i < len; i++) {
-    if (i > 0 && i % 47 === 0) out += "\n";
-    else if (i > 0 && i % 11 === 0) out += " ";
-    else out += FLIGHT_CORRUPT_CHARS[flightRand(0, FLIGHT_CORRUPT_CHARS.length - 1)];
-  }
-  return out;
-}
-
-function sortFlightEntries(a, b) {
-  return (
-    (a.tellOrder ?? 9999) - (b.tellOrder ?? 9999) ||
-    (a.year ?? 0) - (b.year ?? 0) ||
-    (a.cycle ?? 0) - (b.cycle ?? 0)
-  );
-}
-
-/** Tutorial / Sturm arc lives under Uros and is not capped to three partitions. */
-function capJournalEntries(journalId, entries, slot) {
-  if (journalId === "j-uros-belt" || entries.length <= 3) return entries;
-  const fragId = slot ? `${slot.planetId}-imperial-key` : null;
-  const imperial = fragId ? entries.find((e) => e.id === fragId) : null;
-  const rest = entries.filter((e) => e.id !== fragId).sort(sortFlightEntries);
-  const keep = rest.slice(0, imperial ? 2 : 3);
-  return imperial ? [...keep, imperial] : keep;
-}
-
-function buildFlightLog() {
-  const corruption = makeCorruptionBlob(flightRand(1400, 2200));
-  const sourceJournals = FLIGHT_LOG_SOURCE?.journals ?? [];
-  const slotByJournal = Object.fromEntries(
-    IMPERIAL_SLOTS.map((s) => [s.journalId, s])
-  );
-
-  const journals = sourceJournals.map((journal) => {
-    const titleCorrupted = Boolean(journal.corruptTitle || !journal.title);
-    const title = titleCorrupted
-      ? makeCorruptToken(flightRand(10, 18))
-      : journal.title;
-
-    const slot = slotByJournal[journal.id];
-    const accessFromSlot =
-      slot?.volumeCode != null && slot.volumeCode !== ""
-        ? String(slot.volumeCode)
-        : null;
-
-    let entries = (journal.entries ?? []).map((entry) => {
-      const hasBody = typeof entry.body === "string" && entry.body.length > 0;
-      return {
-        id: entry.id,
-        title: entry.title ?? null,
-        year: entry.year,
-        cycle: entry.cycle,
-        body: hasBody ? entry.body : null,
-        seedAfterPad: Boolean(entry.seedAfterPad),
-        unlockKeywords: entry.unlockKeywords ?? [],
-        writeOrder: entry.writeOrder,
-        tellOrder: entry.tellOrder,
-        stinger: entry.stinger ?? null,
-        partnerReveal: Boolean(entry.partnerReveal),
-        grantsImperial: false,
-        imperialFragment: null,
-        fragmentId: null,
-        yearDisplay: String(entry.year ?? "····"),
-        cycleDisplay: String(entry.cycle ?? 0).padStart(2, "0"),
-        dateCorrupted: true,
-        corrupted: true,
-      };
-    });
-
-    if (slot) {
-      const fragId = `${slot.planetId}-imperial-key`;
-      entries = entries.filter((e) => e.id !== fragId && e.id !== "sturm-clearance");
-      entries.push({
-        id: fragId,
-        title: "Imperial Bind",
-        year: journal.yearEnd ?? journal.yearStart ?? 1500,
-        cycle: 15,
-        body: `Seal fragment recovered from this volume.\n\n${slot.fragment}\n\nThe chart still knows the bind order. The wells still wait.`,
-        seedAfterPad: false,
-        unlockKeywords: slot.keywords ?? [],
-        writeOrder: 500,
-        tellOrder: 50,
-        stinger: "reveal",
-        partnerReveal: false,
-        grantsImperial: false,
-        imperialFragment: slot.fragment,
-        fragmentId: slot.fragment,
-        yearDisplay: String(journal.yearEnd ?? "····"),
-        cycleDisplay: "15",
-        dateCorrupted: true,
-        corrupted: true,
-      });
-    }
-
-    entries = capJournalEntries(journal.id, entries, slot);
-
-    return {
-      id: journal.id,
-      title,
-      titleCorrupted,
-      yearStart: journal.yearStart,
-      yearEnd: journal.yearEnd,
-      spanDisplay: titleCorrupted
-        ? `${makeCorruptToken(3)}–${makeCorruptToken(3)} AE`
-        : undefined,
-      accessCode:
-        accessFromSlot ??
-        (journal.accessCode != null && journal.accessCode !== ""
-          ? String(journal.accessCode)
-          : null),
-      startsOpen: Boolean(journal.startsOpen),
-      entries,
-    };
-  });
-
-  return {
-    idle: "SELECT JOURNAL ENTRY",
-    idleHint:
-      "Search recovery keywords to decrypt sealed entries.\nEach journal tracks recovered / total partitions.\nLocked volumes need a three-digit access key.",
-    corruption,
-    journals,
-  };
-}
-
-export const FLIGHT_LOG = buildFlightLog();
-
+export const FLIGHT_LOG = buildFlatFlightLog();

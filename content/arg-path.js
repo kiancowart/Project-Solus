@@ -11,6 +11,9 @@ export const ARG_PROGRESS_KEYS = {
   unlock: "lattice.unlock",
   clearanceDraft: "lattice.clearance.draft",
   fragments: "lattice.fragments",
+  planets: "lattice.planets",
+  /** Shuffled seal ids within veil / neutral / scourge bands */
+  sealOrder: "lattice.sealOrder",
 };
 
 /* ---------------------------------------------------------------------------
@@ -25,13 +28,58 @@ export const PUZZLE_A = {
   promptShip: "ENTR SHIP ID",
   promptKhan: "ENTR KHAN ID",
   successLine: "OUTER AUTH OK — OPTICS BUS ARMED",
-  helpLine: "CMDS: /help · /outer · /inner",
+  helpLine:
+    "CMDS: /help · /outer · /inner · /whoami · /volume · /protocol · /echo · /moon · /edge",
   unknownLine: "CMD NOT RECOGNIZED — TYPE /help FOR COMMAND LIST",
 };
 
 /* ---------------------------------------------------------------------------
+   Terminal hub — purposeful instruments only (logic in src/hull.js)
+   --------------------------------------------------------------------------- */
+export const FTH_HUB = {
+  whoami: [
+    "OPERATOR // GUEST TRAFFIC ON CARAPACE G512 · KHAN LINE: S. RAEI",
+    "SIDEARM PLATE // KSP-512 · PLATE CODE 870",
+    "OPTICS FLARE SEQ // B · A · C  (QAMOR BAY LOCK)",
+    "SEALS // VEIL: Devotion·Erudition·Resolution · NEUTRAL: Communion·Justice·Ambition · SCOURGE: Dominance·Sacrifice·Vengeance",
+  ].join("\n"),
+  volumeSealed: "VOLUME INDEX SEALED — CLAIM THAT WORLD'S FRAGMENT FIRST",
+  volumeUsage: "USAGE: /volume <planet>  — confirms fragment after claim",
+  celeste: "Turn around.",
+  protocolPrompt: "ENTR STORM PROTOCOL PHRASE",
+  protocolAnswers: ["unconquered", "unconquered storm", "teavicta"],
+  protocolOk: [
+    "PROTOCOL OK — TEAVICTA DOSSIER FLAG SET",
+    "AUTH RESIDUE // VOLUME INDEX 540",
+  ].join("\n"),
+  protocolDeny: "ERR — PROTOCOL REJECTED",
+  echoOk: [
+    "ECHO // DAMAGE ORDER REPLAY",
+    "EL0 @ 03:14:08 → WL3 @ 03:29:41 → NR5 @ 03:47:19",
+    "TIME RULE // (first digit of each HH) → 760 HEIXIN VOLUME",
+    "SERIALS FOR CHART LOCK // EL0 WL3 NR5",
+  ].join("\n"),
+  echoNeedInner: "ECHO SEALED — RESTORE INNER FIRST",
+  moonUsage: "USAGE: /moon <name>  — prison-moon ledger lookup",
+  moonKaph: [
+    "MOON LEDGER // KAPH",
+    "CATALOG ID // 430",
+    "PARENT // DESHRET",
+  ].join("\n"),
+  moonUnknown: "ERR — NO MOON INDEX UNDER THAT NAME",
+  edgePrompt: "ENTR DEAD CARRIER",
+  edgeAnswers: ["097.9", "0979", "97.9"],
+  edgeOk: [
+    "EDGE CARRIER LOCKED",
+    "TOKEN // NONUS-EDGE",
+    "VOLUME INDEX // 980",
+    "CHART VOL LOCK ACCEPTS TOKEN NONUS-EDGE",
+  ].join("\n"),
+  edgeDeny: "ERR — CARRIER DEAD",
+};
+
+/* ---------------------------------------------------------------------------
    Puzzle B — /inner: damaged-part serials in damage order
-   Serials are 3 chars (two letters + digit). Accept spaced or compact entry.
    --------------------------------------------------------------------------- */
 
 /** Shared calendar stamp for all outer damage events */
@@ -48,6 +96,7 @@ export const OUTER_STATIONS = [
     serial: "FC1",
     damageOrder: null,
     damageTime: null,
+    cradleGlyph: true,
   },
   {
     id: "ndl-l",
@@ -56,6 +105,7 @@ export const OUTER_STATIONS = [
     serial: "NL2",
     damageOrder: null,
     damageTime: null,
+    cradleGlyph: true,
   },
   {
     id: "ndl-r",
@@ -80,6 +130,7 @@ export const OUTER_STATIONS = [
     serial: "WR4",
     damageOrder: null,
     damageTime: null,
+    cradleGlyph: true,
   },
   {
     id: "msl-top",
@@ -137,16 +188,16 @@ export const PUZZLE_B = {
 };
 
 /* ---------------------------------------------------------------------------
-   INNER bays — click to unlock Chart / Flight Log (replaces removed /bay)
+   INNER bays — click to unlock Chart / Flight Log
    --------------------------------------------------------------------------- */
 export const PUZZLE_C = {
   bay: "stellar",
-  successLine: "STELLAR FIX BUS ONLINE — SYSTEM CHART UNSEALED",
+  successLine: "SYSTEM MAP BUS ONLINE — STELLAR CHART UNSEALED",
 };
 
 export const PUZZLE_D = {
   bay: "personal",
-  successLine: "PERSONAL RECORD BUS ONLINE — FLIGHT LOG UNSEALED",
+  successLine: "FLIGHT LOG BUS ONLINE — PERSONAL RECORD UNSEALED",
 };
 
 export const BAY_UNLOCKS = {
@@ -163,102 +214,299 @@ export const BAY_UNLOCKS = {
 };
 
 /* ---------------------------------------------------------------------------
-   Imperial Clearance — 9 slots (orbital inward → outward)
-   Layer A: planet id · Layer B: fragment string (case-insensitive)
-   Journals folded onto nine primary worlds (see _internal/arg/MASTER.md)
+   Chart puzzles — unlock dossier (seal order) only; not volume codes
    --------------------------------------------------------------------------- */
-export const IMPERIAL_SLOTS = [
+export const CHART_PUZZLES = {
+  qamor: {
+    type: "sequence",
+    prompt: "CORRUPTION PURGE QUERY",
+    hint: "Optics residue: /whoami lists FLARE SEQ.",
+    nodes: [
+      { id: "A", label: "A" },
+      { id: "B", label: "B" },
+      { id: "C", label: "C" },
+    ],
+    /** Click order: B, A, C */
+    answer: ["B", "A", "C"],
+  },
+  ikeph: {
+    type: "reorder",
+    prompt: "CORRUPTION PURGE QUERY",
+    hint: "Terminal leaf after volume open, or hymn scraps in Ikeph log.",
+    lines: [
+      { id: "l0", text: "understory sweet with Her name" },
+      { id: "l1", text: "table fed by every leaf" },
+      { id: "l2", text: "first the canopy remembers" },
+    ],
+    /** Correct order: first / table / understory */
+    answer: ["l2", "l1", "l0"],
+  },
+  terra: {
+    type: "assemble",
+    prompt: "CORRUPTION PURGE QUERY",
+    hint: "STATUS outer ok stations carry cradle glyphs: FC1 · NL2 · WR4.",
+    pieces: ["FC1", "NL2", "WR4"],
+    answer: ["FC1", "NL2", "WR4"],
+  },
+  deshret: {
+    type: "dial",
+    prompt: "CORRUPTION PURGE QUERY",
+    hint: "Sturm weather names the prison brand step — five ticks from dawn.",
+    steps: 8,
+    answer: 5,
+  },
+  teavicta: {
+    type: "flag",
+    prompt: "CORRUPTION PURGE QUERY // TERMINAL GATED",
+    hint: "Run /protocol on Terminal. The red storm is the watchful eye of the Empress's justice.",
+    hullFlag: "teavictaProtocol",
+    terminalGated: true,
+  },
+  uros: {
+    type: "text",
+    prompt: "CORRUPTION PURGE QUERY",
+    hint: "Sturm's free blurb carries the crash mark.",
+    answers: ["vx-48", "vx48", "VX-48", "vx 48"],
+  },
+  heixin: {
+    type: "text",
+    prompt: "CORRUPTION PURGE QUERY // TERMINAL GATED",
+    hint: "/echo or STATUS after /inner.",
+    answers: ["el0 wl3 nr5", "el0wl3nr5", "EL0 WL3 NR5", "EL0WL3NR5"],
+    terminalGated: true,
+  },
+  haider: {
+    type: "text",
+    prompt: "CORRUPTION PURGE QUERY",
+    hint: "Haider journal keywords prickly / crossing.",
+    answers: ["prickly", "still you", "stillyou"],
+  },
+  vol: {
+    type: "flag",
+    prompt: "CORRUPTION PURGE QUERY // TERMINAL GATED",
+    hint: "Run /edge on Terminal with the greeting carrier.",
+    hullFlag: "volEdge",
+    terminalGated: true,
+  },
+};
+
+/* ---------------------------------------------------------------------------
+   Empire seals — Empress purity facets + planet associations
+   Bands: veil (Inner), neutral (Center), scourge (Outer)
+   Well positions shuffle within each band on cold wipe.
+   --------------------------------------------------------------------------- */
+export const EMPIRE_SEALS = [
   {
-    slot: 1,
+    id: "devotion",
+    name: "DEVOTION",
+    facet: "Faith and loyalty",
+    band: "veil",
     planetId: "qamor",
     planetName: "Qamor",
-    journalId: "j-qamor",
-    fragment: "A1",
-    volumeCode: "512",
-    keywords: ["qamor", "seed"],
+    fragment: "HIVE",
   },
   {
-    slot: 2,
+    id: "erudition",
+    name: "ERUDITION",
+    facet: "Wisdom and study",
+    band: "veil",
     planetId: "ikeph",
     planetName: "Ikeph",
-    journalId: "j-ikeph",
-    fragment: "B2",
-    volumeCode: "215",
-    keywords: ["ikeph"],
+    fragment: "OATH",
   },
   {
-    slot: 3,
+    id: "resolution",
+    name: "RESOLUTION",
+    facet: "Endurance in faith and physical",
+    band: "veil",
     planetId: "terra",
     planetName: "Terra",
-    journalId: "j-terra",
-    fragment: "C3",
-    volumeCode: "320",
-    keywords: ["terra"],
+    fragment: "CARA",
   },
   {
-    slot: 4,
+    id: "communion",
+    name: "COMMUNION",
+    facet: "Oneness with her and the Empire — unity",
+    band: "neutral",
     planetId: "deshret",
     planetName: "Deshret",
-    journalId: "j-deshret",
-    fragment: "D4",
-    volumeCode: "430",
-    keywords: ["deshret", "embrace"],
+    fragment: "EXILE",
   },
   {
-    slot: 5,
+    id: "justice",
+    name: "JUSTICE",
+    facet: "Lawfulness; testifying against heresy",
+    band: "neutral",
     planetId: "teavicta",
     planetName: "Teavicta",
-    journalId: "j-kaph",
-    fragment: "E5",
-    volumeCode: "540",
-    keywords: ["kaph", "teavicta"],
+    fragment: "FAITH",
   },
   {
-    slot: 6,
+    id: "ambition",
+    name: "AMBITION",
+    facet: "Hunger for Empire growth and growing faith",
+    band: "neutral",
     planetId: "uros",
     planetName: "Uros",
-    journalId: "j-uros-belt",
-    fragment: "F6",
-    volumeCode: "650",
-    keywords: ["uros", "belt"],
+    fragment: "STURM",
   },
   {
-    slot: 7,
+    id: "dominance",
+    name: "DOMINANCE",
+    facet: "Display of power; crusading",
+    band: "scourge",
     planetId: "heixin",
     planetName: "Heixin",
-    journalId: "j-heixin",
-    fragment: "G7",
-    volumeCode: "760",
-    keywords: ["heixin"],
+    fragment: "SILENCE",
   },
   {
-    slot: 8,
+    id: "sacrifice",
+    name: "SACRIFICE",
+    facet: "Giving up things for Empire",
+    band: "scourge",
     planetId: "haider",
     planetName: "Haider",
-    journalId: "j-spike",
-    fragment: "H8",
-    volumeCode: "870",
-    keywords: ["haider", "spike"],
+    fragment: "SPIKE",
   },
   {
-    slot: 9,
+    id: "vengeance",
+    name: "VENGEANCE",
+    facet: "Wrath against foes and heretics",
+    band: "scourge",
     planetId: "vol",
     planetName: "Vol",
-    journalId: "j-vol",
-    fragment: "I9",
-    volumeCode: "980",
-    keywords: ["vol", "edge"],
+    fragment: "VESPER",
   },
 ];
 
-/** Chart dossier blurbs — slot index is the teachable tell */
-export const PLANET_DOSSIERS = Object.fromEntries(
-  IMPERIAL_SLOTS.map((s) => [
-    s.planetId,
-    {
-      title: s.planetName.toUpperCase(),
-      slotMark: `▽ ${String(s.slot).padStart(2, "0")} // BIND`,
-      body: `Orbital index ${s.slot} of 9. Imperial well expects this bind order. Volume echo: ${s.journalId}.`,
-    },
-  ])
-);
+/** Physical Imperial wells by band (left / mid / right triangles). */
+export const SEAL_BANDS = {
+  veil: {
+    label: "Inner / Veil",
+    wellSlots: [1, 2, 3],
+    sealIds: ["devotion", "erudition", "resolution"],
+  },
+  neutral: {
+    label: "Center / Neutral",
+    wellSlots: [4, 5, 6],
+    sealIds: ["communion", "justice", "ambition"],
+  },
+  scourge: {
+    label: "Outer / Scourge",
+    wellSlots: [7, 8, 9],
+    sealIds: ["dominance", "sacrifice", "vengeance"],
+  },
+};
+
+export function sealById(id) {
+  return EMPIRE_SEALS.find((s) => s.id === id) ?? null;
+}
+
+export function sealByPlanetId(planetId) {
+  const id = String(planetId ?? "")
+    .trim()
+    .toLowerCase();
+  return EMPIRE_SEALS.find((s) => s.planetId === id) ?? null;
+}
+
+export function sealByFragment(fragment) {
+  const f = String(fragment ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[▽▼\s]+/g, "");
+  return EMPIRE_SEALS.find((s) => s.fragment === f) ?? null;
+}
+
+/**
+ * Canon rows for fragment / planet lookup (draft keys still use well slot 1–9).
+ * On-screen seal order comes from getSealWellAssignments() after shuffle.
+ */
+export const IMPERIAL_SLOTS = EMPIRE_SEALS.map((s, i) => ({
+  slot: i + 1,
+  sealId: s.id,
+  sealName: s.name,
+  band: s.band,
+  planetId: s.planetId,
+  planetName: s.planetName,
+  fragment: s.fragment,
+  keywords: [s.planetId, s.fragment.toLowerCase()],
+}));
+
+/**
+ * Chart dossiers — para 1 = planetary facts; para 2 ends on the seal name.
+ * Yellow seal header under the title only after Imperial bind.
+ */
+export const PLANET_DOSSIERS = {
+  qamor: {
+    title: "QAMOR",
+    sealId: "devotion",
+    facts:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    sealWhy:
+      "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est Devotion.",
+  },
+  ikeph: {
+    title: "IKEPH",
+    sealId: "erudition",
+    facts:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio praesent libero sed cursus ante dapibus diam, sed nisi nulla at volutpat diam ut venenatis tellus in metus vulputate eu scelerisque.",
+    sealWhy:
+      "Felisi donec et odio pellentesque diam volutpat commodo sed egestas egestas fringilla phasellus faucibus scelerisque eleifend donec pretium vulputate sapien nec sagittis aliquam malesuada bibendum Erudition.",
+  },
+  terra: {
+    title: "TERRA",
+    sealId: "resolution",
+    facts:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum rhoncus est pellentesque elit ullamcorper dignissim cras tincidunt lobortis feugiat vivamus at augue eget arcu dictum varius duis at consectetur.",
+    sealWhy:
+      "Lorem mollis aliquam ut porttitor leo a diam sollicitudin tempor id eu nisl nunc mi ipsum faucibus vitae aliquet nec ullamcorper sit amet risus nullam eget felis eget nunc Resolution.",
+  },
+  deshret: {
+    title: "DESHRET",
+    sealId: "communion",
+    facts:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Massa tincidunt dui ut ornare lectus sit amet est placerat in egestas erat imperdiet sed euismod nisi porta lorem mollis aliquam ut porttitor.",
+    sealWhy:
+      "Amet nisl suscipit adipiscing bibendum est ultricies integer quis auctor elit sed vulputate mi sit amet mauris commodo quis imperdiet massa tincidunt nunc pulvinar sapien et Communion.",
+  },
+  teavicta: {
+    title: "TEAVICTA",
+    sealId: "justice",
+    facts:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Turpis egestas integer eget aliquet nibh praesent tristique magna sit amet purus gravida quis blandit turpis cursus in hac habitasse platea dictumst.",
+    sealWhy:
+      "Quis enim lobortis scelerisque fermentum dui faucibus in ornare quam viverra orci sagittis eu volutpat odio facilisis mauris sit amet massa vitae tortor condimentum lacinia Justice.",
+  },
+  uros: {
+    title: "UROS",
+    sealId: "ambition",
+    facts:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Elementum sagittis vitae et leo duis ut diam quam nulla porttitor massa id neque aliquam vestibulum morbi blandit cursus risus at ultrices.",
+    sealWhy:
+      "Mi sit amet mauris commodo quis imperdiet massa tincidunt nunc pulvinar sapien et ligula ullamcorper malesuada proin libero nunc consequat interdum varius sit amet mattis Ambition.",
+  },
+  heixin: {
+    title: "HEIXIN",
+    sealId: "dominance",
+    facts:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Semper auctor neque vitae tempus quam pellentesque nec nam aliquam sem et tortor consequat id porta nibh venenatis cras sed felis eget.",
+    sealWhy:
+      "Volutpat ac tincidunt vitae semper quis lectus nulla at volutpat diam ut venenatis tellus in metus vulputate eu scelerisque felis imperdiet proin fermentum leo vel Dominance.",
+  },
+  haider: {
+    title: "HAIDER",
+    sealId: "sacrifice",
+    facts:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Risus nullam eget felis eget nunc lobortis mattis aliquam faucibus purus in massa tempor nec feugiat nisl pretium fusce id velit ut.",
+    sealWhy:
+      "Tortor dignissim convallis aenean et tortor at risus viverra adipiscing at in tellus integer feugiat scelerisque varius morbi enim nunc faucibus a pellentesque sit amet Sacrifice.",
+  },
+  vol: {
+    title: "VOL",
+    sealId: "vengeance",
+    facts:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Enim nulla aliquet porttitor lacus luctus accumsan tortor posuere ac ut consequat semper viverra nam libero justo laoreet sit amet cursus.",
+    sealWhy:
+      "Sit amet dictum sit amet justo donec enim diam vulputate ut pharetra sit amet aliquam id diam maecenas ultricies mi eget mauris pharetra et ultrices neque Vengeance.",
+  },
+};

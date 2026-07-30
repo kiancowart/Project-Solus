@@ -9,11 +9,14 @@ import {
   BAY_UNLOCKS,
   OUTER_STATIONS,
   DAMAGE_EPOCH,
+  FTH_HUB,
+  IMPERIAL_SLOTS,
 } from "../content/arg-path.js";
 import {
   getHullProgress,
   setHullProgress,
   setChannelUnlock,
+  isPlanetCleared,
 } from "./progress.js";
 import { applyClearanceUI } from "./clearance.js";
 
@@ -22,6 +25,8 @@ const PROMPT = {
   OUTER_SHIP: "outer_ship",
   OUTER_KHAN: "outer_khan",
   INNER_CODE: "inner_code",
+  PROTOCOL: "protocol",
+  EDGE: "edge",
 };
 
 function normalizeToken(raw) {
@@ -123,6 +128,13 @@ export function initHullPlan() {
       serialLine.className = "hull-detail__line";
       serialLine.innerHTML = `<span class="hull-detail__k">SERIAL</span><span class="hull-detail__v">—</span>`;
       partDetail.appendChild(serialLine);
+    }
+
+    if (station.cradleGlyph) {
+      const glyphLine = document.createElement("p");
+      glyphLine.className = "hull-detail__line";
+      glyphLine.innerHTML = `<span class="hull-detail__k">CRADLE</span><span class="hull-detail__v">GLYPH ${station.serial}</span>`;
+      partDetail.appendChild(glyphLine);
     }
 
     const todHead = document.createElement("p");
@@ -426,11 +438,6 @@ export function initFthConsole() {
     }
 
     if (promptState === PROMPT.INNER_CODE) {
-      if (!prog.optics) {
-        push("ERR", "fth-console__line--err");
-        resetPrompt();
-        return;
-      }
       if (prog.inner) {
         push("INNER PARTITION ALREADY RESTORED", "fth-console__line--sys");
         resetPrompt();
@@ -439,16 +446,58 @@ export function initFthConsole() {
       const code = normalizeInnerCode(raw);
       const ok = normalizeInnerCode(PUZZLE_B.codeCompact);
       if (code !== ok) {
-        // Flat deny — no coaching
         push(PUZZLE_B.denyLine, "fth-console__line--err");
         audio.play("deny");
         resetPrompt();
         return;
       }
-      setHullProgress({ inner: true });
+      const armedOuter = !prog.optics;
+      setHullProgress({
+        inner: true,
+        ...(armedOuter ? { optics: true } : {}),
+      });
       push(PUZZLE_B.successLine, "fth-console__line--ok");
+      if (armedOuter) {
+        push(PUZZLE_A.successLine, "fth-console__line--ok");
+      }
       audio.play("codeSuccess");
       refreshHull();
+      resetPrompt();
+      return;
+    }
+
+    if (promptState === PROMPT.PROTOCOL) {
+      const n = normalizeToken(raw).replace(/[.\-]/g, "");
+      const ok = (FTH_HUB.protocolAnswers ?? []).some(
+        (a) => normalizeToken(a).replace(/[.\-]/g, "") === n
+      );
+      if (!ok) {
+        push(FTH_HUB.protocolDeny, "fth-console__line--err");
+        audio.play("deny");
+        resetPrompt();
+        return;
+      }
+      setHullProgress({ teavictaProtocol: true });
+      FTH_HUB.protocolOk.split("\n").forEach((line) => push(line, "fth-console__line--ok"));
+      audio.play("codeSuccess");
+      resetPrompt();
+      return;
+    }
+
+    if (promptState === PROMPT.EDGE) {
+      const n = normalizeToken(raw).replace(/[.\-]/g, "");
+      const ok = (FTH_HUB.edgeAnswers ?? []).some(
+        (a) => normalizeToken(a).replace(/[.\-]/g, "") === n
+      );
+      if (!ok) {
+        push(FTH_HUB.edgeDeny, "fth-console__line--err");
+        audio.play("deny");
+        resetPrompt();
+        return;
+      }
+      setHullProgress({ volEdge: true });
+      FTH_HUB.edgeOk.split("\n").forEach((line) => push(line, "fth-console__line--ok"));
+      audio.play("codeSuccess");
       resetPrompt();
     }
   };
@@ -462,6 +511,7 @@ export function initFthConsole() {
   };
 
   const handleCommand = (raw) => {
+    const trimmed = String(raw ?? "").trim();
     const parsed = parseSlash(raw);
 
     // A new slash command cancels any open code/auth prompt
@@ -474,12 +524,18 @@ export function initFthConsole() {
 
     const prog = getHullProgress();
 
+    // Celeste easter (no slash)
+    if (!parsed && /^celeste$/i.test(trimmed)) {
+      push(FTH_HUB.celeste, "fth-console__line--sys");
+      return;
+    }
+
     if (!parsed) {
       unknownCmd(raw);
       return;
     }
 
-    const { verb } = parsed;
+    const { verb, args } = parsed;
 
     if (verb === "help") {
       push(PUZZLE_A.helpLine, "fth-console__line--sys");
@@ -496,16 +552,92 @@ export function initFthConsole() {
     }
 
     if (verb === "inner") {
-      if (!prog.optics) {
-        push("ERR — OUTER AUTH REQUIRED", "fth-console__line--err");
-        return;
-      }
       if (prog.inner) {
         push("INNER PARTITION ALREADY RESTORED", "fth-console__line--sys");
         return;
       }
       setPrompt(PROMPT.INNER_CODE, PUZZLE_B.promptLabel);
       push(PUZZLE_B.promptMask, "fth-console__line--sys");
+      return;
+    }
+
+    if (verb === "whoami") {
+      FTH_HUB.whoami.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
+      return;
+    }
+
+    if (verb === "protocol" || verb === "storm") {
+      if (prog.teavictaProtocol) {
+        FTH_HUB.protocolOk.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
+        return;
+      }
+      setPrompt(PROMPT.PROTOCOL, FTH_HUB.protocolPrompt);
+      return;
+    }
+
+    if (verb === "echo") {
+      if (!prog.inner) {
+        push(FTH_HUB.echoNeedInner, "fth-console__line--err");
+        audio.play("deny");
+        return;
+      }
+      FTH_HUB.echoOk.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
+      return;
+    }
+
+    if (verb === "moon") {
+      const name = String(args[0] ?? "")
+        .trim()
+        .toLowerCase();
+      if (!name) {
+        push(FTH_HUB.moonUsage, "fth-console__line--sys");
+        return;
+      }
+      if (name === "kaph") {
+        FTH_HUB.moonKaph.split("\n").forEach((line) => push(line, "fth-console__line--ok"));
+        return;
+      }
+      push(FTH_HUB.moonUnknown, "fth-console__line--err");
+      audio.play("deny");
+      return;
+    }
+
+    if (verb === "edge" || verb === "carrier") {
+      if (prog.volEdge) {
+        FTH_HUB.edgeOk.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
+        return;
+      }
+      setPrompt(PROMPT.EDGE, FTH_HUB.edgePrompt);
+      return;
+    }
+
+    if (verb === "volume" || verb === "bind") {
+      const planetArg = String(args[0] ?? "")
+        .trim()
+        .toLowerCase();
+      if (!planetArg) {
+        push(FTH_HUB.volumeUsage, "fth-console__line--sys");
+        return;
+      }
+      const slot = IMPERIAL_SLOTS.find(
+        (s) =>
+          s.planetId === planetArg ||
+          s.planetName.toLowerCase() === planetArg
+      );
+      if (!slot) {
+        push("ERR — UNKNOWN WORLD INDEX", "fth-console__line--err");
+        return;
+      }
+      if (!isPlanetCleared(slot.planetId)) {
+        push(FTH_HUB.volumeSealed, "fth-console__line--err");
+        audio.play("deny");
+        return;
+      }
+      push(
+        `VOLUME // ${slot.planetName.toUpperCase()} · CLEAR · FRAGMENT ${slot.fragment} LOGGED`,
+        "fth-console__line--ok"
+      );
+      push("Tray holds the word. Chart dossiers hold bind order.", "fth-console__line--sys");
       return;
     }
 

@@ -2,7 +2,7 @@
  * LATTICE.OS — Terminal audio
  */
 
-import { AMBIENCE, SOUNDTRACK } from "../content/boot-content.js";
+import { AMBIENCE, MUSIC, SOUNDTRACK } from "../content/boot-content.js";
 
 const AMBIENCE_LIVE_KEY = "lattice.ambienceLive";
 
@@ -49,21 +49,27 @@ export class TerminalAudio {
   constructor() {
     this.ctx = null;
     this.enabled = false;
-    /** 666 eyes — no ambience, no SFX until refresh */
+    /** 666 eyes — no ambience, no SFX until caption dismiss */
     this.deadSilent = false;
     this.sfxGain = 0.55;
     this.ambienceGain = Math.max(0, Math.min(1, AMBIENCE?.volume ?? 0.18));
-    this.musicGain = Math.max(0, Math.min(1, SOUNDTRACK?.volume ?? 0.4));
+    this.musicGain = Math.max(0, Math.min(1, MUSIC?.volume ?? SOUNDTRACK?.volume ?? 0.4));
 
     this.ambience = null;
     this.ambienceGainNode = null;
     this.ambienceStarted = false;
     this.ambienceRouted = false;
 
-    this.soundtrack = null;
+    /** @type {Record<string, HTMLAudioElement>} */
+    this.musicEls = {};
+    /** @type {Record<string, boolean>} */
+    this.musicRouted = {};
     this.musicGainNode = null;
+    this.activeTrackId = null;
+    this.soundtrackWanted = false;
+    this.soundtrackSuspended = false;
+    /** Alias: true when a track has been successfully started */
     this.soundtrackStarted = false;
-    this.soundtrackRouted = false;
 
     /** @type {AudioBuffer[]} */
     this.typewriterBuffers = [];
@@ -138,13 +144,19 @@ export class TerminalAudio {
     this.#syncSoundtrack();
   }
 
-  /** Hard mute for the 666 no-mask stare (refresh to escape). */
+  /** Hard mute for the 666 no-mask stare. */
   enterDeadSilence() {
     this.deadSilent = true;
     this.enabled = false;
+    this.soundtrackSuspended = false;
     writeAmbienceLive(false);
     this.stopAmbience();
     this.stopSoundtrack();
+  }
+
+  /** Leave 666 dead silence so pad SFX / ambience can resume. */
+  exitDeadSilence() {
+    this.deadSilent = false;
   }
 
   setSfxGain(normalized) {
@@ -187,52 +199,52 @@ export class TerminalAudio {
     }
   }
 
-  /** Start looping clearance soundtrack once (idempotent). */
-  async startSoundtrack() {
-    if (this.deadSilent) return;
-    const src = SOUNDTRACK?.src;
-    if (!src || this.soundtrackStarted) return;
+  getMusicTracks() {
+    return Array.isArray(MUSIC?.tracks) ? MUSIC.tracks : [];
+  }
 
-    await this.ensure();
-    if (!this.soundtrack) {
-      const el = new Audio(src);
-      el.loop = SOUNDTRACK.loop !== false;
+  getActiveTrackId() {
+    return this.activeTrackId;
+  }
+
+  #trackDef(trackId) {
+    return this.getMusicTracks().find((t) => t.id === trackId) ?? null;
+  }
+
+  #ensureMusicBus() {
+    if (!this.ctx) return;
+    if (this.musicGainNode) return;
+    this.musicGainNode = this.ctx.createGain();
+    this.musicGainNode.gain.value = 0;
+    this.musicGainNode.connect(this.ctx.destination);
+  }
+
+  #ensureTrackEl(trackId) {
+    const def = this.#trackDef(trackId);
+    if (!def?.src) return null;
+    if (!this.musicEls[trackId]) {
+      const el = new Audio(def.src);
+      el.loop = def.loop !== false;
       el.preload = "auto";
-      this.soundtrack = el;
+      this.musicEls[trackId] = el;
     }
-
-    this.#routeSoundtrackThroughCrush();
-    this.soundtrackStarted = true;
-    this.#syncSoundtrack();
-    try {
-      await this.soundtrack.play();
-    } catch {
-      this.soundtrackStarted = false;
-    }
+    return this.musicEls[trackId];
   }
 
-  #routeAmbience() {
-    if (!this.ambience || !this.ctx || this.ambienceRouted) return;
+  /** Bitcrush + band-limit into shared music gain bus. */
+  #routeTrackThroughCrush(trackId) {
+    const el = this.musicEls[trackId];
+    if (!el || !this.ctx || this.musicRouted[trackId]) return;
 
-    const source = this.ctx.createMediaElementSource(this.ambience);
-    this.ambienceGainNode = this.ctx.createGain();
-    this.ambienceGainNode.gain.value = 0;
-    source.connect(this.ambienceGainNode).connect(this.ctx.destination);
-    this.ambience.volume = 1;
-    this.ambienceRouted = true;
-  }
+    this.#ensureMusicBus();
 
-  /** Bitcrush + band-limit chain for a crushed terminal radio feel. */
-  #routeSoundtrackThroughCrush() {
-    if (!this.soundtrack || !this.ctx || this.soundtrackRouted) return;
-
-    const crush = SOUNDTRACK?.crush ?? {};
+    const crush = MUSIC?.crush ?? SOUNDTRACK?.crush ?? {};
     const drive = crush.drive ?? 1.35;
     const bits = crush.bits ?? 9;
     const hpHz = crush.highpassHz ?? 60;
     const lpHz = crush.lowpassHz ?? 7000;
 
-    const source = this.ctx.createMediaElementSource(this.soundtrack);
+    const source = this.ctx.createMediaElementSource(el);
 
     const pre = this.ctx.createGain();
     pre.gain.value = drive;
@@ -261,9 +273,6 @@ export class TerminalAudio {
     const makeup = this.ctx.createGain();
     makeup.gain.value = 1.05;
 
-    this.musicGainNode = this.ctx.createGain();
-    this.musicGainNode.gain.value = 0;
-
     source
       .connect(pre)
       .connect(shaper)
@@ -271,11 +280,134 @@ export class TerminalAudio {
       .connect(lowpass)
       .connect(comp)
       .connect(makeup)
-      .connect(this.musicGainNode)
-      .connect(this.ctx.destination);
+      .connect(this.musicGainNode);
 
-    this.soundtrack.volume = 1;
-    this.soundtrackRouted = true;
+    el.volume = 1;
+    this.musicRouted[trackId] = true;
+  }
+
+  async #waitTrackReady(el) {
+    if (!el) return;
+    if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) return;
+    await Promise.race([
+      new Promise((resolve, reject) => {
+        const onReady = () => {
+          cleanup();
+          resolve();
+        };
+        const onErr = () => {
+          cleanup();
+          reject(new Error("music load failed"));
+        };
+        const cleanup = () => {
+          el.removeEventListener("canplaythrough", onReady);
+          el.removeEventListener("canplay", onReady);
+          el.removeEventListener("error", onErr);
+        };
+        el.addEventListener("canplaythrough", onReady, { once: true });
+        el.addEventListener("canplay", onReady, { once: true });
+        el.addEventListener("error", onErr, { once: true });
+        el.load();
+      }),
+      new Promise((resolve) => setTimeout(resolve, 10000)),
+    ]);
+  }
+
+  #pauseAllTracks() {
+    for (const el of Object.values(this.musicEls)) {
+      if (el && !el.paused) el.pause();
+    }
+  }
+
+  /**
+   * Play a named hub track (stops others). Used after pad / Imperial / Diagnostics.
+   * @param {string} trackId
+   * @param {{ fromStart?: boolean }} [opts]
+   */
+  async startTrack(trackId, { fromStart = true } = {}) {
+    if (this.deadSilent) return;
+    const def = this.#trackDef(trackId);
+    if (!def) return;
+
+    this.soundtrackWanted = true;
+    this.soundtrackSuspended = false;
+    this.activeTrackId = trackId;
+
+    try {
+      await this.ensure();
+    } catch {
+      return;
+    }
+    if (!this.enabled) this.enabled = true;
+
+    const el = this.#ensureTrackEl(trackId);
+    if (!el) return;
+
+    this.#routeTrackThroughCrush(trackId);
+
+    // Stop sibling beds
+    for (const [id, other] of Object.entries(this.musicEls)) {
+      if (id !== trackId && other && !other.paused) other.pause();
+    }
+
+    try {
+      await this.#waitTrackReady(el);
+      if (fromStart) {
+        try {
+          el.currentTime = 0;
+        } catch {
+          /* ignore */
+        }
+      }
+      this.soundtrackStarted = true;
+      this.#syncSoundtrack();
+      await el.play();
+      this.#syncSoundtrack();
+    } catch {
+      this.soundtrackStarted = false;
+      this.#syncSoundtrack();
+    }
+  }
+
+  /** Pad success — Recursion (or Ascendancy if already Imperial). */
+  async startSoundtrack(trackId = MUSIC?.hubDefault ?? "recursion") {
+    await this.startTrack(trackId, { fromStart: true });
+  }
+
+  /** Ensure hub music is running if pad success already armed it. */
+  async ensureSoundtrack() {
+    if (this.deadSilent || !this.soundtrackWanted) return;
+    if (this.soundtrackSuspended) return;
+    const id = this.activeTrackId ?? MUSIC?.hubDefault ?? "recursion";
+    const el = this.musicEls[id];
+    if (this.soundtrackStarted && el && !el.paused) {
+      this.#syncSoundtrack();
+      return;
+    }
+    await this.startTrack(id, { fromStart: false });
+  }
+
+  /** After Imperial bind animation — Ascendancy by default. */
+  async playPostImperialMusic() {
+    const id = MUSIC?.postImperialDefault ?? "ascendancy";
+    await this.startTrack(id, { fromStart: true });
+  }
+
+  /** Diagnostics track picker (post-Imperial). */
+  async setMusicTrack(trackId) {
+    if (!this.#trackDef(trackId)) return;
+    await this.startTrack(trackId, { fromStart: true });
+  }
+
+  #routeAmbience() {
+    if (!this.ambience || !this.ctx || this.ambienceRouted) return;
+
+    const source = this.ctx.createMediaElementSource(this.ambience);
+    this.ambienceGainNode = this.ctx.createGain();
+    this.ambienceGainNode.gain.value = 0;
+    source.connect(this.ambienceGainNode).connect(this.ctx.destination);
+    this.ambience.volume = 1;
+    this.ambienceRouted = true;
   }
 
   /** Stepped + soft-clip curve — low bit depth grit without a worklet. */
@@ -305,15 +437,36 @@ export class TerminalAudio {
 
   /** Halt looping soundtrack (purge / cold exit). */
   stopSoundtrack() {
-    if (this.soundtrack) {
-      this.soundtrack.pause();
+    this.soundtrackWanted = false;
+    this.soundtrackSuspended = false;
+    this.soundtrackStarted = false;
+    this.#pauseAllTracks();
+    for (const el of Object.values(this.musicEls)) {
       try {
-        this.soundtrack.currentTime = 0;
+        el.currentTime = 0;
       } catch {
         /* ignore */
       }
     }
-    this.soundtrackStarted = false;
+    if (this.musicGainNode) this.musicGainNode.gain.value = 0;
+  }
+
+  /** Soft-stop for Imperial bind animation (keeps wanted flag). */
+  pauseSoundtrack() {
+    this.soundtrackSuspended = true;
+    this.#pauseAllTracks();
+    if (this.musicGainNode) this.musicGainNode.gain.value = 0;
+  }
+
+  /**
+   * Resume after pause — only if still on the same bed.
+   * Prefer playPostImperialMusic() after a successful bind.
+   */
+  resumeSoundtrack() {
+    if (this.deadSilent) return;
+    this.soundtrackSuspended = false;
+    if (!this.soundtrackWanted) return;
+    this.#syncSoundtrack();
   }
 
   #syncAmbience() {
@@ -342,24 +495,33 @@ export class TerminalAudio {
   }
 
   #syncSoundtrack() {
-    if (!this.soundtrack) return;
+    const id = this.activeTrackId;
+    const el = id ? this.musicEls[id] : null;
 
-    const level = this.enabled && !this.deadSilent ? this.musicGain : 0;
-    if (this.musicGainNode) {
-      this.musicGainNode.gain.value = level;
-    } else {
-      this.soundtrack.volume = level;
+    if (this.soundtrackSuspended) {
+      if (this.musicGainNode) this.musicGainNode.gain.value = 0;
+      this.#pauseAllTracks();
+      return;
     }
 
-    if (
+    const musicOn =
+      this.soundtrackWanted &&
       this.enabled &&
       !this.deadSilent &&
-      this.soundtrackStarted &&
-      this.soundtrack.paused
-    ) {
-      this.soundtrack.play().catch(() => {});
-    } else if ((!this.enabled || this.deadSilent) && !this.soundtrack.paused) {
-      this.soundtrack.pause();
+      this.musicGain > 0.001 &&
+      Boolean(el);
+
+    const level = musicOn ? this.musicGain : 0;
+    if (this.musicGainNode) {
+      this.musicGainNode.gain.value = level;
+    } else if (el) {
+      el.volume = level;
+    }
+
+    if (musicOn && this.soundtrackStarted && el.paused) {
+      el.play().catch(() => {});
+    } else if (!musicOn) {
+      this.#pauseAllTracks();
     }
   }
 
@@ -505,28 +667,80 @@ export class TerminalAudio {
     this._revealScanSource = null;
   }
 
-  #playTypewriter() {
+  #playTypewriter(glitch = 0) {
     const now = performance.now();
+    const g = Math.max(0, Math.min(1, Number(glitch) || 0));
     // Samples are long; throttle so overlaps stay soft instead of crunching
-    if (now - this._typewriterLastAt < 38) return;
+    // Glitch mode allows denser, uglier stacking
+    const throttle = g > 0.15 ? Math.max(12, 38 - g * 28) : 38;
+    if (now - this._typewriterLastAt < throttle) return;
     this._typewriterLastAt = now;
 
     const bufs = this.typewriterBuffers;
     if (!bufs.length) {
       if (!this.ctx) return;
       const master = this.ctx.createGain();
-      master.gain.value = this.sfxGain * 0.12;
+      master.gain.value = this.sfxGain * (0.12 + g * 0.45);
       master.connect(this.ctx.destination);
-      this.#tone(master, 180, 0.035, this.ctx.currentTime, "square");
+      const f = 180 + g * (40 + Math.random() * 420);
+      this.#tone(master, f, 0.035 + g * 0.04, this.ctx.currentTime, "square");
+      if (g > 0.35) {
+        this.#tone(
+          master,
+          f * (0.35 + Math.random() * 0.4),
+          0.05,
+          this.ctx.currentTime + 0.01,
+          "sawtooth"
+        );
+      }
       return;
     }
     const buf = bufs[Math.floor(Math.random() * bufs.length)];
-    // Dry + quiet — stacking was what made it sound crushed
-    this.#playBuffer(buf, 0.69733125, {
-      maxDur: 0.09,
-      fade: 0.025,
+    if (g < 0.08) {
+      this.#playBuffer(buf, 0.69733125, {
+        maxDur: 0.09,
+        fade: 0.025,
+        track: this._typewriterSources,
+      });
+      return;
+    }
+    // Progressive crush — rate warps + chopped windows + ghost layers
+    const rates = [
+      0.12 + Math.random() * 0.2,
+      0.35 + Math.random() * 0.4,
+      1.8 + Math.random() * 2.4,
+      3.2 + Math.random() * 2.8,
+    ];
+    const playbackRate = rates[Math.floor(Math.random() * rates.length)];
+    const gainScale = 0.85 + g * (1.6 + Math.random() * 1.2);
+    this.#playBuffer(buf, gainScale, {
+      playbackRate,
+      maxDur: 0.04 + Math.random() * (0.05 + g * 0.08),
+      fade: 0.008,
       track: this._typewriterSources,
     });
+    if (g > 0.25) {
+      window.setTimeout(() => {
+        if (this.deadSilent || !this.enabled || !bufs.length) return;
+        this.#playBuffer(buf, gainScale * 0.7, {
+          playbackRate: playbackRate * (0.45 + Math.random() * 0.5),
+          maxDur: 0.03 + Math.random() * 0.06,
+          fade: 0.006,
+          track: this._typewriterSources,
+        });
+      }, 8 + Math.floor(Math.random() * 28));
+    }
+    if (g > 0.55 && Math.random() < 0.7) {
+      window.setTimeout(() => {
+        if (this.deadSilent || !this.enabled || !bufs.length) return;
+        this.#playBuffer(buf, gainScale * 0.5, {
+          playbackRate: 0.06 + Math.random() * 0.14,
+          maxDur: 0.07 + Math.random() * 0.08,
+          fade: 0.01,
+          track: this._typewriterSources,
+        });
+      }, 30 + Math.floor(Math.random() * 50));
+    }
   }
 
   #playKeyInput() {
@@ -660,6 +874,21 @@ export class TerminalAudio {
     this.#tone(master, f, 0.05, t, "square");
     this.#tone(master, f * 0.37, 0.07, t + 0.015, "sawtooth");
     this.#tone(master, f * 2.7, 0.03, t + 0.03, "square");
+  }
+
+  /**
+   * Burst of distorted ui-beep ticks — same bed as imperial triangle glitches.
+   * Used for pad corruption, tuner/controls out, and seal glitch-outs.
+   */
+  playGlitchBurst({ count = 5, gapMs = 75 } = {}) {
+    if (this.deadSilent) return;
+    const n = Math.max(1, Math.floor(count));
+    const gap = Math.max(20, Number(gapMs) || 75);
+    for (let i = 0; i < n; i++) {
+      window.setTimeout(() => {
+        this.play("glitchClick");
+      }, i * gap);
+    }
   }
 
   #playTunerNudge() {
@@ -846,7 +1075,8 @@ export class TerminalAudio {
     }
 
     if (type === "typewriter") {
-      void this.#loadUiSfx().then(() => this.#playTypewriter());
+      const glitch = opts?.glitch ?? 0;
+      void this.#loadUiSfx().then(() => this.#playTypewriter(glitch));
       return;
     }
 

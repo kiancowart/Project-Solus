@@ -13,6 +13,8 @@ const COLD_KEYS = [
   "lattice.whisperStep",
   "lattice.whisperDone",
   "lattice.whisperSealed",
+  "lattice.whisperSudokuSeen",
+  "lattice.sealOrder",
   ...PROGRESS_STORAGE_KEYS,
 ];
 

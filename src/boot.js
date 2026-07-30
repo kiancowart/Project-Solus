@@ -10,6 +10,7 @@ import {
   GATE_EASTER_EGGS,
   GATE_NICE_TRY_CODES,
   GATE_NICE_TRY_TEXT,
+  MUSIC,
 } from "../content/boot-content.js";
 import { audio } from "./audio.js";
 import {
@@ -22,7 +23,11 @@ import {
   revealTopToBottom,
   revealPanel,
 } from "./motion.js";
-import { applyClearanceUI, grantImperialClearance } from "./clearance.js";
+import {
+  applyClearanceUI,
+  grantImperialClearance,
+  hasImperialClearance,
+} from "./clearance.js";
 import { unlockChannelsForImperialBind } from "./progress.js";
 import { initHullPlan } from "./hull.js";
 import { initFlightLog } from "./flight-log.js";
@@ -144,7 +149,10 @@ export function runClearanceGate(skippedRef) {
 
     revealTopToBottom(gate.querySelector(".gate"));
 
-    const interceptLink = gate.querySelector(".gate__intercept");
+    const interceptLink = gate.querySelector('.lattice-route[data-route="tuner"]');
+    const hubBtn = document.getElementById("gate-hub");
+    if (hubBtn) hubBtn.hidden = !hasImperialClearance();
+
     interceptLink?.addEventListener("click", () => {
       // Carry ambient bed across full-page jump back to the tuner
       if (audio.enabled) audio.markAmbienceLive();
@@ -163,6 +171,28 @@ export function runClearanceGate(skippedRef) {
       window.removeEventListener("keydown", onKeydown);
       resolve();
     };
+
+    const enterHubFromPad = async () => {
+      if (!hasImperialClearance() || gate.classList.contains("is-unlocked")) return;
+      locked = true;
+      audio.exitDeadSilence();
+      try {
+        if (!audio.enabled) await audio.enable();
+        updateAudioToggle(true);
+        await audio.startSoundtrack(
+          MUSIC?.postImperialDefault ?? "ascendancy"
+        );
+      } catch {
+        /* ignore */
+      }
+      audio.play("select");
+      if (skippedRef) skippedRef.skipped = true;
+      cleanupAndResolve();
+    };
+
+    hubBtn?.addEventListener("click", () => {
+      void enterHubFromPad();
+    });
 
     const fail = (message = "DENIED") => {
       locked = true;
@@ -198,12 +228,45 @@ export function runClearanceGate(skippedRef) {
         eyes.hidden = false;
         eyes.setAttribute("aria-hidden", "false");
       }
-      // No ambience, no SFX on the no-mask stare — refresh required
+      // No ambience, no SFX on the no-mask stare — caption returns to pad
       audio.enterDeadSilence();
       gate.removeEventListener("click", onPadClick);
       window.removeEventListener("keydown", onKeydown);
-      // Intentionally never resolves — refresh required
     };
+
+    const unstare = async () => {
+      if (!gate.classList.contains("is-staring")) return;
+      audio.exitDeadSilence();
+      try {
+        await audio.enable();
+        updateAudioToggle(true);
+      } catch {
+        /* ignore */
+      }
+      if (eyes) {
+        eyes.hidden = true;
+        eyes.setAttribute("aria-hidden", "true");
+      }
+      gate.classList.remove("is-staring");
+      display.hidden = false;
+      pad.hidden = false;
+      pad.querySelectorAll(".gate__key").forEach((k) => {
+        k.disabled = false;
+      });
+      buffer = "";
+      render();
+      status.textContent = "";
+      status.className = "gate__status";
+      locked = false;
+      setWhisperPadVisible(true);
+      gate.addEventListener("click", onPadClick);
+      window.addEventListener("keydown", onKeydown);
+      audio.play("channelSwitch");
+    };
+
+    eyes?.querySelector(".gate__face-caption")?.addEventListener("click", () => {
+      void unstare();
+    });
 
     const succeed = async () => {
       setWhisperPadVisible(false);
@@ -221,7 +284,15 @@ export function runClearanceGate(skippedRef) {
       void flash.offsetWidth;
       flash.classList.add("is-fire");
       audio.play("codeSuccess");
-      void audio.startSoundtrack();
+      try {
+        if (!audio.enabled) await audio.enable();
+        const trackId = hasImperialClearance()
+          ? MUSIC?.postImperialDefault ?? "ascendancy"
+          : MUSIC?.hubDefault ?? "recursion";
+        await audio.startSoundtrack(trackId);
+      } catch {
+        /* hub ensureSoundtrack will retry */
+      }
 
       // Skip is available immediately — aborts acceptance text + later boot stages
       skipBtn.hidden = false;
@@ -361,6 +432,7 @@ export async function enterHub() {
     logoStage.style.opacity = "";
   }
   audio.play("select");
+  void audio.ensureSoundtrack();
   startChrono();
   applyClearanceUI();
 
@@ -419,10 +491,9 @@ export async function returnToClearance() {
 
 export function initImagoReturn() {
   const mark = document.querySelector(".imago-mark");
-  if (!mark) return;
-
   let busy = false;
-  mark.addEventListener("click", async () => {
+
+  const goPad = async () => {
     if (busy) return;
     const hub = document.getElementById("hub");
     if (!hub || hub.hidden) return;
@@ -432,7 +503,36 @@ export function initImagoReturn() {
     } finally {
       busy = false;
     }
+  };
+
+  mark?.addEventListener("click", () => {
+    void goPad();
   });
+
+  document.getElementById("nav-goto-pad")?.addEventListener("click", () => {
+    void goPad();
+  });
+
+  document.getElementById("nav-goto-tuner")?.addEventListener("click", () => {
+    if (audio.enabled) audio.markAmbienceLive();
+  });
+}
+
+function consumeHubEntryQuery() {
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("hub") !== "1") return false;
+    url.searchParams.delete("hub");
+    const qs = url.searchParams.toString();
+    history.replaceState(
+      null,
+      "",
+      `${url.pathname}${qs ? `?${qs}` : ""}${url.hash}`
+    );
+    return hasImperialClearance();
+  } catch {
+    return false;
+  }
 }
 
 export async function runBoot() {
@@ -455,6 +555,23 @@ export async function runBoot() {
   // Resume terminal ambience after intercept → clearance navigation
   if (audio.shouldResumeAmbience()) {
     void unlockAudio();
+  }
+
+  if (consumeHubEntryQuery()) {
+    skipBtn.hidden = true;
+    const gate = document.getElementById("boot-gate");
+    if (gate) gate.hidden = true;
+    setWhisperPadVisible(false);
+    await unlockAudio();
+    try {
+      await audio.startSoundtrack(
+        MUSIC?.postImperialDefault ?? "ascendancy"
+      );
+    } catch {
+      /* ignore */
+    }
+    await enterHub();
+    return;
   }
 
   const skippedRef = { skipped: false };

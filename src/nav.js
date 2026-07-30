@@ -5,6 +5,8 @@
 import { audio } from "./audio.js";
 import { typeText, revealPanel } from "./motion.js";
 import { CHANNEL_TITLES } from "./clearance.js";
+import { hasImperialClearance } from "./milestones.js";
+import { MUSIC } from "../content/boot-content.js";
 import { refreshGuestCorruptDisplay } from "./guest.js";
 
 /* ==========================================================================
@@ -13,6 +15,18 @@ import { refreshGuestCorruptDisplay } from "./guest.js";
 
 /** Cancels an in-flight banner typewriter when a new channel is selected */
 let bannerTypeAbort = { skipped: true };
+
+/** Blocks channel switches (e.g. during Imperial bind sequence). */
+let navInteractionLocked = false;
+
+export function setNavInteractionLocked(locked) {
+  navInteractionLocked = Boolean(locked);
+  document.body.classList.toggle("is-nav-locked", navInteractionLocked);
+}
+
+export function isNavInteractionLocked() {
+  return navInteractionLocked;
+}
 
 export async function typeChannelBanner(panelId, titleOverride) {
   const banner = document.getElementById("channel-banner");
@@ -38,6 +52,10 @@ export function initNav() {
     const toggle = e.target.closest(".nav-item--toggle");
     if (toggle && rail.contains(toggle)) {
       if (revealing) return;
+      if (navInteractionLocked) {
+        audio.play("deny");
+        return;
+      }
       if (toggle.classList.contains("is-locked")) {
         audio.play("deny");
         return;
@@ -55,6 +73,11 @@ export function initNav() {
     const btn = e.target.closest(".nav-item[data-panel]");
     if (!btn || !rail.contains(btn)) return;
     if (revealing) return;
+    if (navInteractionLocked) {
+      // Stay on current channel while a critical sequence (Imperial bind) runs
+      if (!btn.classList.contains("is-active")) audio.play("deny");
+      return;
+    }
     if (btn.classList.contains("is-locked")) {
       audio.play("deny");
       return;
@@ -87,6 +110,10 @@ export function initNav() {
     audio.play("channelSwitch");
 
     if (id === "guest-corrupt") refreshGuestCorruptDisplay();
+
+    window.dispatchEvent(
+      new CustomEvent("lattice:channel", { detail: { panel: id } })
+    );
 
     revealing = true;
     try {
@@ -192,6 +219,35 @@ export function bindFillBar(bar, onChange) {
   });
 }
 
+export function syncMusicTrackPicker() {
+  const row = document.getElementById("music-track-row");
+  const select = document.getElementById("music-track");
+  if (!row || !select) return;
+
+  const unlocked = hasImperialClearance();
+  row.hidden = !unlocked;
+  if (!unlocked) return;
+
+  const tracks = audio.getMusicTracks?.() ?? MUSIC?.tracks ?? [];
+  if (select.options.length !== tracks.length) {
+    select.replaceChildren();
+    for (const t of tracks) {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = t.title;
+      select.appendChild(opt);
+    }
+  }
+
+  const active =
+    audio.getActiveTrackId?.() ||
+    MUSIC?.postImperialDefault ||
+    "ascendancy";
+  if ([...select.options].some((o) => o.value === active)) {
+    select.value = active;
+  }
+}
+
 export function initSystems() {
   const form = document.getElementById("systems-form");
   const audioBtn = document.getElementById("audio-toggle");
@@ -199,6 +255,7 @@ export function initSystems() {
   const sfxGain = document.getElementById("sfx-gain");
   const ambienceGain = document.getElementById("ambience-gain");
   const musicGain = document.getElementById("music-gain");
+  const musicTrack = document.getElementById("music-track");
   const scan = document.getElementById("scan-intensity");
 
   form?.addEventListener("submit", (e) => e.preventDefault());
@@ -231,6 +288,21 @@ export function initSystems() {
     audio.setMusicGain(v / 100);
   });
   audio.setMusicGain(readFillBarValue(musicGain) / 100);
+
+  musicTrack?.addEventListener("change", async () => {
+    const id = musicTrack.value;
+    if (!id) return;
+    audio.play("dropdownToggle");
+    try {
+      if (!audio.enabled) await audio.enable();
+      await audio.setMusicTrack(id);
+      syncMusicTrackPicker();
+    } catch {
+      /* ignore */
+    }
+  });
+  syncMusicTrackPicker();
+  window.addEventListener("lattice:clearance", syncMusicTrackPicker);
 
   bindFillBar(scan, (v) => {
     document.documentElement.style.setProperty(

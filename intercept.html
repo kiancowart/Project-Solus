@@ -119,19 +119,32 @@
         </div>
 
         <footer class="intercept__foot" aria-hidden="true">
-          <a class="intercept__cta" href="index.html" aria-label="Open clearance gate">
-            <svg class="route-icon route-icon--pad" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <rect x="4.5" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
-              <rect x="10" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
-              <rect x="15.5" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
-              <rect x="4.5" y="10" width="4" height="4" fill="none" stroke="currentColor" />
-              <rect x="10" y="10" width="4" height="4" fill="none" stroke="currentColor" />
-              <rect x="15.5" y="10" width="4" height="4" fill="none" stroke="currentColor" />
-              <rect x="4.5" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
-              <rect x="10" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
-              <rect x="15.5" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
-            </svg>
-          </a>
+          <nav class="lattice-routes" aria-label="Site routes">
+            <a class="lattice-route" data-route="pad" href="index.html" aria-label="Open clearance pad">
+              <svg class="route-icon route-icon--pad" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="4.5" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
+                <rect x="10" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
+                <rect x="15.5" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
+                <rect x="4.5" y="10" width="4" height="4" fill="none" stroke="currentColor" />
+                <rect x="10" y="10" width="4" height="4" fill="none" stroke="currentColor" />
+                <rect x="15.5" y="10" width="4" height="4" fill="none" stroke="currentColor" />
+                <rect x="4.5" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
+                <rect x="10" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
+                <rect x="15.5" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
+              </svg>
+            </a>
+            <a
+              class="lattice-route"
+              data-route="hub"
+              href="index.html?hub=1"
+              aria-label="Return to terminal"
+              hidden
+            >
+              <svg class="route-icon route-icon--hub" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4.5 5.5 L19.5 5.5 L12 18.5 Z" fill="none" stroke="currentColor" stroke-linejoin="round" />
+              </svg>
+            </a>
+          </nav>
         </footer>
 
         <div class="radio__controls">
@@ -162,19 +175,32 @@
           </button>
         </div>
 
-        <a class="radio__clearance" href="index.html" aria-label="Open clearance gate" hidden>
-          <svg class="route-icon route-icon--pad" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <rect x="4.5" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
-            <rect x="10" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
-            <rect x="15.5" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
-            <rect x="4.5" y="10" width="4" height="4" fill="none" stroke="currentColor" />
-            <rect x="10" y="10" width="4" height="4" fill="none" stroke="currentColor" />
-            <rect x="15.5" y="10" width="4" height="4" fill="none" stroke="currentColor" />
-            <rect x="4.5" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
-            <rect x="10" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
-            <rect x="15.5" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
-          </svg>
-        </a>
+        <nav class="lattice-routes lattice-routes--tuner" id="tuner-routes" aria-label="Site routes" hidden>
+          <a class="lattice-route" data-route="pad" href="index.html" aria-label="Open clearance pad">
+            <svg class="route-icon route-icon--pad" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <rect x="4.5" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
+              <rect x="10" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
+              <rect x="15.5" y="4.5" width="4" height="4" fill="none" stroke="currentColor" />
+              <rect x="4.5" y="10" width="4" height="4" fill="none" stroke="currentColor" />
+              <rect x="10" y="10" width="4" height="4" fill="none" stroke="currentColor" />
+              <rect x="15.5" y="10" width="4" height="4" fill="none" stroke="currentColor" />
+              <rect x="4.5" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
+              <rect x="10" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
+              <rect x="15.5" y="15.5" width="4" height="4" fill="none" stroke="currentColor" />
+            </svg>
+          </a>
+          <a
+            class="lattice-route"
+            data-route="hub"
+            href="index.html?hub=1"
+            aria-label="Return to terminal"
+            hidden
+          >
+            <svg class="route-icon route-icon--hub" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4.5 5.5 L19.5 5.5 L12 18.5 Z" fill="none" stroke="currentColor" stroke-linejoin="round" />
+            </svg>
+          </a>
+        </nav>
       </section>
 
       <button type="button" class="boot__skip" id="intercept-skip" hidden aria-label="Skip signal">
@@ -182,6 +208,6 @@
       </button>
     </div>
 
-    <script src="src/intercept.js?v=20260723cold" type="module"></script>
+    <script src="src/intercept.js?v=20260729routes2" type="module"></script>
   </body>
 </html>

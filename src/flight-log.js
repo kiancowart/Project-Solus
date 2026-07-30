@@ -1,21 +1,76 @@
 /**
- * LATTICE.OS — Flight Log (ARG hub)
+ * LATTICE.OS — Flight Log (flat chronological entries)
  */
 
 import { FLIGHT_LOG } from "../content/boot-content.js";
+import { IMPERIAL_SLOTS, sealByPlanetId } from "../content/arg-path.js";
 import { audio } from "./audio.js";
 import { applyClearanceUI } from "./clearance.js";
 import {
-  isEntryRecovered,
-  isJournalUnlocked,
-  recoverByQuery,
-  unlockJournalWithCode,
-} from "./milestones.js";
-import { markFragmentRecovered } from "./progress.js";
+  getRecoveredFragments,
+  markFragmentRecovered,
+  isDossierUnlocked,
+} from "./progress.js";
+import { prefersReducedMotion, sleep } from "./motion.js";
 
-/* ==========================================================================
-   FLIGHT LOG — journals, reader, keyword recovery, volume keys
-   ========================================================================== */
+/** Block/shade glyphs only — no punctuation or math symbols */
+const SCRAMBLE_GLYPHS = "░▒▓█▄▀■□▪▫";
+
+function scrambleText(clear, seed = 0) {
+  const src = String(clear ?? "");
+  if (!src) return "";
+  const n = SCRAMBLE_GLYPHS.length;
+  let out = "";
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === " " || ch === "\n" || ch === "-" || ch === ".") {
+      out += ch;
+      continue;
+    }
+    // Mix per index (coprime step) so runs aren't identical glyphs
+    const idx =
+      ((seed + 1) * 31 + i * 13 + src.length * 7 + (src.charCodeAt(i) || 0)) %
+      n;
+    out += SCRAMBLE_GLYPHS[idx < 0 ? idx + n : idx];
+  }
+  return out;
+}
+
+async function runDescramble(el, clearText, { durationMs = 900 } = {}) {
+  if (!el) return;
+  const clear = String(clearText ?? "");
+  if (!clear) {
+    el.textContent = "";
+    return;
+  }
+  if (prefersReducedMotion()) {
+    el.textContent = clear;
+    el.classList.remove("is-scrambled");
+    el.classList.add("is-clear");
+    return;
+  }
+  el.classList.add("is-descrambling");
+  const steps = Math.max(8, Math.min(22, Math.round(durationMs / 45)));
+  for (let s = 0; s <= steps; s++) {
+    const t = s / steps;
+    let out = "";
+    for (let i = 0; i < clear.length; i++) {
+      const ch = clear[i];
+      if (ch === " " || ch === "\n") {
+        out += ch;
+        continue;
+      }
+      const threshold = t * 1.15 - (i / Math.max(1, clear.length)) * 0.35;
+      if (Math.random() < threshold) out += ch;
+      else out += SCRAMBLE_GLYPHS[(i * 13 + s * 7) % SCRAMBLE_GLYPHS.length];
+    }
+    el.textContent = out;
+    await sleep(Math.round(durationMs / steps));
+  }
+  el.textContent = clear;
+  el.classList.remove("is-descrambling", "is-scrambled");
+  el.classList.add("is-clear");
+}
 
 export function initFlightLog() {
   const flog = document.getElementById("flog");
@@ -23,125 +78,139 @@ export function initFlightLog() {
   const reader = document.getElementById("flog-reader");
   const searchForm = document.getElementById("flog-search");
   const searchInput = document.getElementById("flog-query");
+  const rail = document.getElementById("flog-rail");
   const railFill = document.getElementById("flog-rail-fill");
   const split = document.getElementById("flog-split");
   const journalCountEl = document.getElementById("flog-journal-count");
+  const indexLabel = document.querySelector(".flog__index-label");
+  const missEl = document.getElementById("flog-index-miss");
+  const awaitEl = document.getElementById("flog-index-await");
   if (!host || !reader || !FLIGHT_LOG) return;
 
-  const journals = FLIGHT_LOG.journals ?? [];
-  const corruptHint =
-    FLIGHT_LOG.corruptHint ??
-    [
-      "PARTITION CORRUPTED",
-      "",
-      "Lattice cannot decrypt this record in-place.",
-      "Query the journal index with a recovery key.",
-      "",
-      "SEARCH ACTIVATES RECOVER.",
-      "Keywords wake sealed files.",
-    ].join("\n");
-  const idle = FLIGHT_LOG.idle ?? "SELECT JOURNAL ENTRY";
-  const idleHint =
-    FLIGHT_LOG.idleHint ??
-    [
-      "Search recovery keywords to decrypt sealed entries.",
-      "Each journal tracks recovered / total partitions.",
-      "Locked volumes need a three-digit access key.",
-    ].join("\n");
+  const entries = FLIGHT_LOG.entries ?? [];
+  const idle = FLIGHT_LOG.idle ?? "SELECT LOG ENTRY";
+  const idleHint = FLIGHT_LOG.idleHint ?? "";
 
   let selectedBtn = null;
   let activeEntry = null;
+  let filterQuery = "";
   let pages = [];
   let pageIndex = 0;
-  let keyTarget = null;
+  /** Descramble plays once per entry per Flight Log channel visit */
+  const descrambledIds = new Set();
+  /** While set, paint fragments as scrambled so descramble has something to reveal */
+  let pendingDescrambleId = null;
 
-  const corruptToken = (len = 8) => {
-    const chars =
-      "ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghijkmnopqrstuvwxyz0123456789/·#";
-    let out = "";
-    for (let i = 0; i < len; i++) {
-      out += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return out;
+  const knownFragments = new Set(
+    IMPERIAL_SLOTS.map((s) => String(s.fragment).toUpperCase())
+  );
+
+  const escapeHtml = (s) =>
+    String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  /** Unscrambled fragment-entry locations render as <strong> */
+  const locationInnerHtml = (text, { scrambled, hasFragment }) => {
+    const esc = escapeHtml(text);
+    if (hasFragment && !scrambled) return `<strong>${esc}</strong>`;
+    return esc;
   };
 
-  const syncEntryDisplay = (entry) => {
-    const recovered = isEntryRecovered(entry.id, entry);
-    entry.corrupted = !recovered;
-    entry.dateCorrupted = !recovered;
-    if (recovered) {
-      entry.title = entry.authorTitle || entry.title || "Untitled";
-      entry.yearDisplay = String(entry.year ?? "····");
-      entry.cycleDisplay = String(entry.cycle ?? 0).padStart(2, "0");
-    } else {
-      if (!entry._corruptTitle) entry._corruptTitle = corruptToken(7 + Math.floor(Math.random() * 6));
-      if (!entry._corruptYear) entry._corruptYear = corruptToken(4);
-      if (!entry._corruptCycle) entry._corruptCycle = corruptToken(2);
-      entry.title = entry._corruptTitle;
-      entry.yearDisplay = entry._corruptYear;
-      entry.cycleDisplay = entry._corruptCycle;
-    }
-    return recovered;
+  const isFragInTray = (frag) => {
+    const id = String(frag ?? "")
+      .trim()
+      .toUpperCase()
+      .replace(/[▽▼\s]+/g, "");
+    return Boolean(id) && getRecoveredFragments().has(id);
   };
 
-  journals.forEach((j) => {
-    (j.entries ?? []).forEach((e) => {
-      e.authorTitle = e.title;
-      e.authorBody = e.body;
-      syncEntryDisplay(e);
-      if (
-        isEntryRecovered(e.id, e) &&
-        (e.fragmentId || e.imperialFragment)
-      ) {
-        markFragmentRecovered(e.fragmentId || e.imperialFragment);
-      }
+  const planetMetaClear = (entry) => {
+    if (entry?.location) return String(entry.location).toUpperCase();
+    if (!entry?.planetId) return "—";
+    const seal = sealByPlanetId(entry.planetId);
+    return (seal?.planetName ?? entry.planetId).toUpperCase();
+  };
+
+  const planetUnlocked = (entry) =>
+    Boolean(entry?.planetId) && isDossierUnlocked(entry.planetId);
+
+  /** Only the nine fragment entries scramble LOC — until Chart dossier unlock. */
+  const needsScramble = (entry) =>
+    Boolean(entry?.fragment) && Boolean(entry?.planetId) && !planetUnlocked(entry);
+
+  const plainBody = (text) =>
+    String(text ?? "").replace(/\[\[([A-Za-z0-9\-]+)\]\]/g, "$1");
+
+  const claimFragment = (frag) => {
+    const id = String(frag ?? "")
+      .trim()
+      .toUpperCase()
+      .replace(/[▽▼\s]+/g, "");
+    if (!id || !knownFragments.has(id)) return;
+    if (isFragInTray(id)) return;
+    markFragmentRecovered(id);
+    audio.play("imperial");
+    window.dispatchEvent(new CustomEvent("lattice:fragments"));
+    applyClearanceUI();
+    if (activeEntry) void openEntry(activeEntry, { replayDescramble: false });
+    paintList();
+  };
+
+  /** Paint column HTML — fragment words become boxed/claimed buttons. */
+  const colHtml = (text, entry) => {
+    const scrambled =
+      needsScramble(entry) ||
+      (pendingDescrambleId != null && pendingDescrambleId === entry?.id);
+    let html = escapeHtml(text);
+    // Wrap known fragment tokens (whole words)
+    for (const id of knownFragments) {
+      const re = new RegExp(`\\b(${id})\\b`, "gi");
+      html = html.replace(re, (_, word) => {
+        const up = word.toUpperCase();
+        const claimed = isFragInTray(up);
+        const display = scrambled ? scrambleText(up, 3) : up;
+        const cls = [
+          "flog-inline-frag",
+          claimed ? "is-claimed" : "is-boxed",
+          scrambled ? "is-scrambled" : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        return `<button type="button" class="${cls}" data-inline-frag="${up}" aria-pressed="${claimed ? "true" : "false"}">${display}</button>`;
+      });
+    }
+    return html.replace(/\n/g, "<br />");
+  };
+
+  const bindInlineFrags = () => {
+    reader.querySelectorAll("[data-inline-frag]").forEach((btn) => {
+      if (btn.dataset.bound === "1") return;
+      btn.dataset.bound = "1";
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        claimFragment(btn.dataset.inlineFrag);
+      });
     });
-  });
-
-  const formatDate = (entry) => {
-    const year = entry.dateCorrupted
-      ? entry.yearDisplay ?? "····"
-      : String(entry.year);
-    const cycle = entry.dateCorrupted
-      ? entry.cycleDisplay ?? "··"
-      : String(entry.cycle).padStart(2, "0");
-    return `${year} AE · CYCLE ${cycle}`;
-  };
-
-  const formatListDate = (entry) => {
-    const year = entry.dateCorrupted
-      ? entry.yearDisplay ?? "····"
-      : String(entry.year);
-    const cycle = entry.dateCorrupted
-      ? entry.cycleDisplay ?? "··"
-      : String(entry.cycle).padStart(2, "0");
-    return `${year} AE · C.${cycle}`;
-  };
-
-  const entryStats = (journal) => {
-    const entries = journal.entries ?? [];
-    const total = entries.length;
-    const recovered = entries.filter((e) => isEntryRecovered(e.id, e)).length;
-    return { recovered, total };
-  };
-
-  const updateJournalCount = () => {
-    if (!journalCountEl) return;
-    const total = journals.length;
-    const open = journals.filter((j) => isJournalUnlocked(j)).length;
-    journalCountEl.textContent = `${open}/${total}`;
   };
 
   const updateRail = () => {
     if (!railFill) return;
     const max = host.scrollHeight - host.clientHeight;
-    const fill = max <= 0 ? 1 : host.scrollTop / max;
+    if (max <= 0) {
+      if (rail) rail.hidden = true;
+      railFill.style.transform = "scaleY(0)";
+      return;
+    }
+    if (rail) rail.hidden = false;
+    const fill = host.scrollTop / max;
     railFill.style.transform = `scaleY(${Math.max(0, Math.min(1, fill))})`;
   };
 
-  const tokenize = (text, breakAll) => {
+  const tokenize = (text) => {
     if (!text) return [];
-    if (breakAll) return Array.from(text);
     return text.split(/(\s+)/).filter((t) => t.length > 0);
   };
 
@@ -164,7 +233,7 @@ export function initFlightLog() {
     return best;
   };
 
-  const buildPages = (text, breakAll) => {
+  const buildPages = (text) => {
     const spread = reader.querySelector(".flog-reader__spread");
     const col = reader.querySelector(".flog-reader__col");
     if (!spread || !col) return [{ left: text, right: "" }];
@@ -174,7 +243,7 @@ export function initFlightLog() {
     if (colW < 8 || colH < 8) return [{ left: text, right: "" }];
 
     const measure = document.createElement("div");
-    measure.className = `flog-reader__measure${breakAll ? " is-corrupt" : ""}`;
+    measure.className = "flog-reader__measure";
     measure.style.width = `${colW}px`;
     measure.style.font = getComputedStyle(col).font;
     measure.style.fontSize = getComputedStyle(col).fontSize;
@@ -182,7 +251,7 @@ export function initFlightLog() {
     measure.style.letterSpacing = getComputedStyle(col).letterSpacing;
     document.body.appendChild(measure);
 
-    const tokens = tokenize(text, breakAll);
+    const tokens = tokenize(text);
     const out = [];
     let i = 0;
     let guard = 0;
@@ -205,6 +274,7 @@ export function initFlightLog() {
   };
 
   const paintPage = () => {
+    if (!activeEntry) return;
     const left = reader.querySelector('[data-col="0"]');
     const right = reader.querySelector('[data-col="1"]');
     const prev = reader.querySelector(".flog-turn--prev");
@@ -213,8 +283,9 @@ export function initFlightLog() {
     if (!left || !right || !prev || !next) return;
 
     const page = pages[pageIndex] || { left: "", right: "" };
-    left.textContent = page.left;
-    right.textContent = page.right;
+    left.innerHTML = colHtml(page.left, activeEntry);
+    right.innerHTML = colHtml(page.right, activeEntry);
+    bindInlineFrags();
 
     const canPrev = pageIndex > 0;
     const canNext = pageIndex < pages.length - 1;
@@ -229,140 +300,64 @@ export function initFlightLog() {
 
   const layoutEntry = () => {
     if (!activeEntry) return;
-    syncEntryDisplay(activeEntry);
-    const body = activeEntry.corrupted
-      ? corruptHint
-      : activeEntry.authorBody ?? activeEntry.body ?? "";
+    const body = plainBody(activeEntry.body ?? "");
     const keep = pageIndex;
-    pages = buildPages(body, false);
+    pages = buildPages(body);
     pageIndex = Math.min(keep, Math.max(0, pages.length - 1));
     paintPage();
   };
 
   const showIdle = () => {
     activeEntry = null;
-    keyTarget = null;
     pages = [];
     pageIndex = 0;
+    selectedBtn?.classList.remove("is-active");
+    selectedBtn = null;
     reader.innerHTML = `
       <div class="flog__idle-block">
-        <p class="flog__idle">${idle}</p>
-        <p class="flog__idle-hint">${idleHint.replace(/\n/g, "<br />")}</p>
+        <p class="flog__idle">${escapeHtml(idle)}</p>
+        <p class="flog__idle-hint">${escapeHtml(idleHint).replace(/\n/g, "<br />")}</p>
       </div>`;
-    if (selectedBtn) {
-      selectedBtn.classList.remove("is-active");
-      selectedBtn = null;
-    }
   };
 
-  const showJournalKeyPad = (journal) => {
-    activeEntry = null;
-    keyTarget = journal;
-    pages = [];
-    pageIndex = 0;
-    if (selectedBtn) {
-      selectedBtn.classList.remove("is-active");
-      selectedBtn = null;
-    }
-
-    const label = journal.titleCorrupted
-      ? "CORRUPTED VOLUME"
-      : journal.title || "JOURNAL";
-
-    reader.innerHTML = `
-      <div class="flog-key">
-        <p class="flog-key__status">VOLUME LOCKED</p>
-        <h3 class="flog-key__title">${label}</h3>
-        <p class="flog-key__meta">${journal.yearStart}–${journal.yearEnd} AE</p>
-        <p class="flog-key__copy">Enter three-digit access key to open this journal.</p>
-        <form class="flog-key__form" id="flog-key-form" autocomplete="off">
-          <label class="visually-hidden" for="flog-key-input">Journal access key</label>
-          <input
-            class="flog-key__input"
-            id="flog-key-input"
-            type="text"
-            inputmode="numeric"
-            maxlength="3"
-            pattern="[0-9]*"
-            placeholder="···"
-            spellcheck="false"
-          />
-          <button type="submit" class="flog-key__submit">UNLOCK</button>
-        </form>
-        <p class="flog-key__feedback" id="flog-key-feedback" aria-live="polite"></p>
-      </div>`;
-
-    const form = reader.querySelector("#flog-key-form");
-    const input = reader.querySelector("#flog-key-input");
-    const feedback = reader.querySelector("#flog-key-feedback");
-    input?.focus();
-
-    form?.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const code = input?.value ?? "";
-      const result = unlockJournalWithCode(journal, code);
-      if (!result.ok) {
-        audio.play("deny");
-        if (feedback) {
-          feedback.textContent =
-            result.reason === "unknown"
-              ? "NO KEY ON RECORD FOR THIS VOLUME"
-              : "ACCESS DENIED";
-          feedback.classList.add("is-deny");
-        }
-        form.classList.remove("is-shake");
-        void form.offsetWidth;
-        form.classList.add("is-shake");
-        return;
-      }
-
-      if (feedback) {
-        feedback.textContent = "VOLUME OPEN";
-        feedback.classList.remove("is-deny");
-      }
-      rebuildJournalList(journal.id);
-      updateJournalCount();
-      const details = host.querySelector(
-        `.flog-journal[data-journal="${journal.id}"]`
-      );
-      if (details) details.open = true;
-      showIdle();
-      syncIndexVisibility();
-    });
-  };
-
-  const showEntry = (entry, btn) => {
-    keyTarget = null;
-    syncEntryDisplay(entry);
-    if (selectedBtn) selectedBtn.classList.remove("is-active");
-    selectedBtn = btn;
-    btn.classList.add("is-active");
-    audio.play("dropdownToggle");
-
+  const openEntry = async (entry, { replayDescramble = true } = {}) => {
     activeEntry = entry;
     pageIndex = 0;
-    const status = entry.corrupted ? "CORRUPTED" : "RECOVERED";
-    const titleCls = entry.corrupted
-      ? "flog-reader__title flog-reader__title--corrupt"
-      : "flog-reader__title";
-    const colCls = entry.corrupted
-      ? "flog-reader__col flog-reader__col--corrupt"
-      : "flog-reader__col";
-    const displayTitle = entry.corrupted
-      ? entry.title
-      : entry.authorTitle || entry.title || "Untitled";
+    const scramble = needsScramble(entry);
+    const metaClear = planetMetaClear(entry);
+    const canDescramble =
+      Boolean(entry.fragment) && !scramble && isDossierUnlocked(entry.planetId);
+    const playDescramble =
+      replayDescramble && canDescramble && !descrambledIds.has(entry.id);
+    const metaShow =
+      scramble || playDescramble ? scrambleText(metaClear, 1) : metaClear;
+    const locScrambled = scramble || playDescramble;
+    const planetCls = [
+      locScrambled ? "is-scrambled" : "",
+      entry.fragment && !locScrambled ? "is-frag-clear" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     reader.innerHTML = `
       <header class="flog-reader__head">
-        <p class="flog-reader__status">${status}</p>
-        <h3 class="${titleCls}">${displayTitle}</h3>
-        <p class="flog-reader__date">${formatDate(entry)}</p>
+        <h3 class="flog-reader__title">${escapeHtml(entry.title)}</h3>
+        <div class="flog-reader__cats">
+          <p class="flog-reader__cat">
+            <span class="flog-reader__cat-label">DATE</span>
+            <span class="flog-reader__date">${escapeHtml(entry.date)}</span>
+          </p>
+          <p class="flog-reader__cat">
+            <span class="flog-reader__cat-label">LOCATION</span>
+            <span class="flog-reader__planet${planetCls ? ` ${planetCls}` : ""}" data-flog-planet>${locationInnerHtml(metaShow, { scrambled: locScrambled, hasFragment: Boolean(entry.fragment) })}</span>
+          </p>
+        </div>
       </header>
       <div class="flog-reader__stage">
         <button type="button" class="flog-turn flog-turn--prev" aria-label="Previous page" disabled>‹</button>
         <div class="flog-reader__spread">
-          <div class="${colCls}" data-col="0"></div>
-          <div class="${colCls}" data-col="1"></div>
+          <div class="flog-reader__col" data-col="0"></div>
+          <div class="flog-reader__col" data-col="1"></div>
         </div>
         <button type="button" class="flog-turn flog-turn--next" aria-label="Next page" disabled>›</button>
       </div>
@@ -381,363 +376,191 @@ export function initFlightLog() {
       paintPage();
     });
 
-    requestAnimationFrame(() => {
-      layoutEntry();
-      requestAnimationFrame(layoutEntry);
-    });
-  };
-
-  const missEl = document.getElementById("flog-index-miss");
-  const awaitEl = document.getElementById("flog-index-await");
-  let searchFocused = false;
-  let committedQuery = null;
-
-  const wordsOf = (text) =>
-    String(text ?? "")
-      .toLowerCase()
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-
-  /** Exact word / keyword match — case-insensitive; symbols kept (im ≠ i'm). */
-  const entryMatchesQuery = (btn, query) => {
-    const q = String(query ?? "")
-      .trim()
-      .toLowerCase();
-    if (!q) return true;
-
-    const keywords = String(btn.dataset.keywords || "")
-      .toLowerCase()
-      .split("\u001f")
-      .filter(Boolean);
-    if (keywords.includes(q)) return true;
-
-    return wordsOf(btn.dataset.search || "").includes(q);
-  };
-
-  const setMissVisible = (show) => {
-    if (!missEl) return;
-    missEl.hidden = !show;
-  };
-
-  const setAwaitVisible = (show) => {
-    if (!awaitEl) return;
-    awaitEl.hidden = !show;
-  };
-
-  const syncIndexVisibility = () => {
-    if (searchFocused) {
-      host.classList.add("is-suppressed");
-      setMissVisible(false);
-      setAwaitVisible(true);
-      return;
+    if (playDescramble) {
+      pendingDescrambleId = entry.id;
+      descrambledIds.add(entry.id);
+    } else {
+      pendingDescrambleId = null;
     }
 
-    setAwaitVisible(false);
-
-    if (committedQuery == null || committedQuery === "") {
-      host.classList.remove("is-suppressed");
-      host.querySelectorAll(".flog-journal").forEach((details) => {
-        details.hidden = false;
-        details.querySelectorAll(".flog-entry").forEach((btn) => {
-          const li = btn.closest("li");
-          if (li) li.hidden = false;
+    await new Promise((r) => {
+      requestAnimationFrame(() => {
+        layoutEntry();
+        requestAnimationFrame(() => {
+          layoutEntry();
+          r();
         });
       });
-      setMissVisible(false);
-      updateJournalCount();
-      updateRail();
-      return;
-    }
-
-    let anyVisible = false;
-    host.querySelectorAll(".flog-journal").forEach((details) => {
-      if (details.classList.contains("is-locked")) {
-        details.hidden = true;
-        return;
-      }
-
-      let journalHit = false;
-      details.querySelectorAll(".flog-entry").forEach((btn) => {
-        const match = entryMatchesQuery(btn, committedQuery);
-        const li = btn.closest("li");
-        if (li) li.hidden = !match;
-        if (match) journalHit = true;
-      });
-
-      details.hidden = !journalHit;
-      if (journalHit) {
-        details.open = true;
-        anyVisible = true;
-      }
     });
 
-    if (anyVisible) {
-      host.classList.remove("is-suppressed");
-      setMissVisible(false);
-    } else {
-      host.classList.add("is-suppressed");
-      setMissVisible(true);
+    if (playDescramble) {
+      const planetEl = reader.querySelector("[data-flog-planet]");
+      audio.play("glitchClick");
+      await runDescramble(planetEl, metaClear);
+      const fragBtns = [...reader.querySelectorAll("[data-inline-frag]")];
+      await Promise.all(
+        fragBtns.map((btn) =>
+          runDescramble(btn, btn.dataset.inlineFrag || btn.textContent)
+        )
+      );
+      pendingDescrambleId = null;
+      paintPage();
+      const planetAfter = reader.querySelector("[data-flog-planet]");
+      if (planetAfter && entry.fragment) {
+        planetAfter.classList.remove("is-scrambled");
+        planetAfter.classList.add("is-frag-clear");
+        planetAfter.innerHTML = `<strong>${escapeHtml(metaClear)}</strong>`;
+      }
     }
-    updateJournalCount();
+  };
+
+  const paintList = () => {
+    const q = filterQuery.trim().toLowerCase();
+    const visible = !q
+      ? entries
+      : entries.filter((e) => {
+          const hay = [
+            e.title,
+            e.date,
+            e.planetId,
+            e.location,
+            planetMetaClear(e),
+            e.body,
+            e.fragment,
+            e.keyword,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          return hay.includes(q);
+        });
+
+    host.replaceChildren();
+    for (const entry of visible) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "flog-entry";
+      btn.dataset.entryId = entry.id;
+      const scramble = needsScramble(entry);
+      const hasFrag = Boolean(entry.fragment);
+      const meta = scramble
+        ? scrambleText(planetMetaClear(entry), 2)
+        : planetMetaClear(entry);
+      const planetCls = [
+        scramble ? "is-scrambled" : "",
+        hasFrag && !scramble ? "is-frag-clear" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      btn.innerHTML = `
+        <span class="flog-entry__title">${escapeHtml(entry.title)}</span>
+        <span class="flog-entry__date">${escapeHtml(entry.date)}</span>
+        <span class="flog-entry__loc">
+          <span class="flog-entry__loc-label">LOC</span>
+          <span class="flog-entry__planet${planetCls ? ` ${planetCls}` : ""}">${locationInnerHtml(meta, { scrambled: scramble, hasFragment: hasFrag })}</span>
+        </span>`;
+      if (activeEntry?.id === entry.id) {
+        btn.classList.add("is-active");
+        selectedBtn = btn;
+      }
+      btn.addEventListener("click", () => {
+        selectedBtn?.classList.remove("is-active");
+        selectedBtn = btn;
+        btn.classList.add("is-active");
+        audio.play("journalSelect");
+        void openEntry(entry);
+      });
+      host.appendChild(btn);
+    }
+
+    if (journalCountEl) {
+      journalCountEl.textContent = `${visible.length}/${entries.length}`;
+    }
+    if (missEl) missEl.hidden = !(q && visible.length === 0);
+    if (awaitEl) awaitEl.hidden = true;
     updateRail();
   };
 
-  const commitSearch = (raw) => {
-    const q = String(raw ?? "").trim();
-    committedQuery = q || null;
-    searchFocused = false;
+  searchForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    filterQuery = searchInput?.value ?? "";
+    audio.play("flogSearchHit");
+    paintList();
+  });
 
-    let playedStinger = false;
-    if (q) {
-      const hits = recoverByQuery(q, journals);
-      if (hits.length) {
-        hits.forEach(({ entry, fragmentId }) => {
-          syncEntryDisplay(entry);
-          const frag =
-            fragmentId ||
-            entry.fragmentId ||
-            entry.imperialFragment ||
-            null;
-          if (frag) markFragmentRecovered(frag);
-        });
-        rebuildJournalList();
-        applyClearanceUI();
-        window.dispatchEvent(new CustomEvent("lattice:fragments"));
-        const last = hits[hits.length - 1];
-        if (last?.grantedImperial) {
-          audio.play("imperial");
-          playedStinger = true;
-        }
-      }
-    }
-
-    syncIndexVisibility();
-
-    if (q && !playedStinger) {
-      const hasResults = [...host.querySelectorAll(".flog-entry")].some(
-        (btn) => {
-          const journal = btn.closest(".flog-journal");
-          const li = btn.closest("li");
-          return (
-            journal &&
-            !journal.hidden &&
-            li &&
-            !li.hidden
-          );
-        }
-      );
-      if (hasResults) audio.play("flogSearchHit");
-      else audio.play("deny");
-    }
-
-    searchInput?.blur();
-  };
-
-  const rebuildJournalList = (preferOpenId = null) => {
-    const openId =
-      preferOpenId ?? host.querySelector(".flog-journal[open]")?.dataset.journal;
-    host.replaceChildren();
-
-    journals.forEach((journal) => {
-      const unlocked = isJournalUnlocked(journal);
-      const { recovered, total } = entryStats(journal);
-
-      const details = document.createElement("details");
-      details.className = "flog-journal";
-      details.dataset.journal = journal.id;
-      if (!unlocked) details.classList.add("is-locked");
-      // Never auto-open on first paint; only restore an already-open volume
-      details.open = Boolean(unlocked && openId && openId === journal.id);
-
-      const spanText = journal.titleCorrupted
-        ? journal.spanDisplay ?? "····–···· AE"
-        : `${journal.yearStart}–${journal.yearEnd} AE`;
-
-      const summary = document.createElement("summary");
-      summary.className = "flog-journal__summary";
-      summary.innerHTML = `
-      <span class="flog-journal__name${journal.titleCorrupted ? " is-corrupt" : ""}">${journal.title}</span>
-      <span class="flog-journal__meta">
-        <span class="flog-journal__count">${recovered}/${total}</span>
-        <span class="flog-journal__span">${spanText}</span>
-      </span>`;
-      details.appendChild(summary);
-
-      if (!unlocked) {
-        summary.addEventListener("click", (e) => {
-          e.preventDefault();
-          details.open = false;
-          audio.play("dropdownToggle");
-          showJournalKeyPad(journal);
-        });
-        host.appendChild(details);
-        return;
-      }
-
-      const list = document.createElement("ul");
-      list.className = "flog-journal__entries";
-
-      (journal.entries ?? []).forEach((entry) => {
-        syncEntryDisplay(entry);
-        const li = document.createElement("li");
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "flog-entry";
-        btn.dataset.entryId = entry.id;
-        const listTitle = entry.corrupted
-          ? entry.title
-          : entry.authorTitle || entry.title || "Untitled";
-        btn.dataset.search = [
-          journal.title,
-          entry.authorTitle,
-          listTitle,
-          entry.year,
-          entry.cycle,
-          ...(entry.unlockKeywords ?? []),
-        ]
-          .filter(Boolean)
-          .join(" ");
-        btn.dataset.keywords = (entry.unlockKeywords ?? []).join("\u001f");
-        btn.innerHTML = `
-        <span class="flog-entry__date">${formatListDate(entry)}</span>
-        <span class="flog-entry__title${entry.corrupted ? " is-corrupt" : ""}">${listTitle}</span>
-        <span class="flog-entry__flag">${entry.corrupted ? "Ø" : "·"}</span>`;
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          showEntry(entry, btn);
-        });
-        li.appendChild(btn);
-        list.appendChild(li);
-      });
-
-      details.appendChild(list);
-      let silencingPeers = false;
-      details.addEventListener("toggle", () => {
-        if (!silencingPeers) audio.play("dropdownToggle");
-        if (!details.open) return;
-        silencingPeers = true;
-        host.querySelectorAll(".flog-journal").forEach((other) => {
-          if (other !== details) other.open = false;
-        });
-        silencingPeers = false;
-        requestAnimationFrame(updateRail);
-      });
-      host.appendChild(details);
-    });
-
-    updateJournalCount();
-    syncIndexVisibility();
-  };
-
-  const bindSplit = () => {
-    if (!flog || !split) return;
-    const index = flog.querySelector(".flog__index");
-    if (!index) return;
-
-    const applyWidth = (px, vertical) => {
-      if (vertical) {
-        const total = flog.clientHeight;
-        const clamped = Math.max(total * 0.22, Math.min(total * 0.65, px));
-        index.style.flexBasis = `${clamped}px`;
-        flog.style.setProperty("--flog-index-w", `${clamped}px`);
-      } else {
-        const total = flog.clientWidth;
-        const clamped = Math.max(160, Math.min(total * 0.68, px));
-        index.style.flexBasis = `${clamped}px`;
-        flog.style.setProperty("--flog-index-w", `${clamped}px`);
-      }
-    };
-
-    let dragging = false;
-
-    const onMove = (clientX, clientY) => {
-      if (!dragging) return;
-      const rect = flog.getBoundingClientRect();
-      const vertical = window.matchMedia("(max-width: 720px)").matches;
-      if (vertical) applyWidth(clientY - rect.top, true);
-      else applyWidth(clientX - rect.left, false);
-      layoutEntry();
-    };
-
-    split.addEventListener("pointerdown", (e) => {
-      dragging = true;
-      flog.classList.add("is-resizing");
-      split.setPointerCapture(e.pointerId);
-      e.preventDefault();
-    });
-    split.addEventListener("pointermove", (e) => onMove(e.clientX, e.clientY));
-    const endDrag = () => {
-      if (!dragging) return;
-      dragging = false;
-      flog.classList.remove("is-resizing");
-      layoutEntry();
-      updateRail();
-    };
-    split.addEventListener("pointerup", endDrag);
-    split.addEventListener("pointercancel", endDrag);
-
-    split.addEventListener("keydown", (e) => {
-      const vertical = window.matchMedia("(max-width: 720px)").matches;
-      const step = e.shiftKey ? 32 : 16;
-      const current = index.getBoundingClientRect()[vertical ? "height" : "width"];
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-        e.preventDefault();
-        applyWidth(current - step, vertical);
-        layoutEntry();
-      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-        e.preventDefault();
-        applyWidth(current + step, vertical);
-        layoutEntry();
-      }
-    });
-  };
-
-  host.replaceChildren();
-  rebuildJournalList();
-  showIdle();
-
-  initFlightLog.refreshAccess = () => {
-    journals.forEach((j) => {
-      (j.entries ?? []).forEach((e) => {
-        syncEntryDisplay(e);
-        if (
-          isEntryRecovered(e.id, e) &&
-          (e.fragmentId || e.imperialFragment)
-        ) {
-          markFragmentRecovered(e.fragmentId || e.imperialFragment);
-        }
-      });
-    });
-    rebuildJournalList();
-    updateJournalCount();
-    if (activeEntry) layoutEntry();
-  };
+  searchInput?.addEventListener("input", () => {
+    filterQuery = searchInput.value ?? "";
+    paintList();
+  });
 
   host.addEventListener("scroll", updateRail, { passive: true });
   window.addEventListener("resize", () => {
     updateRail();
-    layoutEntry();
+    if (activeEntry) layoutEntry();
   });
-  requestAnimationFrame(updateRail);
 
-  if (searchInput) {
-    searchInput.addEventListener("focus", () => {
-      searchFocused = true;
-      syncIndexVisibility();
+  /* Panel resize split */
+  if (flog && split) {
+    let dragging = false;
+    const onMove = (clientX) => {
+      if (!dragging) return;
+      const rect = flog.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const pct = Math.max(18, Math.min(62, (x / rect.width) * 100));
+      flog.style.setProperty("--flog-index-w", `${pct}%`);
+      if (activeEntry) layoutEntry();
+      updateRail();
+    };
+    split.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      flog.classList.add("is-resizing");
+      split.setPointerCapture(e.pointerId);
     });
-    searchInput.addEventListener("blur", () => {
-      // Keep list suppressed only while focused; restore last committed view
-      searchFocused = false;
-      syncIndexVisibility();
-    });
-  }
-  if (searchForm) {
-    searchForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      commitSearch(searchInput?.value ?? "");
-    });
+    split.addEventListener("pointermove", (e) => onMove(e.clientX));
+    const endDrag = () => {
+      dragging = false;
+      flog.classList.remove("is-resizing");
+    };
+    split.addEventListener("pointerup", endDrag);
+    split.addEventListener("pointercancel", endDrag);
   }
 
-  bindSplit();
+  if (indexLabel && !indexLabel.dataset.relabeled) {
+    indexLabel.dataset.relabeled = "1";
+  }
+
+  const refreshAccess = () => {
+    paintList();
+    if (activeEntry) {
+      const fresh = entries.find((e) => e.id === activeEntry.id) ?? activeEntry;
+      void openEntry(fresh, { replayDescramble: true });
+    }
+  };
+
+  initFlightLog.refreshAccess = refreshAccess;
+
+  window.addEventListener("lattice:fragments", () => {
+    if (activeEntry) paintPage();
+    paintList();
+  });
+
+  window.addEventListener("lattice:dossier", () => {
+    refreshAccess();
+  });
+
+  let onFlightLogChannel = false;
+  window.addEventListener("lattice:channel", (e) => {
+    const here = e.detail?.panel === "flightlog";
+    if (here && !onFlightLogChannel) {
+      descrambledIds.clear();
+      if (activeEntry) void openEntry(activeEntry, { replayDescramble: true });
+    }
+    onFlightLogChannel = here;
+  });
+
+  paintList();
+  showIdle();
+  updateRail();
 }
+
+initFlightLog.refreshAccess = () => {};

@@ -12,7 +12,7 @@ The website **is** the terminal of **Cara** — a **G512 Carapace-class** Arkhid
 
 - **Setting:** Crashed on **Sturm**, moon of **Uros**. Splinter space; Empire relay dead.
 - **Spike:** Nickname for **Solus**; later the name of her gun (**KSP-512 / Spike**) so she remembers her partner.
-- **Partner:** Remains **unnamed** until a deliberate Flight Log ARG milestone (`partnerReveal`).
+- **Partner:** Named **VESPER** at the Vol / NONUS fragment (`partnerReveal`). Spike remains Solus’s nickname / gun.
 - **Ending intent (unwritten in prose):** Solus chooses **not** to repair Cara for flight back to the Hive. She remains alive (Sturm or elsewhere) — possible table NPC.
 - **Tone:** Scarlet faith tech, damaged systems, CRT void. Triangle (▽) = Imperial Triad.
 - **Campaigns:** Guest Channel (`GUEST_CAMPAIGNS` in `content/boot-content.js`).
@@ -41,13 +41,13 @@ System Chart dossiers (▽ NN // BIND)  ↔  Flight Log imperial fragments
 Imperial Clearance 9-slot assemble  →  Archives + Guest Channel
 ```
 
-Full ARG bible (engagement, funnels, deep board, phases): [`arg/MASTER.md`](arg/MASTER.md) · day-of pins/solutions: [`arg/README.md`](arg/README.md) · editable answers: [`content/arg-path.js`](../content/arg-path.js).
+Full ARG bible (engagement, funnels, deep board, phases): [`arg/MASTER.md`](arg/MASTER.md) · day-of guide + glossary: [`arg/README.md`](arg/README.md) · editable answers: [`content/arg-path.js`](../content/arg-path.js).
 
 1. **Off-site first** — [`intercept.html`](../intercept.html). Carriers: **097.9** · **033.3**.
 2. **Pad `512`** — Opens hub; **STATUS** + **TERMINAL** available; Flight Log / Chart sealed until INNER puzzles.
 3. **STATUS puzzles** — FTH: `/outer` → `/inner` → click INNER bays for Chart / Log.
-4. **Chart + Log** — Dominion Seal ordinals teach bind order (see MASTER); journals yield ▽ fragments via exact keywords.
-5. **Imperial Clearance** — 3×3 wells (planet + fragment). Wrong bind → `SEAL HOLDS` (brief). Grants `lattice.clearance=imperial`.
+4. **Chart + Log** — Chart puzzles unlock dossiers (Dominion Seal ordinals = bind order). Separate volume discoveries open journals. Keywords yield **story fragment words** → click → Imperial tray.
+5. **Imperial Clearance** — 3×3 wells (planet + fragment word: HIVE…VESPER). Wrong bind → deny-shake. Grants `lattice.clearance=imperial`.
 6. **Whisper** — Pad guide only; does **not** grant Imperial.
 7. **Shareable** — Clues are words/docs; each browser keeps its own progress.
 

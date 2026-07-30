@@ -2,7 +2,7 @@
  * Imperial Clearance — triad seal assembler + purge
  */
 
-import { IMPERIAL_SLOTS } from "../content/arg-path.js";
+import { IMPERIAL_SLOTS, EMPIRE_SEALS } from "../content/arg-path.js";
 import { wipeLatticeProgress } from "./cold-start.js";
 import { playBootLogo } from "./boot.js";
 import { audio } from "./audio.js";
@@ -20,16 +20,91 @@ import {
   setClearanceDraft,
   getRecoveredFragments,
   unlockChannelsForImperialBind,
+  getSealForWell,
+  getSealWellAssignments,
+  isDossierUnlocked,
 } from "./progress.js";
 import { initHullPlan } from "./hull.js";
 import { initFlightLog } from "./flight-log.js";
+import { setNavInteractionLocked } from "./nav.js";
 
 const INTERCEPT_HREF = "intercept.html";
 const BLACKOUT_MS = 900;
 const CORNER_ORDER = ["tl", "tr", "bb"];
 const SIDES_OUT_MS = 2000;
+/** Hold on three empty triangles after seals glitch out */
+const EMPTY_TRI_HOLD_MS = 2400;
 const BANQUET_SCAN_MS = 1500;
 const RESET_SCAN_MS = 900;
+/** Block/shade glyphs only — no punctuation or math symbols */
+const SCRAMBLE_GLYPHS = "░▒▓█▄▀■□▪▫";
+
+function scrambleText(clear, seed = 0) {
+  const src = String(clear ?? "");
+  const n = SCRAMBLE_GLYPHS.length;
+  let out = "";
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === " ") {
+      out += ch;
+      continue;
+    }
+    const idx =
+      ((seed + 1) * 31 + i * 13 + src.length * 7 + (src.charCodeAt(i) || 0)) %
+      n;
+    out += SCRAMBLE_GLYPHS[idx < 0 ? idx + n : idx];
+  }
+  return out;
+}
+
+async function descrambleEl(el, clear, durationMs = 850) {
+  if (!el) return;
+  const text = String(clear ?? "");
+  if (prefersReducedMotion()) {
+    el.textContent = text;
+    el.classList.remove("is-scrambled");
+    return;
+  }
+  el.classList.add("is-scrambled");
+  const steps = 14;
+  for (let s = 0; s <= steps; s++) {
+    const t = s / steps;
+    let out = "";
+    for (let i = 0; i < text.length; i++) {
+      const threshold = t * 1.2 - (i / Math.max(1, text.length)) * 0.4;
+      out += Math.random() < threshold
+        ? text[i]
+        : SCRAMBLE_GLYPHS[(i * 11 + s * 5) % SCRAMBLE_GLYPHS.length];
+    }
+    el.textContent = out;
+    await sleep(Math.round(durationMs / steps));
+  }
+  el.textContent = text;
+  el.classList.remove("is-scrambled");
+}
+
+async function waitBanquetImageReady() {
+  const img = document.querySelector(".imperial-tri__banquet-img");
+  if (!img) return;
+  try {
+    if (typeof img.decode === "function") {
+      await img.decode();
+      return;
+    }
+  } catch {
+    /* fall through to load listeners */
+  }
+  if (img.complete && img.naturalWidth > 0) return;
+  await new Promise((resolve) => {
+    const done = () => {
+      img.removeEventListener("load", done);
+      img.removeEventListener("error", done);
+      resolve();
+    };
+    img.addEventListener("load", done, { once: true });
+    img.addEventListener("error", done, { once: true });
+  });
+}
 
 function normFrag(s) {
   return String(s ?? "")
@@ -38,8 +113,8 @@ function normFrag(s) {
     .replace(/[▽▼\s]+/g, "");
 }
 
-function slotByIndex(n) {
-  return IMPERIAL_SLOTS.find((s) => s.slot === n);
+function wellNumbers() {
+  return [1, 2, 3, 4, 5, 6, 7, 8, 9];
 }
 
 /**
@@ -70,11 +145,16 @@ export function initImperialClearance() {
 
   let busy = false;
   const slotState = {};
+  /** Descramble tray chips once per Imperial channel visit */
+  const descrambledTray = new Set();
+
+  // Ensure shuffle exists for this playthrough
+  getSealWellAssignments();
 
   const draft = getClearanceDraft();
-  for (const slot of IMPERIAL_SLOTS) {
-    const saved = draft.slots?.[slot.slot] ?? {};
-    slotState[slot.slot] = {
+  for (const n of wellNumbers()) {
+    const saved = draft.slots?.[n] ?? draft.slots?.[String(n)] ?? {};
+    slotState[n] = {
       planetId: saved.planetId ?? "",
       fragment: saved.fragment ?? "",
     };
@@ -89,11 +169,26 @@ export function initImperialClearance() {
     applyClearanceUI();
   };
 
+  const fragmentUsable = (fragment) => {
+    const slot = IMPERIAL_SLOTS.find(
+      (s) => normFrag(s.fragment) === normFrag(fragment)
+    );
+    return Boolean(slot && isDossierUnlocked(slot.planetId));
+  };
+
+  const denyScrambledUse = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    audio.play("deny");
+  };
+
   const renderTray = () => {
     if (!tray) return;
     tray.replaceChildren();
     const frags = getRecoveredFragments();
-    const known = IMPERIAL_SLOTS.filter((s) => frags.has(s.fragment));
+    const known = IMPERIAL_SLOTS.filter((s) =>
+      frags.has(normFrag(s.fragment))
+    );
     if (!known.length) {
       const empty = document.createElement("p");
       empty.className = "imperial-tray__empty";
@@ -102,11 +197,27 @@ export function initImperialClearance() {
       return;
     }
     for (const s of known) {
+      const unlocked = isDossierUnlocked(s.planetId);
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "imperial-frag";
-      chip.textContent = s.fragment;
-      chip.title = s.planetName;
+      chip.dataset.fragment = s.fragment;
+      chip.dataset.planetId = s.planetId;
+      chip.title = unlocked
+        ? `${s.planetName} · ${s.sealName ?? ""}`
+        : "CORRUPTED — RESOLVE SYSTEM MAP FIRST";
+
+      if (!unlocked) {
+        chip.classList.add("is-scrambled", "is-locked");
+        chip.textContent = scrambleText(s.fragment, 4);
+        chip.draggable = false;
+        chip.setAttribute("aria-disabled", "true");
+        chip.addEventListener("click", denyScrambledUse);
+        chip.addEventListener("dragstart", denyScrambledUse);
+        tray.appendChild(chip);
+        continue;
+      }
+
       chip.draggable = true;
       chip.addEventListener("dragstart", (e) => {
         e.dataTransfer.setData("text/plain", s.fragment);
@@ -114,8 +225,8 @@ export function initImperialClearance() {
       });
       chip.addEventListener("click", () => {
         audio.play("click");
-        for (const slot of IMPERIAL_SLOTS) {
-          const st = slotState[slot.slot];
+        for (const n of wellNumbers()) {
+          const st = slotState[n];
           if (!st.fragment) {
             st.fragment = s.fragment;
             persistDraft();
@@ -125,32 +236,43 @@ export function initImperialClearance() {
         }
       });
       tray.appendChild(chip);
+      if (descrambledTray.has(s.fragment)) {
+        chip.textContent = s.fragment;
+        chip.classList.remove("is-scrambled");
+      } else {
+        chip.classList.add("is-scrambled");
+        chip.textContent = scrambleText(s.fragment, 4);
+        descrambledTray.add(s.fragment);
+        void descrambleEl(chip, s.fragment);
+      }
     }
   };
 
   const buildWell = (slotNum, corner) => {
-    const slot = slotByIndex(slotNum);
+    const seal = getSealForWell(slotNum);
     const st = slotState[slotNum];
     const well = document.createElement("div");
     well.className = "imperial-well";
     well.dataset.slot = String(slotNum);
     well.dataset.corner = corner;
+    if (seal?.id) well.dataset.seal = seal.id;
 
     const body = document.createElement("div");
     body.className = "imperial-well__body";
 
     const idx = document.createElement("span");
     idx.className = "imperial-well__idx";
-    idx.textContent = String(slotNum).padStart(2, "0");
+    idx.textContent = seal?.name ?? "····";
+    idx.title = seal?.facet ?? "";
 
     const planet = document.createElement("select");
     planet.className = "imperial-well__planet";
-    planet.setAttribute("aria-label", `Slot ${slotNum} planet`);
+    planet.setAttribute("aria-label", `${seal?.name ?? "Seal"} planet`);
     const blank = document.createElement("option");
     blank.value = "";
     blank.textContent = "▽";
     planet.appendChild(blank);
-    for (const s of IMPERIAL_SLOTS) {
+    for (const s of EMPIRE_SEALS) {
       const opt = document.createElement("option");
       opt.value = s.planetId;
       opt.textContent = s.planetName;
@@ -169,7 +291,7 @@ export function initImperialClearance() {
     frag.autocomplete = "off";
     frag.spellcheck = false;
     frag.placeholder = "····";
-    frag.setAttribute("aria-label", `Slot ${slotNum} fragment`);
+    frag.setAttribute("aria-label", `${seal?.name ?? "Seal"} fragment`);
     frag.value = st.fragment || "";
     frag.addEventListener("input", () => {
       st.fragment = frag.value;
@@ -180,6 +302,10 @@ export function initImperialClearance() {
       e.preventDefault();
       const data = e.dataTransfer.getData("text/plain");
       if (!data) return;
+      if (!fragmentUsable(data)) {
+        audio.play("deny");
+        return;
+      }
       frag.value = data;
       st.fragment = data;
       persistDraft();
@@ -195,7 +321,7 @@ export function initImperialClearance() {
       }
     });
 
-    if (slot) well.title = slot.planetName;
+    well.title = seal ? `${seal.name} — ${seal.facet}` : `Well ${slotNum}`;
     return well;
   };
 
@@ -254,52 +380,72 @@ export function initImperialClearance() {
 
   const playBindSequence = async () => {
     busy = true;
+    setNavInteractionLocked(true);
     if (submit) submit.disabled = true;
+
+    // Music drops for the bind animation
+    audio.pauseSoundtrack();
     audio.play("imperial");
 
-    if (prefersReducedMotion()) {
-      syncImperialGateVisual(true);
+    const banquetReady = waitBanquetImageReady();
+
+    try {
+      if (prefersReducedMotion()) {
+        syncImperialGateVisual(true);
+        completeImperialBind({ playStinger: false });
+        await banquetReady;
+        await audio.playPostImperialMusic();
+        window.dispatchEvent(
+          new CustomEvent("lattice:clearance", { detail: { imperial: true } })
+        );
+        return;
+      }
+
+      // 1) Chrome hide; seals glitch out → hold on empty triangles
+      root.classList.add("is-binding");
+      audio.playGlitchBurst({ count: 5, gapMs: 80 });
+      await sleep(900);
+      await sleep(EMPTY_TRI_HOLD_MS);
+
+      // 2) Left + right hitch onto mid
+      void playRevealScan(SIDES_OUT_MS, 3.6);
+      root.classList.add("is-sides-out");
+      await sleep(SIDES_OUT_MS + 80);
+      await sleep(1100);
+
+      // Brief mid glitch, then fill
+      root.classList.add("is-mid-glitch");
+      audio.play("glitchClick");
+      await sleep(180);
+      audio.play("glitchClick");
+      await sleep(400);
+      root.classList.remove("is-mid-glitch");
+
+      await playGlitchMidFill();
+      await sleep(900);
+
+      // 3) Banquet scan — wait for scan beat and full image decode
+      void playRevealScan(BANQUET_SCAN_MS, 4.0);
+      root.classList.add("is-banquet-in");
+      await Promise.all([sleep(BANQUET_SCAN_MS + 80), banquetReady]);
+
+      root.classList.add("is-seal-bound");
+
+      // 4) RESET scans back in, then grant
+      root.classList.add("is-reset-in");
+      await sleep(RESET_SCAN_MS);
+      root.classList.add("is-reset-ready");
+
       completeImperialBind({ playStinger: false });
+      // Ascendancy starts once the banquet image is ready and the sequence ends
+      await audio.playPostImperialMusic();
+      window.dispatchEvent(
+        new CustomEvent("lattice:clearance", { detail: { imperial: true } })
+      );
+    } finally {
+      setNavInteractionLocked(false);
       busy = false;
-      return;
     }
-
-    // 1) Chrome hide; seals glitch out
-    root.classList.add("is-binding");
-    await sleep(900);
-    await sleep(450);
-
-    // 2) Left + right hitch onto mid
-    void playRevealScan(SIDES_OUT_MS, 3.6);
-    root.classList.add("is-sides-out");
-    await sleep(SIDES_OUT_MS + 80);
-    await sleep(1100);
-
-    // Brief mid glitch, then fill
-    root.classList.add("is-mid-glitch");
-    audio.play("glitchClick");
-    await sleep(180);
-    audio.play("glitchClick");
-    await sleep(400);
-    root.classList.remove("is-mid-glitch");
-
-    await playGlitchMidFill();
-    await sleep(900);
-
-    // 3) Banquet scan
-    void playRevealScan(BANQUET_SCAN_MS, 4.0);
-    root.classList.add("is-banquet-in");
-    await sleep(BANQUET_SCAN_MS + 80);
-
-    root.classList.add("is-seal-bound");
-
-    // 4) RESET scans back in, then grant
-    root.classList.add("is-reset-in");
-    await sleep(RESET_SCAN_MS);
-    root.classList.add("is-reset-ready");
-
-    completeImperialBind({ playStinger: false });
-    busy = false;
   };
 
   const shakeWrongSeals = (slotNums) => {
@@ -316,13 +462,15 @@ export function initImperialClearance() {
     if (hasImperialClearance() || busy) return;
 
     const wrong = [];
-    for (const slot of IMPERIAL_SLOTS) {
-      const st = slotState[slot.slot];
+    for (const n of wellNumbers()) {
+      const seal = getSealForWell(n);
+      const st = slotState[n];
       if (
-        st.planetId !== slot.planetId ||
-        normFrag(st.fragment) !== normFrag(slot.fragment)
+        !seal ||
+        st.planetId !== seal.planetId ||
+        normFrag(st.fragment) !== normFrag(seal.fragment)
       ) {
-        wrong.push(slot.slot);
+        wrong.push(n);
       }
     }
 
@@ -337,10 +485,11 @@ export function initImperialClearance() {
 
   const autofillSeals = () => {
     if (hasImperialClearance() || busy) return;
-    for (const slot of IMPERIAL_SLOTS) {
-      slotState[slot.slot] = {
-        planetId: slot.planetId,
-        fragment: slot.fragment,
+    for (const n of wellNumbers()) {
+      const seal = getSealForWell(n);
+      slotState[n] = {
+        planetId: seal?.planetId ?? "",
+        fragment: seal?.fragment ?? "",
       };
     }
     persistDraft();
@@ -356,6 +505,16 @@ export function initImperialClearance() {
   syncGrantedUI();
 
   window.addEventListener("lattice:fragments", renderTray);
+  window.addEventListener("lattice:dossier", renderTray);
+  let onImperialChannel = false;
+  window.addEventListener("lattice:channel", (e) => {
+    const here = e.detail?.panel === "imperial";
+    if (here && !onImperialChannel) {
+      descrambledTray.clear();
+      renderTray();
+    }
+    onImperialChannel = here;
+  });
   window.addEventListener("focus", () => {
     renderTray();
     syncGrantedUI();
