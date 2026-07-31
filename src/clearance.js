@@ -1,24 +1,79 @@
 /**
- * LATTICE.OS — Clearance / Imperial partitions
+ * LATTICE.OS — Clearance / Imperial partitions / Guest channel
  */
 
 import { CLEARANCE } from "../content/boot-content.js";
 import { LORE_CATALOG } from "../content/lore-catalog.js";
-import { initGuestChannel } from "./guest.js";
-import {
-  hasImperialClearance,
-  hasDeepClearance,
-  grantImperialClearance,
-  grantDeepClearance,
-} from "./milestones.js";
 import { isChannelUnlocked } from "./progress.js";
 
-export {
-  hasImperialClearance,
-  hasDeepClearance,
-  grantImperialClearance,
-  grantDeepClearance,
-};
+/* ==========================================================================
+   IMPERIAL CLEARANCE — persistence (localStorage)
+   ========================================================================== */
+
+const CLEARANCE_KEY = CLEARANCE?.storageKey ?? "lattice.clearance";
+const CLEARANCE_IMPERIAL = CLEARANCE?.imperialValue ?? "imperial";
+const CLEARANCE_LEGACY_DEEP = CLEARANCE?.deepValue ?? "deep";
+
+let sessionImperial = false;
+
+export function hasImperialClearance() {
+  if (sessionImperial) return true;
+  try {
+    const v = localStorage.getItem(CLEARANCE_KEY);
+    return v === CLEARANCE_IMPERIAL || v === CLEARANCE_LEGACY_DEEP;
+  } catch {
+    return false;
+  }
+}
+
+/** @deprecated use hasImperialClearance */
+export function hasDeepClearance() {
+  return hasImperialClearance();
+}
+
+export function grantImperialClearance() {
+  sessionImperial = true;
+  try {
+    localStorage.setItem(CLEARANCE_KEY, CLEARANCE_IMPERIAL);
+  } catch {
+    /* session flag still unlocks */
+  }
+}
+
+/** @deprecated use grantImperialClearance */
+export function grantDeepClearance() {
+  grantImperialClearance();
+}
+
+/* ==========================================================================
+   GUEST CHANNEL — corrupt signal display
+   ========================================================================== */
+
+const GUEST_NOISE =
+  "ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghijkmnopqrstuvwxyz0123456789/·#▓░▒";
+
+function makeCorruptNoise(len = 52) {
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    if (i > 0 && i % 13 === 0) out += " ";
+    else out += GUEST_NOISE[Math.floor(Math.random() * GUEST_NOISE.length)];
+  }
+  return out;
+}
+
+/** Paint a fresh corrupt string in the signal channel display. */
+export function refreshGuestCorruptDisplay() {
+  const el = document.getElementById("guest-corrupt-display");
+  if (el) el.textContent = makeCorruptNoise();
+}
+
+export function initGuestChannel() {
+  refreshGuestCorruptDisplay();
+}
+
+/* ==========================================================================
+   CHANNEL LOCKS / PARTITION UI
+   ========================================================================== */
 
 /** Red channel-banner copy — keyed by nav `data-panel` */
 export const CHANNEL_TITLES = {

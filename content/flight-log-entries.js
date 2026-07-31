@@ -7,7 +7,7 @@
  * Filler entries use ship/context locations — never seal planetIds.
  */
 
-import { EMPIRE_SEALS } from "./arg-path.js";
+import { EMPIRE_SEALS, PARTNER_MORSE } from "./arg-path.js";
 
 const FRAG_BY_PLANET = Object.fromEntries(
   EMPIRE_SEALS.map((s) => [s.planetId, s.fragment])
@@ -59,7 +59,7 @@ export const FLIGHT_LOG_ENTRIES = [
     date: "1541.06.22",
     planetId: "terra",
     fragment: FRAG_BY_PLANET.terra,
-    body: `Terra workshops remember more than people do. Machines dreaming of flesh, flesh dreaming of machines — and I keep saying her name into the recorder — [[${FRAG_BY_PLANET.terra}]] — like a machine prayer.\n\nResolution is not a sermon here. It is a hull that refuses to fold. Cara taught me the Chart purge in two soft words: HOLD FAST.\n\nSTATUS still stamps ok stations FC1 · NL2 · WR4 like cradle noise. Pretty serials. Ignore them for the seal — they are just the ship remembering how to stand.\n\nJunk: glyph · neon · triad · outerbelt · 870.`,
+    body: `Terra workshops remember more than people do. Machines dreaming of flesh, flesh dreaming of machines — and I keep saying her name into the recorder — [[${FRAG_BY_PLANET.terra}]] — like a machine prayer.\n\nResolution is not a sermon here. It is a hull that refuses to fold. Chrono drift on Lattice is the real tell — hours and minutes lie until you realign them.\n\nSTATUS still stamps ok stations FC1 · NL2 · WR4. Pretty serials. They are not the Chart purge.\n\nJunk: glyph · neon · triad · outerbelt · 870.`,
   },
   {
     id: "flog-06",
@@ -99,11 +99,13 @@ export const FLIGHT_LOG_ENTRIES = [
   },
   {
     id: "flog-10",
-    title: "SERIAL ECHO",
+    title: "RELAY QUIET",
     date: "1541.10.16",
-    planetId: "heixin",
-    fragment: FRAG_BY_PLANET.heixin,
-    body: `Heixin treats the ship like a weapon that listens. Between pings: [[${FRAG_BY_PLANET.heixin}]]. Power pauses. Power returns.\n\nMorbi in dui quis est pulvinar ullamcorper. Nulla facilisi. Integer lacinia sollicitudin massa. Cras metus. Sed aliquet risus a tortor. Integer id quam.`,
+    location: "CARA · COMM",
+    planetId: null,
+    fragment: null,
+    body:
+      "Outer relays go mute for hours. Lattice keeps asking for a world I have never stood on. I do not answer.\n\nMorbi in dui quis est pulvinar ullamcorper. Nulla facilisi. Integer lacinia sollicitudin massa.",
   },
   {
     id: "flog-11",
@@ -111,7 +113,7 @@ export const FLIGHT_LOG_ENTRIES = [
     date: "1541.11.09",
     planetId: "haider",
     fragment: FRAG_BY_PLANET.haider,
-    body: `Haider costs names. Letters home stop mid-sentence. What the line takes is [[${FRAG_BY_PLANET.haider}]].\n\nMorbi mi. Quisque nisl felis, venenatis tristique, dignissim in, ultrices sit amet, augue. Proin sodales libero eget ante. Nulla quam. Aenean laoreet.`,
+    body: `Haider costs names. Letters home stop mid-sentence. What the line takes is [[${FRAG_BY_PLANET.haider}]].\n\nChart purge on Haider reads as a 3×5 bank of dark data blocks. Recovery is not random — press these once, row-major from the upper left: 01 · 04 · 05 · 09 · 10 · 12. Neighbors flip with the self. When every block burns, the dossier opens.\n\nJunk: grip · plate · 870 · gunsmith · all-on.`,
   },
   {
     id: "flog-12",
@@ -129,7 +131,7 @@ export const FLIGHT_LOG_ENTRIES = [
     date: "1541.12.05",
     planetId: "vol",
     fragment: FRAG_BY_PLANET.vol,
-    body: `Vol is the last well. Dead-line static answers only hunters. Last name in the noise: [[${FRAG_BY_PLANET.vol}]].\n\nCurabitur aliquet quam id dui posuere blandit. Nulla porttitor accumsan tincidunt. Donec rutrum congue leo eget malesuada. Vivamus magna justo, lacinia eget consectetur sed.`,
+    body: `Vol is the last well. Dead-line static answers only hunters. Last name in the noise: [[${FRAG_BY_PLANET.vol}]].\n\nChart Vol keeps a purge tray: the first three dossier purges you clear elsewhere appear there. Drag them onto the upper bar in true orbit — innermost left, outermost right — then commit.\n\nJunk: nonus · edge · carrier · 0979 · deadline · tray.`,
   },
   {
     id: "flog-14",
@@ -172,6 +174,17 @@ export const FLIGHT_LOG_ENTRIES = [
       "Recalibrated the eye. Outer still lies. Inner still hurts. Between them: work.\n\nDonec sollicitudin molestie malesuada. Curabitur arcu erat, accumsan id imperdiet et, porttitor at sem. Mauris blandit aliquet elit, eget tincidunt nibh pulvinar a.",
   },
   {
+    id: "flog-heixin-partner",
+    title: "EPITAPH",
+    date: "1542.03.22",
+    planetId: "heixin",
+    fragment: FRAG_BY_PLANET.heixin,
+    audio: "assets/audio/voice/flight-log/heixin-morse.mp3",
+    body: `AUDIO TRANSMISSION // TRANSCRIBED
+${PARTNER_MORSE.code}
+[[${FRAG_BY_PLANET.heixin}]]`,
+  },
+  {
     id: "flog-18",
     title: "HOLDING PATTERN",
     date: "1542.03.30",
@@ -179,7 +192,7 @@ export const FLIGHT_LOG_ENTRIES = [
     planetId: null,
     fragment: null,
     body:
-      "End of this batch. Eighteen marks. Nine of them bite. The rest are oxygen. Glory to her — or so the forms say.\n\nSed porttitor lectus nibh. Vivamus magna justo, lacinia eget consectetur sed, convallis at tellus. Curabitur aliquet quam id dui posuere blandit. Proin eget tortor risus.",
+      "End of this batch. Marks in the index. Nine of them bite. The rest are oxygen. Glory to her — or so the forms say.\n\nSed porttitor lectus nibh. Vivamus magna justo, lacinia eget consectetur sed, convallis at tellus. Curabitur aliquet quam id dui posuere blandit. Proin eget tortor risus.",
   },
 ];
 

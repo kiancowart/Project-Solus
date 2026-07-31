@@ -102,24 +102,16 @@ export const MUSIC = {
     {
       id: "recursion",
       title: "Recursion",
-      src: "assets/audio/music/Recursion.wav",
+      src: "assets/audio/music/Recursion.mp3",
       loop: true,
     },
     {
       id: "ascendancy",
       title: "Ascendancy",
-      src: "assets/audio/music/Ascendancy.wav",
+      src: "assets/audio/music/Ascendancy.mp3",
       loop: true,
     },
   ],
-};
-
-/** @deprecated use MUSIC — kept so older imports don't break */
-export const SOUNDTRACK = {
-  src: MUSIC.tracks.find((t) => t.id === MUSIC.postImperialDefault)?.src,
-  loop: true,
-  volume: MUSIC.volume,
-  crush: MUSIC.crush,
 };
 
 /* ---------------------------------------------------------------------------
@@ -498,7 +490,7 @@ export const SYSTEM_CHART = {
     offset: 16,
     angle: 48,
     blurb:
-      "Splinter-Nation Moon of Uros — formerly a part of the Zezura belt Empire. After the first Belt War, it became one of the first Uros moons contested between the young Nivian Republic and the Arkhidian Empire. As conflicts extended, it was abandoned as a territory — now a Splinter-Nation of unwanted Nivian rebels, Arkhidian outcasts, and those born under crusade weather. Most of the surface is desert, with bursts of woodland and water from failed Arkhidian Crusades. Lattice local fix after impact: VX-48. Prison-moon shadows on Deshret still count five ticks from dawn when the brand aligns.",
+      "Splinter-Nation Moon of Uros — the parent world still carries its old belt name in Empire maps: Zezura. After the first Belt War, Sturm became one of the first Uros moons contested between the young Nivian Republic and the Arkhidian Empire. As conflicts extended, it was abandoned as a territory — now a Splinter-Nation of unwanted Nivian rebels, Arkhidian outcasts, and those born under crusade weather. Most of the surface is desert, with bursts of woodland and water from failed Arkhidian Crusades. Lattice local fix after impact: VX-48. Prison-moon shadows on Deshret still count five ticks from dawn when the brand aligns.",
   },
   /** Nu Lunae / Enkidu-1 — non-Imperial easter egg framework */
   mystery: {

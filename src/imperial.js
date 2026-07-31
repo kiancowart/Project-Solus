@@ -3,15 +3,13 @@
  */
 
 import { IMPERIAL_SLOTS, EMPIRE_SEALS } from "../content/arg-path.js";
-import { wipeLatticeProgress } from "./cold-start.js";
+import { wipeLatticeProgress } from "./progress.js";
 import { playBootLogo } from "./boot.js";
 import { audio } from "./audio.js";
-import { sleep, bootMs, prefersReducedMotion } from "./motion.js";
+import { sleep, bootMs, prefersReducedMotion, scrambleText, SCRAMBLE_GLYPHS } from "./motion.js";
 import {
   grantImperialClearance,
   hasImperialClearance,
-} from "./milestones.js";
-import {
   applyClearanceUI,
   syncImperialGateVisual,
 } from "./clearance.js";
@@ -36,26 +34,6 @@ const SIDES_OUT_MS = 2000;
 const EMPTY_TRI_HOLD_MS = 2400;
 const BANQUET_SCAN_MS = 1500;
 const RESET_SCAN_MS = 900;
-/** Block/shade glyphs only — no punctuation or math symbols */
-const SCRAMBLE_GLYPHS = "░▒▓█▄▀■□▪▫";
-
-function scrambleText(clear, seed = 0) {
-  const src = String(clear ?? "");
-  const n = SCRAMBLE_GLYPHS.length;
-  let out = "";
-  for (let i = 0; i < src.length; i++) {
-    const ch = src[i];
-    if (ch === " ") {
-      out += ch;
-      continue;
-    }
-    const idx =
-      ((seed + 1) * 31 + i * 13 + src.length * 7 + (src.charCodeAt(i) || 0)) %
-      n;
-    out += SCRAMBLE_GLYPHS[idx < 0 ? idx + n : idx];
-  }
-  return out;
-}
 
 async function descrambleEl(el, clear, durationMs = 850) {
   if (!el) return;
@@ -86,6 +64,11 @@ async function descrambleEl(el, clear, durationMs = 850) {
 async function waitBanquetImageReady() {
   const img = document.querySelector(".imperial-tri__banquet-img");
   if (!img) return;
+  const deferred = img.getAttribute("data-src");
+  if (deferred && !img.getAttribute("src")) {
+    img.src = deferred;
+    img.removeAttribute("data-src");
+  }
   try {
     if (typeof img.decode === "function") {
       await img.decode();

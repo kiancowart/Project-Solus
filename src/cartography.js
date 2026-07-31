@@ -7,15 +7,31 @@ import {
   CHART_PUZZLES,
   PLANET_DOSSIERS,
   sealById,
+  PARTNER_MORSE,
+  morseCodesMatch,
 } from "../content/arg-path.js";
 import { audio } from "./audio.js";
-import { prefersReducedMotion } from "./motion.js";
 import {
-  getHullProgress,
+  prefersReducedMotion,
+  scrambleText,
+  animateCorruptBars,
+} from "./motion.js";
+import {
   isDossierUnlocked,
   markDossierUnlocked,
+  getVolTrayPlanets,
 } from "./progress.js";
-import { hasImperialClearance } from "./milestones.js";
+import { hasImperialClearance } from "./clearance.js";
+import {
+  getDisplayLocalTime,
+  getRealLocalTime,
+  isChronoAligned,
+  lockChronoAligned,
+  glitchChronoPart,
+  nudgeHourOffset,
+  nudgeMinuteOffset,
+  resetChronoOffsets,
+} from "./chrono.js";
 import {
   getCompassCardinal,
   glitchCompass,
@@ -127,6 +143,62 @@ export function initCartography() {
   let stopWire = null;
   let selectedId = null;
   let selectedG = null;
+  let stopCorruptAnim = null;
+
+  const clearCorruptAnim = () => {
+    if (stopCorruptAnim) {
+      stopCorruptAnim();
+      stopCorruptAnim = null;
+    }
+    readout.classList.remove("is-puzzle-corrupt");
+  };
+
+  const applyCorruptChrome = (clearName) => {
+    const lock = readout.querySelector(".chart-lock");
+    if (!lock || lock.dataset.corrupt === "1") return () => {};
+    lock.dataset.corrupt = "1";
+    lock.classList.add("chart-lock--corrupt");
+    readout.classList.add("is-puzzle-corrupt");
+
+    lock.querySelector(".chart-lock__title")?.remove();
+
+    const top = document.createElement("div");
+    top.className = "chart-corrupt-bar chart-corrupt-bar--top";
+    top.setAttribute("aria-hidden", "true");
+    top.innerHTML = `
+      <span class="chart-corrupt-bar__title is-scrambled" data-corrupt-title>${scrambleText(clearName, 9)}</span>
+      <span class="chart-corrupt-bar__stream" data-corrupt-stream></span>`;
+
+    const bot = document.createElement("div");
+    bot.className = "chart-corrupt-bar chart-corrupt-bar--bottom";
+    bot.setAttribute("aria-hidden", "true");
+    bot.innerHTML = `<span class="chart-corrupt-bar__stream" data-corrupt-stream></span>`;
+
+    lock.insertBefore(top, lock.firstChild);
+    lock.appendChild(bot);
+    return animateCorruptBars(lock, clearName);
+  };
+
+  const showIdle = () => {
+    clearCorruptAnim();
+    if (stopWire) {
+      stopWire();
+      stopWire = null;
+    }
+    paintArchive(null);
+    readout.innerHTML = `<p class="chart__idle">${idle}</p>`;
+  };
+
+  const showError = () => {
+    clearCorruptAnim();
+    audio.play("open");
+    if (stopWire) {
+      stopWire();
+      stopWire = null;
+    }
+    paintArchive(null);
+    readout.innerHTML = `<p class="chart__error">${errorText}</p>`;
+  };
 
   const fitSelectBox = (g) => {
     const content = g.querySelector(".chart-svg__content");
@@ -194,32 +266,14 @@ export function initCartography() {
     paintArchive(null);
   };
 
-  const showIdle = () => {
-    if (stopWire) {
-      stopWire();
-      stopWire = null;
-    }
-    paintArchive(null);
-    readout.innerHTML = `<p class="chart__idle">${idle}</p>`;
-  };
-
-  const showError = () => {
-    audio.play("open");
-    if (stopWire) {
-      stopWire();
-      stopWire = null;
-    }
-    paintArchive(null);
-    readout.innerHTML = `<p class="chart__error">${errorText}</p>`;
-  };
-
-  const showDossier = (planetId) => {
+  const showDossier = (planetId, { scanIn = false } = {}) => {
+    clearCorruptAnim();
     const d = PLANET_DOSSIERS[planetId];
     if (!d) {
       showError();
       return;
     }
-    audio.play("dropdownToggle");
+    if (!scanIn) audio.play("dropdownToggle");
     if (stopWire) {
       stopWire();
       stopWire = null;
@@ -232,8 +286,9 @@ export function initCartography() {
       : "";
     const facts = d.facts ?? d.body ?? "";
     const why = d.sealWhy ?? "";
+    const scanClass = scanIn ? " is-scanning-in" : "";
     readout.innerHTML = `
-      <div class="chart-dossier">
+      <div class="chart-dossier${scanClass}">
         <div class="wire-globe" aria-hidden="true">
           <svg class="wire-globe__svg" viewBox="0 0 100 100">
             <circle class="wire-globe__rim" cx="50" cy="50" r="44" fill="none" />
@@ -249,18 +304,48 @@ export function initCartography() {
       </div>`;
     const globeSvg = readout.querySelector(".wire-globe__svg");
     if (globeSvg) stopWire = startWireGlobe(globeSvg);
+    if (scanIn && !prefersReducedMotion()) {
+      audio.play("revealScan", { durationMs: 720, gainScale: 2.6 });
+    }
   };
 
+  let unlockRevealTimer = 0;
+  let unlockRevealBusy = false;
+
   const unlockAndShow = (planetId) => {
+    if (unlockRevealBusy) return;
+    if (isDossierUnlocked(planetId)) {
+      showDossier(planetId);
+      return;
+    }
+    unlockRevealBusy = true;
     markDossierUnlocked(planetId);
     audio.play("unlock");
+    if (planetId === "terra") lockChronoAligned();
     paintArchive(planetId);
-    showDossier(planetId);
     if (planetId === "teavicta") resetCompass({ animate: true });
     window.dispatchEvent(
       new CustomEvent("lattice:dossier", { detail: { planetId } })
     );
     initFlightLogRefresh();
+
+    const lock = readout.querySelector(".chart-lock");
+    const finish = () => {
+      unlockRevealTimer = 0;
+      unlockRevealBusy = false;
+      refreshPlanetLabels();
+      showDossier(planetId, { scanIn: true });
+    };
+
+    window.clearTimeout(unlockRevealTimer);
+    if (lock && !prefersReducedMotion()) {
+      lock.classList.add("is-purging");
+      lock.setAttribute("aria-busy", "true");
+      audio.playGlitchBurst({ count: 4, gapMs: 55 });
+      unlockRevealTimer = window.setTimeout(finish, 480);
+    } else {
+      finish();
+    }
   };
 
   const initFlightLogRefresh = () => {
@@ -307,22 +392,247 @@ export function initCartography() {
       stopWire = null;
     }
     paintArchive(planetId);
+    clearCorruptAnim();
 
-    if (puzzle.type === "flag") {
-      const prog = getHullProgress();
-      const ok = Boolean(prog[puzzle.hullFlag]);
+    try {
+    if (puzzle.type === "orbit-order") {
+      const need = puzzle.requireDossiers ?? 3;
+      const orbitAnswer =
+        puzzle.answer ?? (SYSTEM_CHART.bodies ?? []).map((b) => b.id);
+      const orbitRank = Object.fromEntries(
+        orbitAnswer.map((id, i) => [id, i])
+      );
+      const nameById = Object.fromEntries(
+        (SYSTEM_CHART.bodies ?? []).map((b) => [b.id, b.name])
+      );
+      const collected = getVolTrayPlanets({
+        limit: need,
+        exclude: planetId,
+      });
+      /** Chips currently seated on the order bar (inner→outer L→R). */
+      let barOrder = [];
+      let dragId = null;
+      let dragFrom = null;
+      let ghostEl = null;
+
+      const trayIds = () => collected.filter((id) => !barOrder.includes(id));
+
+      const correctOrder = () =>
+        [...collected].sort(
+          (a, b) => (orbitRank[a] ?? 99) - (orbitRank[b] ?? 99)
+        );
+
+      const orderMatches = () => {
+        if (collected.length < need || barOrder.length !== need) return false;
+        const want = correctOrder();
+        return barOrder.every((id, i) => id === want[i]);
+      };
+
+      const clearGhost = () => {
+        ghostEl?.remove();
+        ghostEl = null;
+      };
+
+      const placeGhost = (id, clientX, clientY) => {
+        const lockEl = readout.querySelector("#chart-lock");
+        if (!lockEl) return;
+        if (!ghostEl) {
+          ghostEl = document.createElement("div");
+          ghostEl.className = "chart-lock__orbit-ghost";
+          ghostEl.setAttribute("aria-hidden", "true");
+          lockEl.appendChild(ghostEl);
+        }
+        ghostEl.textContent = (nameById[id] ?? id).toUpperCase();
+        const rect = lockEl.getBoundingClientRect();
+        const w = ghostEl.offsetWidth || 72;
+        const h = ghostEl.offsetHeight || 32;
+        ghostEl.style.transform = `translate(${clientX - rect.left - w / 2}px, ${clientY - rect.top - h / 2}px)`;
+      };
+
+      const paint = () => {
+        const bar = readout.querySelector("#orbit-bar");
+        const tray = readout.querySelector("#orbit-tray");
+        const status = readout.querySelector("#orbit-tray-status");
+        if (!bar || !tray) return;
+
+        const fillZone = (host, ids, zone) => {
+          host.replaceChildren();
+          for (let i = 0; i < need; i++) {
+            const slot = document.createElement("div");
+            slot.className = "chart-lock__orbit-slot";
+            slot.dataset.slot = String(i);
+            slot.dataset.zone = zone;
+            const id = ids[i];
+            if (id) {
+              const chip = document.createElement("button");
+              chip.type = "button";
+              chip.className = "chart-lock__orbit-chip";
+              chip.dataset.id = id;
+              chip.dataset.zone = zone;
+              chip.textContent = (nameById[id] ?? id).toUpperCase();
+              chip.setAttribute(
+                "aria-label",
+                `${nameById[id] ?? id}, drag between tray and order bar`
+              );
+              chip.addEventListener("pointerdown", (e) => {
+                if (e.button !== 0) return;
+                dragId = id;
+                dragFrom = zone;
+                chip.classList.add("is-dragging");
+                chip.setPointerCapture(e.pointerId);
+                placeGhost(id, e.clientX, e.clientY);
+                audio.play("click");
+              });
+              chip.addEventListener("pointermove", (e) => {
+                if (dragId !== id) return;
+                placeGhost(id, e.clientX, e.clientY);
+              });
+              chip.addEventListener("pointerup", (e) => {
+                if (dragId !== id) return;
+                const under = document.elementFromPoint(e.clientX, e.clientY);
+                chip.classList.remove("is-dragging");
+                clearGhost();
+                try {
+                  chip.releasePointerCapture(e.pointerId);
+                } catch {
+                  /* ignore */
+                }
+                const overChip = under?.closest?.(".chart-lock__orbit-chip");
+                const overSlot = under?.closest?.(".chart-lock__orbit-slot");
+                const resolvedZone =
+                  overChip?.dataset.zone ||
+                  overSlot?.dataset.zone ||
+                  (under?.closest?.("#orbit-bar") ? "bar" : null) ||
+                  (under?.closest?.("#orbit-tray") ? "tray" : null);
+
+                if (dragFrom === "tray" && resolvedZone === "bar") {
+                  if (!barOrder.includes(id) && barOrder.length < need) {
+                    const slotIdx = overSlot
+                      ? Number(overSlot.dataset.slot)
+                      : barOrder.length;
+                    const next = [...barOrder];
+                    const at = Number.isFinite(slotIdx)
+                      ? Math.min(Math.max(0, slotIdx), next.length)
+                      : next.length;
+                    next.splice(at, 0, id);
+                    barOrder = next.slice(0, need);
+                  }
+                } else if (dragFrom === "bar" && resolvedZone === "tray") {
+                  barOrder = barOrder.filter((x) => x !== id);
+                } else if (
+                  dragFrom === "bar" &&
+                  resolvedZone === "bar" &&
+                  overChip &&
+                  overChip !== chip
+                ) {
+                  const from = barOrder.indexOf(id);
+                  const to = barOrder.indexOf(overChip.dataset.id);
+                  if (from >= 0 && to >= 0 && from !== to) {
+                    const next = [...barOrder];
+                    next.splice(from, 1);
+                    next.splice(to, 0, id);
+                    barOrder = next;
+                  }
+                } else if (
+                  dragFrom === "bar" &&
+                  resolvedZone === "bar" &&
+                  overSlot &&
+                  !overChip
+                ) {
+                  const from = barOrder.indexOf(id);
+                  let to = Number(overSlot.dataset.slot);
+                  if (from >= 0 && Number.isFinite(to)) {
+                    const next = [...barOrder];
+                    next.splice(from, 1);
+                    to = Math.min(to, next.length);
+                    next.splice(to, 0, id);
+                    barOrder = next;
+                  }
+                }
+
+                dragId = null;
+                dragFrom = null;
+                paint();
+              });
+              chip.addEventListener("pointercancel", () => {
+                chip.classList.remove("is-dragging");
+                clearGhost();
+                dragId = null;
+                dragFrom = null;
+              });
+              slot.appendChild(chip);
+              slot.classList.add("is-filled");
+            }
+            host.appendChild(slot);
+          }
+        };
+
+        fillZone(bar, barOrder, "bar");
+        fillZone(tray, trayIds(), "tray");
+        if (status) {
+          status.textContent = `RECOVERED ${collected.length}/${need}`;
+        }
+      };
+
       readout.innerHTML = `
-        <div class="chart-lock" id="chart-lock">
+        <div class="chart-lock chart-lock--orbit" id="chart-lock">
           <p class="chart-lock__title">${name}</p>
           <p class="chart-lock__prompt">${puzzle.prompt}</p>
           <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
-          <p class="chart-lock__feedback" id="chart-lock-feedback">${
-            ok ? "FLAG SET — OPENING…" : "AWAITING TERMINAL FLAG"
-          }</p>
+          <p class="chart-lock__orbit-legend" aria-hidden="true">
+            <span>INNER</span><span class="chart-lock__orbit-legend-arrow">→</span><span>OUTER</span>
+          </p>
+          <div
+            class="chart-lock__orbit-bar"
+            id="orbit-bar"
+            role="list"
+            aria-label="Orbital order bar, inner to outer left to right"
+          ></div>
+          <p class="chart-lock__orbit-tray-label" id="orbit-tray-status">RECOVERED ${collected.length}/${need}</p>
+          <div
+            class="chart-lock__orbit-tray"
+            id="orbit-tray"
+            role="list"
+            aria-label="Recovered dossier purges"
+          ></div>
+          <div class="chart-lock__orbit-ops">
+            <button type="button" class="chart-lock__reset" id="orbit-reset">RESET</button>
+            <button type="button" class="chart-lock__submit" id="orbit-commit">COMMIT</button>
+          </div>
+          <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
         </div>`;
-      if (ok) {
-        requestAnimationFrame(() => unlockAndShow(planetId));
-      }
+
+      const feedback = readout.querySelector("#chart-lock-feedback");
+      const lock = readout.querySelector("#chart-lock");
+      paint();
+
+      readout.querySelector("#orbit-reset")?.addEventListener("click", () => {
+        barOrder = [];
+        clearGhost();
+        dragId = null;
+        dragFrom = null;
+        if (feedback) {
+          feedback.textContent = "";
+          feedback.classList.remove("is-deny");
+        }
+        paint();
+        audio.play("click");
+      });
+      readout.querySelector("#orbit-commit")?.addEventListener("click", () => {
+        if (collected.length < need) {
+          flashDenyFeedback(
+            feedback,
+            `NEED ${need} PURGES — ${collected.length} / ${need}`
+          );
+          shakeLock(lock);
+          return;
+        }
+        if (orderMatches()) unlockAndShow(planetId);
+        else {
+          flashDenyFeedback(feedback, "ORBITAL STACK REJECTED");
+          shakeLock(lock);
+        }
+      });
       return;
     }
 
@@ -483,154 +793,666 @@ export function initCartography() {
     if (puzzle.type === "reorder") {
       let order = (puzzle.lines ?? []).map((l) => l.id);
       const byId = Object.fromEntries((puzzle.lines ?? []).map((l) => [l.id, l]));
-      const render = () => {
-        readout.innerHTML = `
-          <div class="chart-lock" id="chart-lock">
-            <p class="chart-lock__title">${name}</p>
-            <p class="chart-lock__prompt">${puzzle.prompt}</p>
-            <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
-            <ul class="chart-lock__lines" id="chart-lock-lines"></ul>
-            <button type="button" class="chart-lock__submit" id="chart-lock-submit">COMMIT ORDER</button>
-            <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
-          </div>`;
+      let swapping = false;
+
+      const syncLineButtons = (list) => {
+        list.querySelectorAll(".chart-lock__line").forEach((li, idx) => {
+          li.querySelectorAll("button[data-dir]").forEach((btn) => {
+            btn.dataset.idx = String(idx);
+          });
+        });
+      };
+
+      const bindLineOps = (list) => {
+        list.querySelectorAll("button[data-dir]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            if (swapping) return;
+            const i = Number(btn.dataset.idx);
+            const dir = btn.dataset.dir;
+            const j = dir === "up" ? i - 1 : i + 1;
+            if (j < 0 || j >= order.length) return;
+
+            const next = [...order];
+            [next[i], next[j]] = [next[j], next[i]];
+            order = next;
+            audio.play("click");
+
+            const items = [...list.children];
+            const a = items[i];
+            const b = items[j];
+            if (!a || !b) {
+              paintLines();
+              return;
+            }
+
+            if (prefersReducedMotion()) {
+              paintLines();
+              return;
+            }
+
+            const firstA = a.getBoundingClientRect();
+            const firstB = b.getBoundingClientRect();
+
+            if (i < j) list.insertBefore(b, a);
+            else list.insertBefore(a, b);
+
+            syncLineButtons(list);
+
+            const lastA = a.getBoundingClientRect();
+            const lastB = b.getBoundingClientRect();
+            const dxA = firstA.left - lastA.left;
+            const dyA = firstA.top - lastA.top;
+            const dxB = firstB.left - lastB.left;
+            const dyB = firstB.top - lastB.top;
+
+            swapping = true;
+            a.classList.add("is-swapping");
+            b.classList.add("is-swapping");
+            a.style.transform = `translate(${dxA}px, ${dyA}px)`;
+            b.style.transform = `translate(${dxB}px, ${dyB}px)`;
+
+            const clearSwap = (el) => {
+              el.classList.remove("is-swapping");
+              el.style.transform = "";
+            };
+
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                a.style.transform = "translate(0, 0)";
+                b.style.transform = "translate(0, 0)";
+              });
+            });
+
+            let pending = 2;
+            const onEnd = (ev) => {
+              if (ev.propertyName !== "transform") return;
+              const el = ev.currentTarget;
+              el.removeEventListener("transitionend", onEnd);
+              clearSwap(el);
+              pending -= 1;
+              if (pending <= 0) swapping = false;
+            };
+            a.addEventListener("transitionend", onEnd);
+            b.addEventListener("transitionend", onEnd);
+            window.setTimeout(() => {
+              if (!swapping) return;
+              clearSwap(a);
+              clearSwap(b);
+              swapping = false;
+            }, 320);
+          });
+        });
+      };
+
+      const paintLines = () => {
         const list = readout.querySelector("#chart-lock-lines");
+        if (!list) return;
+        list.replaceChildren();
         order.forEach((id, idx) => {
           const li = document.createElement("li");
           li.className = "chart-lock__line";
+          li.dataset.lineId = id;
           li.innerHTML = `
-            <span class="chart-lock__line-text">${byId[id]?.text ?? id}</span>
+            <span class="chart-lock__line-text">${byId[id]?.glyph ?? byId[id]?.text ?? id}</span>
             <span class="chart-lock__line-ops">
               <button type="button" data-dir="up" data-idx="${idx}" aria-label="Move up">↑</button>
               <button type="button" data-dir="down" data-idx="${idx}" aria-label="Move down">↓</button>
             </span>`;
           list.appendChild(li);
         });
-        list.querySelectorAll("button[data-dir]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const i = Number(btn.dataset.idx);
-            const dir = btn.dataset.dir;
-            const j = dir === "up" ? i - 1 : i + 1;
-            if (j < 0 || j >= order.length) return;
-            const next = [...order];
-            [next[i], next[j]] = [next[j], next[i]];
-            order = next;
-            audio.play("click");
-            render();
-          });
-        });
-        readout.querySelector("#chart-lock-submit")?.addEventListener("click", () => {
-          const ok = order.every((id, i) => id === puzzle.answer[i]);
-          if (ok) unlockAndShow(planetId);
-          else {
-            const feedback = readout.querySelector("#chart-lock-feedback");
-            if (feedback) feedback.textContent = "HYMN REJECTED";
-            shakeLock(readout.querySelector("#chart-lock"));
-          }
-        });
+        bindLineOps(list);
       };
-      render();
+
+      readout.innerHTML = `
+        <div class="chart-lock" id="chart-lock">
+          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__prompt">${puzzle.prompt}</p>
+          <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+          <ul class="chart-lock__lines" id="chart-lock-lines"></ul>
+          <button type="button" class="chart-lock__submit" id="chart-lock-submit">COMMIT ORDER</button>
+          <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
+        </div>`;
+      paintLines();
+      readout.querySelector("#chart-lock-submit")?.addEventListener("click", () => {
+        const ok = order.every((id, i) => id === puzzle.answer[i]);
+        if (ok) unlockAndShow(planetId);
+        else {
+          const feedback = readout.querySelector("#chart-lock-feedback");
+          if (feedback) feedback.textContent = "HYMN REJECTED";
+          shakeLock(readout.querySelector("#chart-lock"));
+        }
+      });
       return;
     }
 
-    if (puzzle.type === "assemble") {
-      let slots = Array(puzzle.answer.length).fill(null);
-      const pool = [...(puzzle.pieces ?? [])];
-      const render = () => {
-        readout.innerHTML = `
-          <div class="chart-lock" id="chart-lock">
-            <p class="chart-lock__title">${name}</p>
-            <p class="chart-lock__prompt">${puzzle.prompt}</p>
-            <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
-            <div class="chart-lock__slots" id="chart-lock-slots"></div>
-            <div class="chart-lock__pool" id="chart-lock-pool"></div>
-            <button type="button" class="chart-lock__submit" id="chart-lock-submit">SEAL SIGIL</button>
-            <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
-          </div>`;
-        const slotsEl = readout.querySelector("#chart-lock-slots");
-        const poolEl = readout.querySelector("#chart-lock-pool");
-        slots.forEach((piece, i) => {
-          const slot = document.createElement("button");
-          slot.type = "button";
-          slot.className = "chart-lock__slot";
-          slot.textContent = piece ?? "·";
-          slot.addEventListener("click", () => {
-            if (!slots[i]) return;
-            pool.push(slots[i]);
-            slots[i] = null;
-            audio.play("click");
-            render();
-          });
-          slotsEl.appendChild(slot);
-        });
-        pool.forEach((piece) => {
+    if (puzzle.type === "lights-out") {
+      const rows = puzzle.rows ?? 3;
+      const cols = puzzle.cols ?? 5;
+      const size = rows * cols;
+      const clone = (arr) => (arr ?? []).map((v) => (v ? 1 : 0));
+      let grid = clone(puzzle.start);
+      if (grid.length !== size) grid = Array(size).fill(0);
+      const goalAllOn = puzzle.goal !== "all-off";
+
+      const neighbors = (i) => {
+        const r = Math.floor(i / cols);
+        const c = i % cols;
+        const out = [i];
+        if (r > 0) out.push(i - cols);
+        if (r < rows - 1) out.push(i + cols);
+        if (c > 0) out.push(i - 1);
+        if (c < cols - 1) out.push(i + 1);
+        return out;
+      };
+
+      const toggleAt = (i) => {
+        for (const j of neighbors(i)) grid[j] = grid[j] ? 0 : 1;
+      };
+
+      const isSolved = () =>
+        goalAllOn ? grid.every((v) => v) : grid.every((v) => !v);
+
+      const paint = () => {
+        const host = readout.querySelector("#chart-lock-lights");
+        if (!host) return;
+        host.replaceChildren();
+        host.style.setProperty("--lights-cols", String(cols));
+        for (let i = 0; i < size; i++) {
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "chart-lock__piece";
-          btn.textContent = piece;
+          btn.className = "chart-lock__light";
+          if (grid[i]) btn.classList.add("is-on");
+          btn.setAttribute("aria-label", `Data block ${i + 1}`);
+          btn.setAttribute("aria-pressed", grid[i] ? "true" : "false");
+          btn.dataset.idx = String(i);
           btn.addEventListener("click", () => {
-            const empty = slots.findIndex((s) => s == null);
-            if (empty < 0) return;
-            slots[empty] = piece;
-            const pi = pool.indexOf(piece);
-            if (pi >= 0) pool.splice(pi, 1);
+            if (isDossierUnlocked(planetId)) return;
+            toggleAt(i);
             audio.play("click");
-            render();
+            paint();
+            if (isSolved()) unlockAndShow(planetId);
           });
-          poolEl.appendChild(btn);
-        });
-        readout.querySelector("#chart-lock-submit")?.addEventListener("click", () => {
-          const ok = slots.every((p, i) => p === puzzle.answer[i]);
-          if (ok) unlockAndShow(planetId);
-          else {
-            const feedback = readout.querySelector("#chart-lock-feedback");
-            if (feedback) feedback.textContent = "SIGIL REJECTED";
-            shakeLock(readout.querySelector("#chart-lock"));
-          }
-        });
+          host.appendChild(btn);
+        }
       };
-      render();
+
+      readout.innerHTML = `
+        <div class="chart-lock chart-lock--lights" id="chart-lock">
+          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__prompt">${puzzle.prompt}</p>
+          <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+          <div
+            class="chart-lock__lights"
+            id="chart-lock-lights"
+            role="group"
+            aria-label="Data block grid"
+          ></div>
+          <button type="button" class="chart-lock__reset" id="chart-lock-reset">RESET</button>
+          <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
+        </div>`;
+      paint();
+      readout.querySelector("#chart-lock-reset")?.addEventListener("click", () => {
+        grid = clone(puzzle.start);
+        if (grid.length !== size) grid = Array(size).fill(0);
+        paint();
+        audio.play("click");
+      });
       return;
     }
 
-    if (puzzle.type === "dial") {
-      let step = 0;
-      const render = () => {
-        readout.innerHTML = `
-          <div class="chart-lock" id="chart-lock">
-            <p class="chart-lock__title">${name}</p>
-            <p class="chart-lock__prompt">${puzzle.prompt}</p>
-            <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
-            <div class="chart-lock__dial">
-              <button type="button" class="chart-lock__dial-btn" id="chart-dial-ccw" aria-label="Rotate counter-clockwise">↺</button>
-              <p class="chart-lock__dial-readout">TICK ${step} / ${puzzle.steps - 1}</p>
-              <button type="button" class="chart-lock__dial-btn" id="chart-dial-cw" aria-label="Rotate clockwise">↻</button>
-            </div>
-            <button type="button" class="chart-lock__submit" id="chart-lock-submit">LOCK ALIGNMENT</button>
-            <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
-          </div>`;
-        const wrap = (n) => ((n % puzzle.steps) + puzzle.steps) % puzzle.steps;
-        readout.querySelector("#chart-dial-cw")?.addEventListener("click", () => {
-          step = wrap(step + 1);
-          audio.play("click");
-          render();
-        });
-        readout.querySelector("#chart-dial-ccw")?.addEventListener("click", () => {
-          step = wrap(step - 1);
-          audio.play("click");
-          render();
-        });
-        readout.querySelector("#chart-lock-submit")?.addEventListener("click", () => {
-          if (step === puzzle.answer) unlockAndShow(planetId);
+    if (puzzle.type === "morse-translate") {
+      let buffer = "";
+      let phase = "morse";
+      const targetMorse = puzzle.morse ?? PARTNER_MORSE.code;
+      let transitionBusy = false;
+
+      const bindTranslateForm = () => {
+        readout.querySelector("#morse-translate-form")?.addEventListener("submit", (e) => {
+          e.preventDefault();
+          if (phase !== "translate") return;
+          const input = readout.querySelector("#morse-translate-input");
+          const lockEl = readout.querySelector("#chart-lock");
+          const feedbackEl = readout.querySelector("#chart-lock-feedback");
+          if (answersMatch(input?.value, puzzle.answers)) unlockAndShow(planetId);
           else {
-            const feedback = readout.querySelector("#chart-lock-feedback");
-            if (feedback) feedback.textContent = "SHADOW MISALIGNED";
-            shakeLock(readout.querySelector("#chart-lock"));
+            flashDenyFeedback(feedbackEl, "TRANSLATION REJECTED");
+            shakeLock(lockEl);
           }
         });
       };
-      render();
+
+      const syncDisplay = () => {
+        const display = readout.querySelector("#morse-display");
+        if (display) display.value = buffer;
+        const lockEl = readout.querySelector("#chart-lock");
+        if (lockEl) lockEl.dataset.phase = phase;
+      };
+
+      const setMorsePadLocked = (locked) => {
+        const lockEl = readout.querySelector("#chart-lock");
+        lockEl?.classList.toggle("is-morse-locked", locked);
+        readout
+          .querySelectorAll("[data-sym], #morse-back, #morse-commit")
+          .forEach((btn) => {
+            btn.disabled = locked;
+            btn.setAttribute("aria-disabled", locked ? "true" : "false");
+          });
+      };
+
+      const mountTranslateForm = () => {
+        if (readout.querySelector("#morse-translate-wrap")) return;
+        const lockEl = readout.querySelector("#chart-lock");
+        const feedbackEl = readout.querySelector("#chart-lock-feedback");
+        if (!lockEl) return;
+        const wrap = document.createElement("div");
+        wrap.className = "chart-lock__morse-translate";
+        wrap.id = "morse-translate-wrap";
+        wrap.innerHTML = `
+          <form class="chart-lock__form" id="morse-translate-form" autocomplete="off">
+            <label class="visually-hidden" for="morse-translate-input">Plaintext translation</label>
+            <input
+              class="chart-lock__input"
+              id="morse-translate-input"
+              type="text"
+              spellcheck="false"
+              placeholder="PLAINTEXT"
+            />
+            <button type="submit" class="chart-lock__submit">COMMIT</button>
+          </form>`;
+        if (feedbackEl) lockEl.insertBefore(wrap, feedbackEl);
+        else lockEl.appendChild(wrap);
+        bindTranslateForm();
+        if (!prefersReducedMotion()) {
+          wrap.classList.add("is-scan-in");
+          audio.play("revealScan", { durationMs: 720, gainScale: 2.2 });
+        }
+        window.setTimeout(() => {
+          readout.querySelector("#morse-translate-input")?.focus();
+        }, prefersReducedMotion() ? 0 : 120);
+      };
+
+      const glitchOutResetThenTranslate = () => {
+        const footer = readout.querySelector(".chart-lock__morse-footer");
+        const resetBtn = readout.querySelector("#morse-reset");
+        const finish = () => {
+          footer?.remove();
+          mountTranslateForm();
+          transitionBusy = false;
+        };
+
+        setMorsePadLocked(true);
+        syncDisplay();
+
+        if (!footer || !resetBtn || prefersReducedMotion()) {
+          finish();
+          return;
+        }
+
+        resetBtn.classList.add("is-glitching-out");
+        resetBtn.disabled = true;
+        audio.playGlitchBurst({ count: 4, gapMs: 55 });
+        let done = false;
+        const once = () => {
+          if (done) return;
+          done = true;
+          finish();
+        };
+        resetBtn.addEventListener("animationend", once, { once: true });
+        window.setTimeout(once, 900);
+      };
+
+      const appendSym = (sym) => {
+        if (phase !== "morse" || transitionBusy) return;
+        buffer += sym;
+        audio.play("click");
+        syncDisplay();
+      };
+
+      const deleteSym = () => {
+        if (phase !== "morse" || transitionBusy) return;
+        if (!buffer) return;
+        buffer = buffer.slice(0, -1);
+        audio.play("click");
+        syncDisplay();
+      };
+
+      const resetMorse = () => {
+        if (phase !== "morse" || transitionBusy) return;
+        buffer = "";
+        if (feedback) {
+          feedback.textContent = "";
+          feedback.classList.remove("is-deny");
+        }
+        audio.play("click");
+        syncDisplay();
+      };
+
+      const commitMorse = () => {
+        if (phase !== "morse" || transitionBusy) return;
+        if (!morseCodesMatch(buffer, targetMorse)) {
+          flashDenyFeedback(feedback, "CARRIER REJECTED");
+          shakeLock(lock);
+          audio.play("deny");
+          return;
+        }
+        transitionBusy = true;
+        phase = "translate";
+        audio.play("click");
+        const display = readout.querySelector("#morse-display");
+        if (display) {
+          display.focus();
+          display.select();
+        }
+        glitchOutResetThenTranslate();
+      };
+
+      readout.innerHTML = `
+        <div class="chart-lock chart-lock--morse" id="chart-lock" data-phase="morse">
+          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__prompt">${puzzle.prompt}</p>
+          <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+          <label class="visually-hidden" for="morse-display">Morse buffer</label>
+          <input
+            class="chart-lock__morse-display"
+            id="morse-display"
+            type="text"
+            readonly
+            spellcheck="false"
+            value=""
+            aria-live="polite"
+          />
+          <div class="chart-lock__morse-row" role="group" aria-label="Morse keys">
+            <button type="button" class="chart-lock__morse-key" data-sym="." aria-label="Dot">.</button>
+            <button type="button" class="chart-lock__morse-key" data-sym="-" aria-label="Dash">-</button>
+            <button type="button" class="chart-lock__morse-key" data-sym="/" aria-label="Space">/</button>
+            <button type="button" class="chart-lock__morse-action" id="morse-back">DELETE</button>
+            <button type="button" class="chart-lock__morse-action chart-lock__morse-action--commit" id="morse-commit">COMMIT</button>
+          </div>
+          <div class="chart-lock__morse-footer">
+            <button type="button" class="chart-lock__morse-action" id="morse-reset">RESET</button>
+          </div>
+          <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
+        </div>`;
+
+      const feedback = readout.querySelector("#chart-lock-feedback");
+      const lock = readout.querySelector("#chart-lock");
+
+      readout.querySelectorAll("[data-sym]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          appendSym(btn.dataset.sym);
+          readout.querySelector("#morse-display")?.focus();
+        });
+      });
+      readout.querySelector("#morse-back")?.addEventListener("click", () => {
+        deleteSym();
+        readout.querySelector("#morse-display")?.focus();
+      });
+      readout.querySelector("#morse-reset")?.addEventListener("click", () => {
+        resetMorse();
+        readout.querySelector("#morse-display")?.focus();
+      });
+      readout.querySelector("#morse-commit")?.addEventListener("click", commitMorse);
+
+      const onMorseKeydown = (e) => {
+        if (phase !== "morse" || transitionBusy) return;
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        if (e.repeat) return;
+
+        let handled = true;
+        if (e.key === ".") appendSym(".");
+        else if (e.key === "-") appendSym("-");
+        else if (e.key === "/") appendSym("/");
+        else if (e.key === "Backspace" || e.key === "Delete") deleteSym();
+        else if (e.key === "Enter") commitMorse();
+        else handled = false;
+
+        if (handled) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      };
+
+      readout.querySelector("#morse-display")?.addEventListener("keydown", onMorseKeydown);
+      syncDisplay();
+      readout.querySelector("#morse-display")?.focus();
       return;
     }
+
+    if (puzzle.type === "chrono-rings") {
+      let selected = "minutes";
+      let raf = 0;
+      let unlocking = false;
+      let keyHandler = null;
+      let onChrono = null;
+
+      const cleanup = () => {
+        cancelAnimationFrame(raf);
+        if (keyHandler) window.removeEventListener("keydown", keyHandler);
+        if (onChrono) window.removeEventListener("lattice:chrono", onChrono);
+      };
+
+      readout.innerHTML = `
+        <div class="chart-lock chart-lock--chrono" id="chart-lock" tabindex="0">
+          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__prompt">${puzzle.prompt}</p>
+          <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
+          <div class="chrono-align">
+            <div class="chrono-align__stage">
+              <svg class="chrono-align__svg" viewBox="0 0 220 220" aria-hidden="true">
+                <g class="chrono-align__ring" data-ring="hours" id="chrono-ring-hours"></g>
+                <g class="chrono-align__ring" data-ring="minutes" id="chrono-ring-minutes"></g>
+                <g class="chrono-align__ring chrono-align__ring--seconds" data-ring="seconds" id="chrono-ring-seconds"></g>
+              </svg>
+              <button type="button" class="chrono-align__nudge chrono-align__nudge--w" data-dir="-1" aria-label="Rotate selected ring counter-clockwise">
+                <svg class="chrono-align__nudge-svg" viewBox="0 0 28 48" aria-hidden="true">
+                  <path class="chrono-align__chevron" d="M18 10 L6 24 L18 38" fill="none" />
+                </svg>
+              </button>
+              <button type="button" class="chrono-align__nudge chrono-align__nudge--e" data-dir="1" aria-label="Rotate selected ring clockwise">
+                <svg class="chrono-align__nudge-svg" viewBox="0 0 28 48" aria-hidden="true">
+                  <path class="chrono-align__chevron" d="M10 10 L22 24 L10 38" fill="none" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="chrono-align__actions">
+            <button type="button" class="chart-lock__reset chrono-align__reset" id="chrono-reset">RESET</button>
+            <button type="button" class="chart-lock__submit chrono-align__enter" id="chrono-enter">COMMIT</button>
+          </div>
+        </div>`;
+
+      const lock = readout.querySelector("#chart-lock");
+      const hoursG = readout.querySelector("#chrono-ring-hours");
+      const minutesG = readout.querySelector("#chrono-ring-minutes");
+      const secondsG = readout.querySelector("#chrono-ring-seconds");
+      const spin = { h: 0, m: 0, s: 0 };
+      let spinReady = false;
+
+      const unwrapToward = (current, targetMod360) => {
+        const curMod = ((current % 360) + 360) % 360;
+        const delta = ((targetMod360 - curMod + 540) % 360) - 180;
+        return current + delta;
+      };
+
+      const setSpinInstant = (angles) => {
+        const rings = [hoursG, minutesG, secondsG];
+        rings.forEach((g) => {
+          if (!g) return;
+          g.style.transition = "none";
+        });
+        spin.h = angles.h;
+        spin.m = angles.m;
+        spin.s = angles.s;
+        if (hoursG) hoursG.style.transform = `rotate(${spin.h}deg)`;
+        if (minutesG) minutesG.style.transform = `rotate(${spin.m}deg)`;
+        if (secondsG) secondsG.style.transform = `rotate(${spin.s}deg)`;
+        rings.forEach((g) => {
+          if (!g) return;
+          void g.getBoundingClientRect();
+          g.style.transition = "";
+        });
+      };
+
+      const paintRingMarks = (g, radius, marks) => {
+        if (!g) return;
+        g.replaceChildren();
+        const rim = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        rim.setAttribute("cx", "110");
+        rim.setAttribute("cy", "110");
+        rim.setAttribute("r", String(radius));
+        rim.setAttribute("class", "chrono-align__rim");
+        g.appendChild(rim);
+        for (let i = 0; i < marks; i++) {
+          const ang = (i / marks) * Math.PI * 2 - Math.PI / 2;
+          const isIndex = i === 0;
+          const outer = radius + (isIndex ? 3 : 0);
+          const inner = radius - (isIndex ? 16 : 10);
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("x1", String(110 + Math.cos(ang) * inner));
+          line.setAttribute("y1", String(110 + Math.sin(ang) * inner));
+          line.setAttribute("x2", String(110 + Math.cos(ang) * outer));
+          line.setAttribute("y2", String(110 + Math.sin(ang) * outer));
+          line.setAttribute(
+            "class",
+            isIndex ? "chrono-align__tick chrono-align__tick--index" : "chrono-align__tick"
+          );
+          g.appendChild(line);
+        }
+        if (g.dataset.ring !== "seconds") {
+          const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          hit.setAttribute("cx", "110");
+          hit.setAttribute("cy", "110");
+          hit.setAttribute("r", String(radius));
+          hit.setAttribute("class", "chrono-align__hit");
+          hit.dataset.ring = g.dataset.ring;
+          // Annular target so outer/inner rings pick cleanly
+          hit.style.strokeWidth = g.dataset.ring === "hours" ? "22" : "20";
+          g.appendChild(hit);
+        }
+      };
+
+      // Uniform tick marks only — no minor subdivisions
+      paintRingMarks(hoursG, 96, 24);
+      paintRingMarks(minutesG, 70, 12);
+      paintRingMarks(secondsG, 44, 12);
+
+      const syncSelection = () => {
+        readout.querySelectorAll(".chrono-align__ring").forEach((g) => {
+          g.classList.toggle("is-selected", g.dataset.ring === selected);
+        });
+      };
+
+      const applyRotations = () => {
+        if (unlocking || !readout.querySelector(".chart-lock--chrono")) return;
+        const d = getDisplayLocalTime();
+        const real = getRealLocalTime();
+        // Hard steps only — no fractional creep between units
+        const secAngle = real.s * 6;
+        const minAngle = d.m * 6;
+        const hourAngle = (d.h % 24) * 15;
+        if (!spinReady) {
+          setSpinInstant({ h: hourAngle, m: minAngle, s: secAngle });
+          spinReady = true;
+        } else {
+          spin.h = unwrapToward(spin.h, hourAngle);
+          spin.m = unwrapToward(spin.m, minAngle);
+          spin.s = unwrapToward(spin.s, secAngle);
+          if (hoursG) hoursG.style.transform = `rotate(${spin.h}deg)`;
+          if (minutesG) minutesG.style.transform = `rotate(${spin.m}deg)`;
+          if (secondsG) secondsG.style.transform = `rotate(${spin.s}deg)`;
+        }
+      };
+
+      const tryEnter = () => {
+        if (unlocking || isDossierUnlocked(planetId)) return;
+        if (!isChronoAligned()) {
+          shakeLock(lock);
+          return;
+        }
+        unlocking = true;
+        cleanup();
+        unlockAndShow(planetId);
+      };
+
+      const nudge = (dir) => {
+        if (selected === "hours") {
+          nudgeHourOffset(dir);
+          glitchChronoPart("hours");
+        } else if (selected === "minutes") {
+          nudgeMinuteOffset(dir);
+          glitchChronoPart("minutes");
+        } else return;
+        audio.play("click");
+        applyRotations();
+      };
+
+      const selectRing = (ring) => {
+        if (ring === "seconds") return;
+        selected = ring;
+        syncSelection();
+        audio.play("click");
+        lock?.focus();
+      };
+
+      syncSelection();
+      applyRotations();
+      lock?.focus();
+
+      readout.querySelectorAll(".chrono-align__hit").forEach((hit) => {
+        hit.addEventListener("click", () => selectRing(hit.dataset.ring));
+      });
+      readout.querySelectorAll(".chrono-align__nudge").forEach((btn) => {
+        btn.addEventListener("click", () => nudge(Number(btn.dataset.dir) || 0));
+      });
+      readout.querySelector("#chrono-reset")?.addEventListener("click", () => {
+        resetChronoOffsets();
+        selected = "minutes";
+        syncSelection();
+        applyRotations();
+        audio.play("click");
+      });
+      readout.querySelector("#chrono-enter")?.addEventListener("click", () => {
+        tryEnter();
+      });
+
+      keyHandler = (e) => {
+        const panel = document.querySelector('.panel[data-panel="cartography"]');
+        if (panel?.hidden) return;
+        if (!readout.querySelector(".chart-lock--chrono")) return;
+        if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+          e.preventDefault();
+          nudge(-1);
+        } else if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+          e.preventDefault();
+          nudge(1);
+        } else if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
+          e.preventDefault();
+          selectRing("hours");
+        } else if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
+          e.preventDefault();
+          selectRing("minutes");
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          tryEnter();
+        }
+      };
+      window.addEventListener("keydown", keyHandler);
+
+      onChrono = () => applyRotations();
+      window.addEventListener("lattice:chrono", onChrono);
+
+      const loop = () => {
+        if (!readout.querySelector(".chart-lock--chrono")) {
+          cleanup();
+          return;
+        }
+        applyRotations();
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+      return;
+    }
+
 
     // text
     readout.innerHTML = `
@@ -641,7 +1463,7 @@ export function initCartography() {
         <form class="chart-lock__form" id="chart-lock-form" autocomplete="off">
           <label class="visually-hidden" for="chart-lock-input">Puzzle answer</label>
           <input class="chart-lock__input" id="chart-lock-input" type="text" spellcheck="false" />
-          <button type="submit" class="chart-lock__submit">SUBMIT</button>
+          <button type="submit" class="chart-lock__submit">COMMIT</button>
         </form>
         <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
       </div>`;
@@ -657,6 +1479,12 @@ export function initCartography() {
         shakeLock(readout.querySelector("#chart-lock"));
       }
     });
+    } finally {
+      const lock = readout.querySelector(".chart-lock");
+      if (lock && lock.dataset.corrupt !== "1") {
+        stopCorruptAnim = applyCorruptChrome(name);
+      }
+    }
   };
 
   const selectPlanet = (planetId) => {
@@ -665,6 +1493,7 @@ export function initCartography() {
   };
 
   const showSturm = () => {
+    clearCorruptAnim();
     audio.play("dropdownToggle");
     if (stopWire) {
       stopWire();
@@ -715,11 +1544,14 @@ export function initCartography() {
     onSelect();
   };
 
-  const sunHit = add("circle", { class: "chart-svg__hit", cx, cy, r: 14 });
-  sunHit.addEventListener("click", () => {
-    clearSelection();
-    showError();
+  const sunHit = add("circle", {
+    class: "chart-svg__hit chart-svg__hit--sun",
+    cx,
+    cy,
+    r: 14,
   });
+  sunHit.style.pointerEvents = "none";
+  svg.querySelector(".chart-svg__sun")?.setAttribute("pointer-events", "none");
 
   const movers = [];
 
@@ -732,6 +1564,26 @@ export function initCartography() {
         e.preventDefault();
         activate();
       }
+    });
+  };
+
+  const refreshPlanetLabels = () => {
+    svg.querySelectorAll(".chart-svg__body[data-body]").forEach((g) => {
+      const id = g.dataset.body;
+      const body = bodies.find((b) => b.id === id);
+      const label = g.querySelector(".chart-svg__label");
+      if (!body || !label) return;
+      const clear = String(body.name ?? id).toUpperCase();
+      if (isDossierUnlocked(id)) {
+        label.textContent = clear;
+        label.classList.remove("is-scrambled");
+        g.setAttribute("aria-label", body.name);
+      } else {
+        label.textContent = scrambleText(clear, clear.length + 3);
+        label.classList.add("is-scrambled");
+        g.setAttribute("aria-label", "Corrupted orbital body");
+      }
+      fitSelectBox(g);
     });
   };
 
@@ -758,7 +1610,7 @@ export function initCartography() {
       { class: "chart-svg__label", x: body.size + 4, y: 2.5 },
       content
     );
-    label.textContent = body.name;
+    label.textContent = String(body.name ?? "").toUpperCase();
     g.setAttribute("transform", `translate(${x} ${y})`);
     bindBody(g, body.id, () => selectPlanet(body.id));
 
@@ -770,6 +1622,7 @@ export function initCartography() {
       id: body.id,
     });
   });
+  refreshPlanetLabels();
 
   const makeSatellite = (cfg, className, ariaLabel, onSelect) => {
     if (!cfg) return null;
@@ -847,18 +1700,24 @@ export function initCartography() {
 
   showIdle();
 
-  // Re-check flag puzzles when returning from Terminal
-  window.addEventListener("lattice:hull", () => {
-    if (!selectedId || !CHART_PUZZLES[selectedId]) return;
-    if (isDossierUnlocked(selectedId)) return;
-    if (CHART_PUZZLES[selectedId].type === "flag") {
-      selectPlanet(selectedId);
-    }
+  // Refresh Vol tray as dossiers unlock elsewhere
+  window.addEventListener("lattice:dossier", () => {
+    refreshPlanetLabels();
+    if (selectedId !== "vol") return;
+    if (isDossierUnlocked("vol")) return;
+    selectPlanet("vol");
   });
 
   if (!prefersReducedMotion()) {
     let last = performance.now();
+    let raf = 0;
+    let orbitLive = false;
+
     const tick = (now) => {
+      if (!orbitLive) {
+        raf = 0;
+        return;
+      }
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
@@ -887,9 +1746,23 @@ export function initCartography() {
       tickSat(sturmMover);
       tickSat(mysteryMover);
 
-      requestAnimationFrame(tick);
+      raf = requestAnimationFrame(tick);
     };
-    requestAnimationFrame(tick);
+
+    const setOrbitLive = (on) => {
+      if (on === orbitLive) return;
+      orbitLive = on;
+      if (on) {
+        last = performance.now();
+        if (!raf) raf = requestAnimationFrame(tick);
+      }
+    };
+
+    const chartPanel = document.getElementById("panel-cartography");
+    setOrbitLive(Boolean(chartPanel?.classList.contains("is-active")));
+    window.addEventListener("lattice:channel", (e) => {
+      setOrbitLive(e.detail?.panel === "cartography");
+    });
   }
 }
 

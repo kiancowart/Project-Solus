@@ -4,6 +4,7 @@
 
 import {
   ARG_PROGRESS_KEYS,
+  EMPIRE_SEALS,
   IMPERIAL_SLOTS,
   SEAL_BANDS,
   sealById,
@@ -150,7 +151,20 @@ export function markFragmentRecovered(fragmentId) {
 }
 
 export function getPlanetClears() {
-  return readJson(PLANETS_KEY, planetsRef, { cleared: {}, dossiers: {} });
+  return readJson(PLANETS_KEY, planetsRef, {
+    cleared: {},
+    dossiers: {},
+    dossierOrder: [],
+  });
+}
+
+function writePlanetClears(next) {
+  writeJson(PLANETS_KEY, planetsRef, {
+    cleared: { ...(next.cleared ?? {}) },
+    dossiers: { ...(next.dossiers ?? {}) },
+    dossierOrder: Array.isArray(next.dossierOrder) ? [...next.dossierOrder] : [],
+  });
+  return getPlanetClears();
 }
 
 export function markPlanetCleared(planetId) {
@@ -159,12 +173,10 @@ export function markPlanetCleared(planetId) {
     .toLowerCase();
   if (!id) return getPlanetClears();
   const data = getPlanetClears();
-  const cleared = { ...(data.cleared ?? {}), [id]: true };
-  writeJson(PLANETS_KEY, planetsRef, {
-    cleared,
-    dossiers: { ...(data.dossiers ?? {}) },
+  return writePlanetClears({
+    ...data,
+    cleared: { ...(data.cleared ?? {}), [id]: true },
   });
-  return getPlanetClears();
 }
 
 export function isPlanetCleared(planetId) {
@@ -182,11 +194,13 @@ export function markDossierUnlocked(planetId) {
   if (!id) return getPlanetClears();
   const data = getPlanetClears();
   const dossiers = { ...(data.dossiers ?? {}), [id]: true };
-  writeJson(PLANETS_KEY, planetsRef, {
-    cleared: { ...(data.cleared ?? {}) },
+  let dossierOrder = Array.isArray(data.dossierOrder) ? [...data.dossierOrder] : [];
+  if (!dossierOrder.includes(id)) dossierOrder.push(id);
+  return writePlanetClears({
+    ...data,
     dossiers,
+    dossierOrder,
   });
-  return getPlanetClears();
 }
 
 export function isDossierUnlocked(planetId) {
@@ -195,6 +209,54 @@ export function isDossierUnlocked(planetId) {
     .toLowerCase();
   if (!id) return false;
   return Boolean(getPlanetClears().dossiers?.[id]);
+}
+
+/** Count Chart dossier unlocks; optionally exclude one world. */
+export function countDossiersUnlocked({ exclude } = {}) {
+  const skip = String(exclude ?? "")
+    .trim()
+    .toLowerCase();
+  const dossiers = getPlanetClears().dossiers ?? {};
+  return Object.keys(dossiers).filter((id) => dossiers[id] && id !== skip).length;
+}
+
+/** True when all nine Empire world Chart dossiers are unlocked. */
+export function areAllPlanetDossiersUnlocked() {
+  return EMPIRE_SEALS.every((s) => isDossierUnlocked(s.planetId));
+}
+
+/** True when every seal fragment has been recovered (clicked in Flight Log). */
+export function areAllFragmentsRecovered() {
+  const frags = getRecoveredFragments();
+  return EMPIRE_SEALS.every((s) => frags.has(normalizeFragmentId(s.fragment)));
+}
+
+/**
+ * First N dossier purges in unlock order (excludes Vol).
+ * Used by the Vol orbit tray — capped at 3.
+ */
+export function getVolTrayPlanets({ limit = 3, exclude = "vol" } = {}) {
+  const skip = String(exclude ?? "")
+    .trim()
+    .toLowerCase();
+  const data = getPlanetClears();
+  let order = Array.isArray(data.dossierOrder)
+    ? data.dossierOrder.map((id) => String(id).toLowerCase()).filter(Boolean)
+    : [];
+  if (!order.length) {
+    const dossiers = data.dossiers ?? {};
+    order = Object.keys(dossiers).filter((id) => dossiers[id]);
+  }
+  const seen = new Set();
+  const out = [];
+  for (const id of order) {
+    if (!id || id === skip || seen.has(id)) continue;
+    if (data.dossiers && !data.dossiers[id]) continue;
+    seen.add(id);
+    out.push(id);
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 function shuffleIds(ids) {
@@ -282,4 +344,47 @@ export function resetProgressSession() {
   sessionFrags = null;
   sessionPlanets = null;
   sessionSealOrder = null;
+}
+
+/* ==========================================================================
+   COLD START — wipe ARG progress (?cold=1 / ?reset=1 / Imperial purge)
+   ========================================================================== */
+
+const COLD_KEYS = [
+  "lattice.clearance",
+  "lattice.milestones",
+  "lattice.journals",
+  "lattice.interceptTuned",
+  "lattice.interceptEcho",
+  "lattice.whisperStep",
+  "lattice.whisperDone",
+  "lattice.whisperSealed",
+  "lattice.whisperSudokuSeen",
+  "lattice.sealOrder",
+  ...PROGRESS_STORAGE_KEYS,
+];
+
+/** Wipe all ARG progress keys (pad, journals, intercept, whisper, STATUS). */
+export function wipeLatticeProgress() {
+  try {
+    for (const key of COLD_KEYS) localStorage.removeItem(key);
+  } catch {
+    /* private mode */
+  }
+  resetProgressSession();
+}
+
+export function applyColdStartFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("cold") && !params.has("reset")) return false;
+
+  wipeLatticeProgress();
+
+  // Strip the flag so a refresh doesn't keep wiping mid-playtest
+  params.delete("cold");
+  params.delete("reset");
+  const q = params.toString();
+  const next = `${window.location.pathname}${q ? `?${q}` : ""}${window.location.hash}`;
+  window.history.replaceState({}, "", next);
+  return true;
 }

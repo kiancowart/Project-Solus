@@ -2,26 +2,26 @@
  * LATTICE.OS — Terminal audio
  */
 
-import { AMBIENCE, MUSIC, SOUNDTRACK } from "../content/boot-content.js";
+import { AMBIENCE, MUSIC } from "../content/boot-content.js";
 
 const AMBIENCE_LIVE_KEY = "lattice.ambienceLive";
 
 /** Sampled UI SFX under assets/audio/ui-sfx/ */
 const UI_SFX = {
-  typewriter: ["assets/audio/ui-sfx/typewriter-a.ogg"],
-  keyInput: "assets/audio/ui-sfx/key-input.wav",
-  channelSwitch: "assets/audio/ui-sfx/channel-switch.ogg",
-  journalSelect: "assets/audio/ui-sfx/dropdown.ogg",
-  dropdownToggle: "assets/audio/ui-sfx/dropdown.ogg",
-  revealScan: "assets/audio/ui-sfx/reveal-scan.wav",
-  uiBeep: "assets/audio/ui-sfx/ui-beep.wav",
-  tunerNudge: "assets/audio/ui-sfx/tuner-nudge.wav",
-  uiDeny: "assets/audio/ui-sfx/ui-deny.wav",
-  codeSuccess: "assets/audio/ui-sfx/code-success.ogg",
-  imperialClearance: "assets/audio/ui-sfx/imperial-clearance.ogg",
-  imagoBoot: "assets/audio/ui-sfx/imago-boot.ogg",
-  imagoReset: "assets/audio/ui-sfx/imago-reset.ogg",
-  flogSearchHit: "assets/audio/ui-sfx/flog-search-hit.wav",
+  typewriter: ["assets/audio/ui-sfx/typewriter-a.mp3"],
+  keyInput: "assets/audio/ui-sfx/key-input.mp3",
+  channelSwitch: "assets/audio/ui-sfx/channel-switch.mp3",
+  journalSelect: "assets/audio/ui-sfx/dropdown.mp3",
+  dropdownToggle: "assets/audio/ui-sfx/dropdown.mp3",
+  revealScan: "assets/audio/ui-sfx/reveal-scan.mp3",
+  uiBeep: "assets/audio/ui-sfx/ui-beep.mp3",
+  tunerNudge: "assets/audio/ui-sfx/tuner-nudge.mp3",
+  uiDeny: "assets/audio/ui-sfx/ui-deny.mp3",
+  codeSuccess: "assets/audio/ui-sfx/code-success.mp3",
+  imperialClearance: "assets/audio/ui-sfx/imperial-clearance.mp3",
+  imagoBoot: "assets/audio/ui-sfx/imago-boot.mp3",
+  imagoReset: "assets/audio/ui-sfx/imago-reset.mp3",
+  flogSearchHit: "assets/audio/ui-sfx/flog-search-hit.mp3",
 };
 
 function readAmbienceLive() {
@@ -53,7 +53,7 @@ export class TerminalAudio {
     this.deadSilent = false;
     this.sfxGain = 0.55;
     this.ambienceGain = Math.max(0, Math.min(1, AMBIENCE?.volume ?? 0.18));
-    this.musicGain = Math.max(0, Math.min(1, MUSIC?.volume ?? SOUNDTRACK?.volume ?? 0.4));
+    this.musicGain = Math.max(0, Math.min(1, MUSIC?.volume ?? 0.4));
 
     this.ambience = null;
     this.ambienceGainNode = null;
@@ -183,7 +183,7 @@ export class TerminalAudio {
     if (!this.ambience) {
       const el = new Audio(src);
       el.loop = AMBIENCE.loop !== false;
-      el.preload = "auto";
+      el.preload = "metadata";
       this.ambience = el;
     }
 
@@ -225,7 +225,7 @@ export class TerminalAudio {
     if (!this.musicEls[trackId]) {
       const el = new Audio(def.src);
       el.loop = def.loop !== false;
-      el.preload = "auto";
+      el.preload = "metadata";
       this.musicEls[trackId] = el;
     }
     return this.musicEls[trackId];
@@ -238,7 +238,7 @@ export class TerminalAudio {
 
     this.#ensureMusicBus();
 
-    const crush = MUSIC?.crush ?? SOUNDTRACK?.crush ?? {};
+    const crush = MUSIC?.crush ?? {};
     const drive = crush.drive ?? 1.35;
     const bits = crush.bits ?? 9;
     const hpHz = crush.highpassHz ?? 60;
@@ -288,7 +288,9 @@ export class TerminalAudio {
 
   async #waitTrackReady(el) {
     if (!el) return;
-    if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) return;
+    // Start playback as soon as a buffer chunk is ready — don't wait for
+    // canplaythrough (that used to stall hub entry on multi-MB WAV beds).
+    if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return;
     await Promise.race([
       new Promise((resolve, reject) => {
         const onReady = () => {
@@ -300,16 +302,20 @@ export class TerminalAudio {
           reject(new Error("music load failed"));
         };
         const cleanup = () => {
-          el.removeEventListener("canplaythrough", onReady);
           el.removeEventListener("canplay", onReady);
+          el.removeEventListener("loadeddata", onReady);
           el.removeEventListener("error", onErr);
         };
-        el.addEventListener("canplaythrough", onReady, { once: true });
         el.addEventListener("canplay", onReady, { once: true });
+        el.addEventListener("loadeddata", onReady, { once: true });
         el.addEventListener("error", onErr, { once: true });
-        el.load();
+        try {
+          el.load();
+        } catch {
+          /* ignore */
+        }
       }),
-      new Promise((resolve) => setTimeout(resolve, 10000)),
+      new Promise((resolve) => setTimeout(resolve, 2500)),
     ]);
   }
 

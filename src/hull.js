@@ -3,6 +3,7 @@
  */
 
 import { audio } from "./audio.js";
+import { corruptChromeLabel } from "./motion.js";
 import {
   PUZZLE_A,
   PUZZLE_B,
@@ -11,6 +12,12 @@ import {
   DAMAGE_EPOCH,
   FTH_HUB,
   IMPERIAL_SLOTS,
+  EMPIRE_BLOOD_PHRASE,
+  empireBloodPhraseHex,
+  PARTNER_MORSE,
+  normalizeMorseCode,
+  decodeMorseLetters,
+  morseCodesMatch,
   getIkephPassageLines,
 } from "../content/arg-path.js";
 import {
@@ -203,8 +210,42 @@ export function initHullPlan() {
     const prog = getHullProgress();
     mon?.classList.toggle("hull-mon--optics", prog.optics);
     mon?.classList.toggle("hull-mon--inner", prog.inner);
+    mon?.classList.toggle("hull-mon--outer-corrupt", !prog.optics);
+    mon?.classList.toggle("hull-mon--inner-corrupt", !prog.inner);
     document.body.classList.toggle("hull-optics-online", prog.optics);
     document.body.classList.toggle("hull-inner-online", prog.inner);
+
+    document.getElementById("hull-view-outer")?.classList.toggle(
+      "is-layer-corrupt",
+      !prog.optics
+    );
+    document.getElementById("hull-view-inner")?.classList.toggle(
+      "is-layer-corrupt",
+      !prog.inner
+    );
+    document.getElementById("hull-tab-outer")?.classList.toggle(
+      "is-chrome-corrupt",
+      !prog.optics
+    );
+    document.getElementById("hull-tab-inner")?.classList.toggle(
+      "is-chrome-corrupt",
+      !prog.inner
+    );
+
+    const tabOuter = document.getElementById("hull-tab-outer");
+    const tabInner = document.getElementById("hull-tab-inner");
+    if (tabOuter) {
+      if (!tabOuter.dataset.clearLabel) tabOuter.dataset.clearLabel = "OUTER";
+      tabOuter.textContent = prog.optics
+        ? tabOuter.dataset.clearLabel
+        : corruptChromeLabel(tabOuter.dataset.clearLabel, 8);
+    }
+    if (tabInner) {
+      if (!tabInner.dataset.clearLabel) tabInner.dataset.clearLabel = "INNER";
+      tabInner.textContent = prog.inner
+        ? tabInner.dataset.clearLabel
+        : corruptChromeLabel(tabInner.dataset.clearLabel, 9);
+    }
 
     if (eye) {
       const dead = !prog.optics;
@@ -332,7 +373,14 @@ function startEngBusJitter() {
   });
 
   let last = performance.now();
+  let raf = 0;
+  let live = false;
+
   const tick = (now) => {
+    if (!live) {
+      raf = 0;
+      return;
+    }
     const dt = Math.min(48, now - last);
     last = now;
 
@@ -351,10 +399,23 @@ function startEngBusJitter() {
       s.val.textContent = `${Math.round(pct)}%`;
     }
 
-    requestAnimationFrame(tick);
+    raf = requestAnimationFrame(tick);
   };
 
-  requestAnimationFrame(tick);
+  const setLive = (on) => {
+    if (on === live) return;
+    live = on;
+    if (on) {
+      last = performance.now();
+      if (!raf) raf = requestAnimationFrame(tick);
+    }
+  };
+
+  const overview = document.getElementById("panel-overview");
+  setLive(Boolean(overview?.classList.contains("is-active")));
+  window.addEventListener("lattice:channel", (e) => {
+    setLive(e.detail?.panel === "overview");
+  });
 }
 
 export function initFthConsole() {
@@ -610,6 +671,95 @@ export function initFthConsole() {
         return;
       }
       setPrompt(PROMPT.EDGE, FTH_HUB.edgePrompt);
+      return;
+    }
+
+    if (verb === "translate" || verb === "xlat") {
+      const payload = args.join(" ").trim();
+      if (!payload) {
+        FTH_HUB.translateUsage.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
+        return;
+      }
+
+      const norm = (s) =>
+        String(s ?? "")
+          .trim()
+          .toLowerCase()
+          .replace(/['’‘]/g, "'")
+          .replace(/\.+$/g, "")
+          .replace(/\s+/g, " ");
+      const hexNorm = (s) =>
+        String(s ?? "")
+          .trim()
+          .toLowerCase()
+          .replace(/^0x/, "")
+          .replace(/[\s:_-]/g, "");
+
+      const en = EMPIRE_BLOOD_PHRASE.en;
+      const arLatn = EMPIRE_BLOOD_PHRASE.arLatn;
+      const ar = EMPIRE_BLOOD_PHRASE.ar;
+      const hex = empireBloodPhraseHex();
+      const inNorm = norm(payload);
+      const inHex = hexNorm(payload);
+      const morseCompact = normalizeMorseCode(payload);
+      const looksMorse = /^[.\-/]+$/.test(morseCompact);
+
+      if (looksMorse || morseCodesMatch(payload, PARTNER_MORSE.code)) {
+        if (!morseCodesMatch(payload, PARTNER_MORSE.code)) {
+          const decoded = decodeMorseLetters(payload);
+          push("TRANSLATE // MORSE PARSE", "fth-console__line--sys");
+          push(`DECODE // ${decoded || "(empty)"}`, "fth-console__line--sys");
+          push(
+            "NOTE // SYMBOL NOT IN PARTNER ROW — BOUND CORPUS LIMITED",
+            "fth-console__line--err"
+          );
+          audio.play("deny");
+          return;
+        }
+        push("TRANSLATE // PARTIAL HIT — PARTNER MORSE ROW", "fth-console__line--ok");
+        push(`MORSE // ${PARTNER_MORSE.code}`, "fth-console__line--sys");
+        push(`EN // ${PARTNER_MORSE.en}`, "fth-console__line--sys");
+        push(
+          "NOTE // FULL TABLE OFFLINE — PARTNER CARRIER + BLOOD PHRASE ONLY",
+          "fth-console__line--sys"
+        );
+        return;
+      }
+
+      const partnerHit = PARTNER_MORSE.enAlts.some((a) => norm(a) === inNorm) ||
+        inNorm === norm(PARTNER_MORSE.en);
+      if (partnerHit) {
+        push("TRANSLATE // PARTIAL HIT — PARTNER MORSE ROW", "fth-console__line--ok");
+        push(`EN // ${PARTNER_MORSE.en}`, "fth-console__line--sys");
+        push(`MORSE // ${PARTNER_MORSE.code}`, "fth-console__line--sys");
+        push(
+          "NOTE // FULL TABLE OFFLINE — PARTNER CARRIER + BLOOD PHRASE ONLY",
+          "fth-console__line--sys"
+        );
+        return;
+      }
+
+      let hit = null;
+      if (inNorm === norm(en) || inNorm === norm(`${en}.`)) hit = "en";
+      else if (inNorm === norm(arLatn)) hit = "arLatn";
+      else if (payload.replace(/\s+/g, "") === ar.replace(/\s+/g, "")) hit = "ar";
+      else if (inHex === hex) hit = "hex";
+
+      if (!hit) {
+        FTH_HUB.translateMiss.split("\n").forEach((line) => push(line, "fth-console__line--err"));
+        audio.play("deny");
+        return;
+      }
+
+      push("TRANSLATE // PARTIAL HIT — BOUND CORPUS ROW", "fth-console__line--ok");
+      push(`EN // ${en}`, "fth-console__line--sys");
+      push(`AR-LATN // ${arLatn}`, "fth-console__line--sys");
+      push(`AR // ${ar}`, "fth-console__line--sys");
+      push(`HEX // ${hex}`, "fth-console__line--sys");
+      push(
+        "NOTE // FULL MULTILINGUAL TABLE OFFLINE — BLOOD PHRASE + PARTNER MORSE ONLY",
+        "fth-console__line--sys"
+      );
       return;
     }
 

@@ -28,9 +28,9 @@ export const LORE_CATALOG = {
       "trail": [
         "SHIP MEMORY"
       ],
-      "search": "sturm mem/sturm # sturm\n\nsplinter-nation moon of **uros**. contested belt history; now home to generations of nivian rebels, arkhidian outcasts, and locals born under neither banner.\n\nsurface: deserts interrupted by failed crusade woodland and water. empire relay is dead here. expect salvage economies, distrust of khans, and weather that does not care about vows.",
+      "search": "sturm mem/sturm # sturm\n\nsplinter-nation moon of **uros** (old belt name **zezura**). contested belt history; now home to generations of nivian rebels, arkhidian outcasts, and locals born under neither banner.\n\nsurface: deserts interrupted by failed crusade woodland and water. empire relay is dead here. expect salvage economies, distrust of khans, and weather that does not care about vows.",
       "recovered": true,
-      "body": "# Sturm\n\nSplinter-Nation moon of **Uros**. Contested belt history; now home to generations of Nivian rebels, Arkhidian outcasts, and locals born under neither banner.\n\nSurface: deserts interrupted by failed crusade woodland and water. Empire relay is dead here. Expect salvage economies, distrust of Khans, and weather that does not care about vows."
+      "body": "# Sturm\n\nSplinter-Nation moon of **Uros** — the parent world still indexed under its old belt name, **Zezura**. Contested belt history; now home to generations of Nivian rebels, Arkhidian outcasts, and locals born under neither banner.\n\nSurface: deserts interrupted by failed crusade woodland and water. Empire relay is dead here. Expect salvage economies, distrust of Khans, and weather that does not care about vows."
     },
     {
       "id": "mem-003",

@@ -4,7 +4,7 @@
  */
 
 /* ---------------------------------------------------------------------------
-   STATUS progress storage keys (also listed in cold-start wipe list)
+   STATUS progress storage keys (also wiped by progress cold start)
    --------------------------------------------------------------------------- */
 export const ARG_PROGRESS_KEYS = {
   hull: "lattice.hull",
@@ -15,6 +15,23 @@ export const ARG_PROGRESS_KEYS = {
   /** Shuffled seal ids within veil / neutral / scourge bands */
   sealOrder: "lattice.sealOrder",
 };
+
+/* ---------------------------------------------------------------------------
+   Intercept blood carrier poem — typed near 033.3 (carrier-0333.mp3)
+   `at` = seconds into the bed (tweak freely)
+   --------------------------------------------------------------------------- */
+export const BLOOD_LYRICS = [
+  { at: 0.21, text: "THE EMPRESS GIVES HER REWARD" },
+  { at: 2.34, text: "SO THE FAITHFUL MAY FILL THEIR CUPS" },
+  { at: 4.97, text: "A WINE ONLY SHE CAN GIVE" },
+  { at: 8.9, text: "SHE CUTS PURITY POURS" },
+  { at: 11.3, text: "FROM BENEATH THE SKIN" },
+  { at: 13.8, text: "THE IRON RED WITHIN" },
+  { at: 18.01, text: "WERE WE TO DO THE SAME" },
+  { at: 20.02, text: "THE RESULT WOULD BE A SHAME" },
+  { at: 22.7, text: "WHAT IS IT BEING SPILLED?" },
+];
+
 
 /* ---------------------------------------------------------------------------
    Puzzle A — /outer: ship id + khan id unlocks eye (optics flag)
@@ -29,7 +46,7 @@ export const PUZZLE_A = {
   promptKhan: "ENTR KHAN ID",
   successLine: "OUTER AUTH OK — OPTICS BUS ARMED",
   helpLine:
-    "CMDS: /help · /outer · /inner · /landing · /volume · /protocol · /echo · /moon · /edge",
+    "CMDS: /help · /outer · /inner · /landing · /volume · /protocol · /echo · /moon · /edge · /translate · /passage",
   unknownLine: "CMD NOT RECOGNIZED — TYPE /help FOR COMMAND LIST",
 };
 
@@ -52,7 +69,7 @@ export const FTH_HUB = {
   protocolPrompt: "ENTR STORM PROTOCOL PHRASE",
   protocolAnswers: ["unconquered", "unconquered storm", "teavicta"],
   protocolOk: [
-    "PROTOCOL OK — TEAVICTA DOSSIER FLAG SET",
+    "PROTOCOL OK — STORM AUTH CLEARED",
     "AUTH RESIDUE // VOLUME INDEX 540",
   ].join("\n"),
   protocolDeny: "ERR — PROTOCOL REJECTED",
@@ -60,7 +77,7 @@ export const FTH_HUB = {
     "ECHO // DAMAGE ORDER REPLAY",
     "EL0 @ 03:14:08 → WL3 @ 03:29:41 → NR5 @ 03:47:19",
     "TIME RULE // (first digit of each HH) → 760 HEIXIN VOLUME",
-    "SERIALS FOR CHART LOCK // EL0 WL3 NR5",
+    "SERIALS LOGGED // EL0 WL3 NR5",
   ].join("\n"),
   echoNeedInner: "ECHO SEALED — RESTORE INNER FIRST",
   moonUsage: "USAGE: /moon <name>  — prison-moon ledger lookup",
@@ -76,9 +93,19 @@ export const FTH_HUB = {
     "EDGE CARRIER LOCKED",
     "TOKEN // NONUS-EDGE",
     "VOLUME INDEX // 980",
-    "CHART VOL LOCK ACCEPTS TOKEN NONUS-EDGE",
   ].join("\n"),
   edgeDeny: "ERR — CARRIER DEAD",
+  translateUsage: [
+    "STATUS // DEGRADED — FULL LEXICON CORRUPTED",
+    "PARTIAL LEXICON RECOVERY // EMPIRE MOTTO (EN · AR-LATN · AR · HEX)",
+    "PARTIAL LEXICON RECOVERY // MORSE KEY (.-/  ·  EN)",
+    "USAGE: /translate <string>",
+  ].join("\n"),
+  translateMiss: [
+    "TRANSLATE // LEXICON MISS",
+    "ERR — INPUT NOT IN BOUND CORPUS",
+    "HINT // BLOOD PHRASE TABLE · OR PARTNER MORSE ROW",
+  ].join("\n"),
 };
 
 /* ---------------------------------------------------------------------------
@@ -214,7 +241,86 @@ export const BAY_UNLOCKS = {
 };
 
 /* ---------------------------------------------------------------------------
-   Chart puzzles — unlock dossier (seal order) only; not volume codes
+   Partner signal — Heixin Flight Log audio · Chart Morse · /translate
+   --------------------------------------------------------------------------- */
+export const PARTNER_MORSE = {
+  /** `/` = space between letters — matches Log audio "I MISS U" */
+  code: "../--/../.../.../..-",
+  en: "I MISS U",
+  enAlts: ["i miss u", "i miss you", "imiss u", "imissyou", "i m i s s u"],
+};
+
+export function normalizeMorseCode(raw) {
+  return String(raw ?? "")
+    .trim()
+    .replace(/[·•]/g, ".")
+    .replace(/[—–_]/g, "-")
+    .replace(/\|/g, "/")
+    .replace(/\s+/g, "/")
+    .replace(/\/+/g, "/")
+    .replace(/^\/+|\/+$/g, "");
+}
+
+export function morseCodesMatch(a, b) {
+  return normalizeMorseCode(a) === normalizeMorseCode(b);
+}
+
+export function decodeMorseLetters(raw) {
+  const table = {
+    ".-": "A",
+    "-...": "B",
+    "-.-.": "C",
+    "-..": "D",
+    ".": "E",
+    "..-.": "F",
+    "--.": "G",
+    "....": "H",
+    "..": "I",
+    ".---": "J",
+    "-.-": "K",
+    ".-..": "L",
+    "--": "M",
+    "-.": "N",
+    "---": "O",
+    ".--.": "P",
+    "--.-": "Q",
+    ".-.": "R",
+    "...": "S",
+    "-": "T",
+    "..-": "U",
+    "...-": "V",
+    ".--": "W",
+    "-..-": "X",
+    "-.--": "Y",
+    "--..": "Z",
+  };
+  const compact = normalizeMorseCode(raw);
+  if (!compact) return "";
+  return compact
+    .split("/")
+    .filter(Boolean)
+    .map((sym) => table[sym] ?? "?")
+    .join(" ");
+}
+
+/* ---------------------------------------------------------------------------
+   Empire blood phrase — Terra dossier scrap · Deshret purge · /translate
+   --------------------------------------------------------------------------- */
+export const EMPIRE_BLOOD_PHRASE = {
+  en: "All our blood is red",
+  /** English-letter phonetic Arabic (shown in Terra chrono hub) */
+  arLatn: "kullu dima'ina ahmar",
+  ar: "كُلُّ دِمَائِنَا أَحْمَر",
+};
+
+/** UTF-8 hex of the English Empire phrase (no trailing period). */
+export function empireBloodPhraseHex() {
+  const bytes = new TextEncoder().encode(EMPIRE_BLOOD_PHRASE.en);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/* ---------------------------------------------------------------------------
+   Chart puzzles — unlock dossier (seal order) only; not Terminal residue crumbs
    --------------------------------------------------------------------------- */
 export const CHART_PUZZLES = {
   qamor: {
@@ -237,69 +343,106 @@ export const CHART_PUZZLES = {
     prompt: "CORRUPTION PURGE QUERY",
     hint: "Recompile archive anchor passage",
     lines: [
-      { id: "l5", text: "THE IRON RED WITHIN" },
-      { id: "l1", text: "SO THE FAITHFUL MAY FILL THEIR CUPS" },
-      { id: "l7", text: "THE RESULT WOULD BE A SHAME" },
-      { id: "l0", text: "THE EMPRESS GIVES HER REWARD" },
-      { id: "l3", text: "SHE CUTS PURITY POURS" },
-      { id: "l8", text: "BLOOD IS WHAT IS BEING SPILLED" },
-      { id: "l2", text: "A WINE ONLY SHE CAN GIVE" },
-      { id: "l6", text: "WERE WE TO DO THE SAME" },
-      { id: "l4", text: "FROM BENEATH THE SKIN" },
+      { id: "l5", text: "THE IRON RED WITHIN", glyph: "▒HE IRON R▒▪ WITHIN" },
+      {
+        id: "l1",
+        text: "SO THE FAITHFUL MAY FILL THEIR CUPS",
+        glyph: "SO TH□ FAITHFUL MAY ▓▫■L T▄EIR CUP░",
+      },
+      {
+        id: "l7",
+        text: "THE RESULT WOULD BE A SHAME",
+        glyph: "THE R▪SULT WOU▒D BE █ SHA▪E",
+      },
+      {
+        id: "l0",
+        text: "THE EMPRESS GIVES HER REWARD",
+        glyph: "▄HE EMPRE□▄ GIVES H□▄ REWARD",
+      },
+      { id: "l3", text: "SHE CUTS PURITY POURS", glyph: "▀HE CUT▄ P▀RITY POU▪S" },
+      {
+        id: "l8",
+        text: "BLOOD IS WHAT IS BEING SPILLED",
+        glyph: "BLO□D ▪S WHAT I▒ BEING SP▒LL▓D",
+      },
+      {
+        id: "l2",
+        text: "A WINE ONLY SHE CAN GIVE",
+        glyph: "A WI▀E ■N░Y SHE CAN GIV▪",
+      },
+      { id: "l6", text: "WERE WE TO DO THE SAME", glyph: "WERE W░ TO ▀O THE ▄AME" },
+      { id: "l4", text: "FROM BENEATH THE SKIN", glyph: "FR█M BE▪E▓TH THE ▪KIN" },
     ],
     /** Blood carrier verse — final line restated (not a question) */
     answer: ["l0", "l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8"],
   },
   terra: {
-    type: "text",
+    type: "chrono-rings",
     prompt: "CORRUPTION PURGE QUERY",
-    hint: "Flight Log remembers what endures.",
-    answers: [
-      "hold fast",
-      "holdfast",
-      "HOLD FAST",
-      "hold-fast",
-    ],
+    hint: "Complete chronoal realignment",
   },
   deshret: {
-    type: "dial",
+    type: "text",
     prompt: "CORRUPTION PURGE QUERY",
-    hint: "Sturm weather names the prison brand step — five ticks from dawn.",
-    steps: 8,
-    answer: 5,
+    hint: "Recovery key // Empire phrase",
+    answers: [
+      EMPIRE_BLOOD_PHRASE.en,
+      `${EMPIRE_BLOOD_PHRASE.en}.`,
+      "all our blood is red",
+      "all our blood is red.",
+    ],
   },
   teavicta: {
     type: "cardinal-eye",
     prompt: "CORRUPTION PURGE QUERY",
-    hint: "Cardinal realignment required.",
+    hint: "Cardinal realignment required",
     /** Compass starts East; each correct look advances the ribbon. */
     answer: ["E", "W", "N", "S"],
   },
   uros: {
     type: "text",
     prompt: "CORRUPTION PURGE QUERY",
-    hint: "Sturm's free blurb carries the crash mark.",
-    answers: ["vx-48", "vx48", "VX-48", "vx 48"],
+    hint: "Recovery key // Original designation",
+    answers: ["zezura", "Zezura", "ZEZURA"],
   },
   heixin: {
-    type: "text",
-    prompt: "CORRUPTION PURGE QUERY // TERMINAL GATED",
-    hint: "/echo or STATUS after /inner.",
-    answers: ["el0 wl3 nr5", "el0wl3nr5", "EL0 WL3 NR5", "EL0WL3NR5"],
-    terminalGated: true,
+    type: "morse-translate",
+    prompt: "CORRUPTION PURGE QUERY",
+    hint: "Carrier decode // Partner signal",
+    morse: PARTNER_MORSE.code,
+    answers: [PARTNER_MORSE.en, ...PARTNER_MORSE.enAlts],
   },
   haider: {
-    type: "text",
+    type: "lights-out",
     prompt: "CORRUPTION PURGE QUERY",
-    hint: "Haider journal keywords prickly / crossing.",
-    answers: ["prickly", "still you", "stillyou"],
+    hint: "Recover data blocks",
+    rows: 3,
+    cols: 5,
+    /**
+     * PDTA-style 3×5 lights: click toggles self + orthogonal neighbors.
+     * Starts all dark; solved when every cell is lit.
+     */
+    start: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    goal: "all-on",
   },
   vol: {
-    type: "flag",
-    prompt: "CORRUPTION PURGE QUERY // TERMINAL GATED",
-    hint: "Run /edge on Terminal with the greeting carrier.",
-    hullFlag: "volEdge",
-    terminalGated: true,
+    type: "orbit-order",
+    prompt: "CORRUPTION PURGE QUERY",
+    hint: "Resync celestial structure",
+    /** Tray / commit require this many other dossier purges. */
+    requireDossiers: 3,
+    /** Full inner → outer reference (subset ranked from this). */
+    answer: [
+      "qamor",
+      "ikeph",
+      "terra",
+      "deshret",
+      "teavicta",
+      "uros",
+      "heixin",
+      "haider",
+      "vol",
+    ],
   },
 };
 
@@ -419,6 +562,9 @@ export const SEAL_BANDS = {
   },
 };
 
+/**
+ * Lookup helpers for seals / fragments (Chart · Imperial · Terminal).
+ */
 export function sealById(id) {
   return EMPIRE_SEALS.find((s) => s.id === id) ?? null;
 }
@@ -430,6 +576,7 @@ export function sealByPlanetId(planetId) {
   return EMPIRE_SEALS.find((s) => s.planetId === id) ?? null;
 }
 
+/** Resolve a seal from a recovered fragment word (tray / /volume). */
 export function sealByFragment(fragment) {
   const f = String(fragment ?? "")
     .trim()
@@ -454,8 +601,12 @@ export const IMPERIAL_SLOTS = EMPIRE_SEALS.map((s, i) => ({
 }));
 
 /**
- * Chart dossiers — para 1 = planetary facts; para 2 ends on the seal name.
+ * Chart dossiers — edit planet-by-planet.
+ * `facts` = planetary description (para 1).
+ * `sealWhy` = why this seal fits; end on the seal name (para 2).
  * Yellow seal header under the title only after Imperial bind.
+ *
+ * Sturm’s free blurb lives in SYSTEM_CHART.sturm (content/boot-content.js).
  */
 export const PLANET_DOSSIERS = {
   qamor: {
@@ -478,7 +629,7 @@ export const PLANET_DOSSIERS = {
     title: "TERRA",
     sealId: "resolution",
     facts:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum rhoncus est pellentesque elit ullamcorper dignissim cras tincidunt lobortis feugiat vivamus at augue eget arcu dictum varius duis at consectetur.",
+      `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum rhoncus est pellentesque elit ullamcorper dignissim cras tincidunt lobortis feugiat vivamus at augue eget arcu dictum varius duis at consectetur. Empire scrap still stamps the blood creed in phonetic Arabic — ${EMPIRE_BLOOD_PHRASE.arLatn}.`,
     sealWhy:
       "Lorem mollis aliquam ut porttitor leo a diam sollicitudin tempor id eu nisl nunc mi ipsum faucibus vitae aliquet nec ullamcorper sit amet risus nullam eget felis eget nunc Resolution.",
   },

@@ -3,11 +3,17 @@
  */
 
 import { audio } from "./audio.js";
-import { typeText, revealPanel } from "./motion.js";
-import { CHANNEL_TITLES } from "./clearance.js";
-import { hasImperialClearance } from "./milestones.js";
+import {
+  CHANNEL_TITLES,
+  hasImperialClearance,
+  refreshGuestCorruptDisplay,
+} from "./clearance.js";
 import { MUSIC } from "../content/boot-content.js";
-import { refreshGuestCorruptDisplay } from "./guest.js";
+import {
+  areAllPlanetDossiersUnlocked,
+  areAllFragmentsRecovered,
+} from "./progress.js";
+import { typeText, revealPanel, corruptChromeLabel } from "./motion.js";
 
 /* ==========================================================================
    NAVIGATION — channel switching + typed banner title
@@ -18,6 +24,112 @@ let bannerTypeAbort = { skipped: true };
 
 /** Blocks channel switches (e.g. during Imperial bind sequence). */
 let navInteractionLocked = false;
+
+const CHROME_CLEAR = {
+  terminal: {
+    label: "TERMINAL",
+    title: "FTHFLL // KERNEL INTERFACE",
+  },
+  overview: {
+    label: "STATUS",
+    title: "HULL TELEMETRY // CRAFT FUNCTIONALITY",
+  },
+  flightlog: {
+    label: "FLIGHT LOG",
+    title: "INTERNAL DATABASE // PERSONAL RECORD",
+  },
+  imperial: {
+    label: "IMPERIAL CLEARANCE",
+    title: "EMERGENCY OVERRIDE // RECOVERY AUTHORIZATION",
+  },
+  archives: {
+    label: "ARCHIVES",
+    title: "ARCHIVES // SHIP MEMORY",
+  },
+  cartography: {
+    label: "SYSTEM MAP",
+    title: "CARTOGRAPHY // STELLAR CHART",
+  },
+  diagnostics: {
+    label: "DIAGNOSTICS",
+    title: "FIDELITY BUS // SIGNAL DIAGNOSTICS",
+  },
+  "guest-campaign-1": {
+    label: "CAMPAIGN 1",
+    title: "EXTERNAL // CAMPAIGN 1",
+  },
+};
+
+function ensureClearChrome(btn, panelId) {
+  const known = CHROME_CLEAR[panelId];
+  if (!btn.dataset.clearLabel) {
+    const raw = (btn.textContent || known?.label || "").replace(/\s+/g, " ").trim();
+    btn.dataset.clearLabel = known?.label || raw;
+  }
+  if (!btn.dataset.clearTitle) {
+    btn.dataset.clearTitle =
+      known?.title || btn.dataset.channelTitle || CHANNEL_TITLES[panelId] || "";
+  }
+}
+
+function setNavButtonLabel(btn, label) {
+  btn.textContent = label;
+}
+
+export function refreshChannelCorruption() {
+  const chartCorrupt = !areAllPlanetDossiersUnlocked();
+  const flogCorrupt = !areAllFragmentsRecovered();
+
+  document.querySelectorAll(".nav-item[data-panel]").forEach((btn) => {
+    const panelId = btn.dataset.panel;
+    if (!panelId || panelId === "guest-corrupt") return;
+
+    ensureClearChrome(btn, panelId);
+    const locked = btn.classList.contains("is-locked");
+    const special =
+      (panelId === "cartography" && chartCorrupt) ||
+      (panelId === "flightlog" && flogCorrupt);
+    const corrupt = locked || special;
+    const seed = panelId.length + 4;
+    const clearLabel = btn.dataset.clearLabel;
+    const clearTitle = btn.dataset.clearTitle;
+
+    if (corrupt) {
+      setNavButtonLabel(btn, corruptChromeLabel(clearLabel, seed));
+      btn.dataset.channelTitle = corruptChromeLabel(clearTitle, seed + 2);
+      btn.classList.add("is-chrome-corrupt");
+    } else {
+      setNavButtonLabel(btn, clearLabel);
+      btn.dataset.channelTitle = clearTitle;
+      btn.classList.remove("is-chrome-corrupt");
+    }
+  });
+
+  document.querySelectorAll(".nav-group--guest .nav-item--toggle").forEach((btn) => {
+    if (!btn.dataset.clearLabel) btn.dataset.clearLabel = "GUEST CHANNEL";
+    const locked = btn.classList.contains("is-locked");
+    const clear = btn.dataset.clearLabel;
+    const label = locked ? corruptChromeLabel(clear, 11) : clear;
+    btn.classList.toggle("is-chrome-corrupt", locked);
+    btn.replaceChildren();
+    btn.append(document.createTextNode(`${label} `));
+    const caret = document.createElement("span");
+    caret.className = "nav-item__caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.textContent = "▼";
+    btn.appendChild(caret);
+  });
+
+  const banner = document.getElementById("channel-banner");
+  const active = document.querySelector(".nav-item[data-panel].is-active");
+  if (
+    banner &&
+    active?.classList.contains("is-chrome-corrupt") &&
+    active.dataset.channelTitle
+  ) {
+    banner.textContent = active.dataset.channelTitle;
+  }
+}
 
 export function setNavInteractionLocked(locked) {
   navInteractionLocked = Boolean(locked);
@@ -47,6 +159,10 @@ export function initNav() {
   if (!rail) return;
 
   let revealing = false;
+  refreshChannelCorruption();
+  window.addEventListener("lattice:dossier", refreshChannelCorruption);
+  window.addEventListener("lattice:fragments", refreshChannelCorruption);
+  window.addEventListener("lattice:clearance", refreshChannelCorruption);
 
   rail.addEventListener("click", async (e) => {
     const toggle = e.target.closest(".nav-item--toggle");
@@ -126,24 +242,9 @@ export function initNav() {
 }
 
 /* ==========================================================================
-   CHRONO — UTC clock
+   CHRONO — re-exported from chrono.js for older imports
    ========================================================================== */
 
-export function startChrono() {
-  const el = document.getElementById("chrono");
-  if (!el || el.dataset.running === "1") return;
-  el.dataset.running = "1";
-  const tick = () => {
-    const now = new Date();
-    const h = String(now.getUTCHours()).padStart(2, "0");
-    const m = String(now.getUTCMinutes()).padStart(2, "0");
-    const s = String(now.getUTCSeconds()).padStart(2, "0");
-    el.textContent = `${h}:${m}:${s} UTC`;
-    el.dateTime = now.toISOString();
-  };
-  tick();
-  setInterval(tick, 1000);
-}
 
 /* ==========================================================================
    DIAGNOSTICS / AUDIO UI
@@ -307,12 +408,12 @@ export function initSystems() {
   bindFillBar(scan, (v) => {
     document.documentElement.style.setProperty(
       "--scan-opacity",
-      String(0.04 + (v / 100) * 0.18)
+      String(0.1 + (v / 100) * 0.28)
     );
   });
   {
     const v = readFillBarValue(scan) / 100;
-    document.documentElement.style.setProperty("--scan-opacity", String(0.04 + v * 0.18));
+    document.documentElement.style.setProperty("--scan-opacity", String(0.1 + v * 0.28));
   }
 
   document.body.addEventListener("click", (e) => {

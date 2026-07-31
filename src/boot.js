@@ -32,8 +32,9 @@ import { unlockChannelsForImperialBind } from "./progress.js";
 import { initHullPlan } from "./hull.js";
 import { initFlightLog } from "./flight-log.js";
 import { setWhisperPadVisible, whisperPadControl } from "./whisper.js";
-import { typeChannelBanner, startChrono, updateAudioToggle } from "./nav.js";
-import { wipeLatticeProgress } from "./cold-start.js";
+import { typeChannelBanner, updateAudioToggle } from "./nav.js";
+import { startChrono } from "./chrono.js";
+import { wipeLatticeProgress } from "./progress.js";
 
 /* ==========================================================================
    BOOT SEQUENCE — clearance keypad → log → logo → hub

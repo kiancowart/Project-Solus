@@ -4,7 +4,7 @@ Friends never see this file.
 
 **One operator sheet:** puzzle glossary (top) + walkthrough + paste pins + playtest.  
 **Design bible** (engagement, funnels, phases): [`MASTER.md`](./MASTER.md)  
-**Editable answers:** [`content/arg-path.js`](../../content/arg-path.js) · [`content/boot-content.js`](../../content/boot-content.js) · [`content/blood-lyrics.js`](../../content/blood-lyrics.js)
+**Editable answers:** [`content/arg-path.js`](../../content/arg-path.js) · [`content/boot-content.js`](../../content/boot-content.js) · [`content/flight-log-entries.js`](../../content/flight-log-entries.js)
 
 **Reset:** `?cold=1` on intercept or index. Cold-wipe after changing fragments / volumes.  
 **House rules:** Share URL + *methods*, not codes. □ = Celeste · ▽ = Imperial Triad.
@@ -37,11 +37,11 @@ Discord (pin intercept URL only)
 | Whisper | please → **blood** → **512** → **reward** → **no** |
 | Terminal | see **Terminal (FTH)** below — all cmds + prompts |
 | STATUS | **EL0 → WL3 → NR5** · bays STELLAR FIX / PERSONAL RECORD |
-| Volumes | **512 215 320 430 540 650 760 870 980** |
+| Volumes | Residue crumbs **215 · 430 · 540 · 760 · 870 · 980** (STATUS / Terminal tips — not Log locks) |
 | Fragments | **HIVE OATH CARA EXILE FAITH STURM SILENCE SPIKE VESPER** |
 
-Dual layer: **volume** = 3-digit journal airlock · **fragment** = diegetic well word (click → tray).  
-Wrong Imperial bind → **deny-shake** (no `SEAL HOLDS`).
+Dual layer: **fragment** = diegetic well word (click → tray) · **Chart dossier** = bind order.  
+Flight Log is **flat** (no journal airlocks). 3-digit residue numbers in STATUS / Terminal are crumbs, not locks.
 
 ---
 
@@ -96,18 +96,20 @@ Never pin “the password is 512.” Fiction points via **G512** / Triad languag
 |-------|--------------------|-----------------|
 | `/help` | — | Lists cmds |
 | `/outer` | `ENTR SHIP ID` → `ENTR KHAN ID` | Ship **G512** → Khan **S. Raei** (spaces/period optional: `S RAEI`, `S.RAEI`) → optics |
-| `/inner` | `DAMAGED PART SERIALS` | **EL0 WL3 NR5** (compact ok). Also arms **outer/optics** if not done. Prints canopy checksum **215** |
-| `/whoami` | — | Identity · plate **870** · flare seq **B · A · C** (Qamor Chart) |
-| `/protocol` or `/storm` | `ENTR STORM PROTOCOL PHRASE` | **unconquered** / **unconquered storm** / **teavicta** → Teavicta flag + volume **540** |
-| `/echo` | — (needs INNER) | Damage times + Heixin volume **760** + serials for Chart |
+| `/inner` | `DAMAGED PART SERIALS` | **EL0 WL3 NR5** (compact ok). Also arms **outer/optics** if not done. INNER live shows Ikeph crumb **215** |
+| `/landing` or `/land` | — | Landing-gear actuation profiles (Qamor Chart uses spoil/rough: **L-2 → L-1 → L-3 → L-5**) |
+| `/protocol` or `/storm` | `ENTR STORM PROTOCOL PHRASE` | **unconquered** / **unconquered storm** / **teavicta** → volume residue **540** (Chart Teavicta is separate: cardinal eye) |
+| `/echo` | — (needs INNER) | Damage times + Heixin volume **760** + serials |
 | `/moon` | — | Usage |
 | `/moon kaph` | — | Catalog **430** (Deshret) |
-| `/edge` or `/carrier` | `ENTR DEAD CARRIER` | **097.9** / **0979** / **97.9** → Vol flag + volume **980** + token `NONUS-EDGE` |
+| `/edge` or `/carrier` | `ENTR DEAD CARRIER` | **097.9** / **0979** / **97.9** → volume **980** + token `NONUS-EDGE` |
+| `/translate` | optional string | Empire blood phrase + partner Morse lexicon |
+| `/passage` | — | Ikeph Empress / blood verse dump |
 | `/volume` | — | Usage |
 | `/volume <planet>` or `/bind <planet>` | — | Confirm fragment **only after** claim |
 | `Celeste` (no slash) | — | **Turn around.** (no unlock) |
 
-Shipped help line: `/help · /outer · /inner · /whoami · /volume · /protocol · /echo · /moon · /edge`
+Shipped help line: `/help · /outer · /inner · /landing · /volume · /protocol · /echo · /moon · /edge · /translate · /passage`
 
 ---
 
@@ -120,9 +122,9 @@ Damaged order for `/inner`: **EL0** (ENG·L) → **WL3** (WINGS L) → **NR5** (
 | ENG·L | **EL0** | Damage #1 |
 | WINGS L | **WL3** | Damage #2 |
 | NDL·R | **NR5** | Damage #3 |
-| FWD·CAM | FC1 | Cradle glyph (Terra Chart) |
-| NDL·L | NL2 | Cradle glyph |
-| WINGS R | WR4 | Cradle glyph |
+| FWD·CAM | FC1 | Ok / flavor |
+| NDL·L | NL2 | Ok / flavor |
+| WINGS R | WR4 | Ok / flavor |
 | MSL·TOP | MT6 | Flavor |
 | AFT·CAM | AC7 | Flavor |
 | ENG·R | ER8 | Flavor |
@@ -140,35 +142,38 @@ Bind order = inward → outward (Dominion Seal ordinals). Chart unlocks **dossie
 
 | # | Planet | Seal | Chart puzzle answer |
 |--:|--------|------|---------------------|
-| 1 | Qamor | PRIMUS | Sequence **B → A → C** (`/whoami` flare) |
-| 2 | Ikeph | SECUNDUS | Reorder: **first the canopy…** → **table fed…** → **understory…** |
-| 3 | Terra | TERTIUS | Assemble **FC1 · NL2 · WR4** |
-| 4 | Deshret | QUARTUS | Dial tick **5** |
-| 5 | Teavicta | QUINTUS | Flag after `/protocol` success |
-| 6 | Uros | SEXTUS | Text **VX-48** (Sturm free dossier) |
-| 7 | Heixin | SEPTIMUS | **EL0 WL3 NR5** (`/echo` or STATUS) |
-| 8 | Haider | OCTAVUS | **prickly** / **still you** |
-| 9 | Vol | NONUS | Flag after `/edge` success |
+| 1 | Qamor | DEVOTION | Sequence **L-2 → L-1 → L-3 → L-5** (`/landing` rough/spoil profile) |
+| 2 | Ikeph | ERUDITION | Reorder blood poem (`/passage`) — glyph lines → clear order |
+| 3 | Terra | RESOLUTION | Chrono rings — align hours + minutes to real local time, then COMMIT |
+| 4 | Deshret | COMMUNION | Text **All our blood is red** (Empire phrase) |
+| 5 | Teavicta | JUSTICE | Cardinal eye **E → W → N → S** |
+| 6 | Uros | AMBITION | Text **Zezura** (Sturm free dossier — Uros's old name) |
+| 7 | Heixin | DOMINANCE | Log Morse → Chart pad `../--/../.../.../..-` → plaintext **I MISS U** |
+| 8 | Haider | SACRIFICE | Lights-out **3×5** — press **01 · 04 · 05 · 09 · 10 · 12** (all lit) |
+| 9 | Vol | VENGEANCE | Tray first **3** purges → drag onto bar **inner→outer** |
 
 Sturm dossier is free (tutorial shape). Teavicta `?` = Nu Lunae egg (not Imperial).
 
+**Planet descriptions (dossier copy):** edit `PLANET_DOSSIERS` in `content/arg-path.js` (planet-by-planet: `facts` + `sealWhy`). Sturm blurb: `SYSTEM_CHART.sturm` in `content/boot-content.js`.
+
 ---
 
-### Flight Log — volumes
+### Flight Log — residue crumbs (not airlocks)
 
-| Planet | Journal | Volume | How you earn it |
-|--------|---------|--------|-----------------|
-| Qamor | `j-qamor` | **512** | Pad key reuse |
-| Ikeph | `j-ikeph` | **215** | `/inner` canopy checksum |
-| Terra | `j-terra` | **320** | Uros Wake cycle scrap |
-| Deshret | `j-deshret` | **430** | `/moon kaph` |
-| Teavicta | `j-kaph` | **540** | `/protocol` residue |
-| Uros | `j-uros-belt` | **650** | **starts open** |
-| Heixin | `j-heixin` | **760** | `/echo` |
-| Haider | `j-spike` | **870** | Gun plate / `/whoami` |
-| Vol | `j-vol` | **980** | `/edge` |
+Flat chronological log once PERSONAL RECORD bay unlocks. Numbers below show up as STATUS / Terminal tips — they do **not** unlock Log chapters.
 
-Search: exact keywords + words in **recovered** bodies. Cap **5** open hits (Her Story) → `SHOWING 5 OF N — REFINE KEY`. Locked volumes with keyword hits → **KEYWORD PING**.
+| Crumb | Where it appears |
+|-------|------------------|
+| **512** | Pad / ship id (also Qamor flavor) |
+| **215** | INNER live telemetry · `CANOPY CHECKSUM · IKEPH VOL 215` |
+| **320** | Diegetic scrap in Log / lore (Terra) |
+| **430** | `/moon kaph` catalog |
+| **540** | `/protocol` auth residue |
+| **760** | `/echo` time rule |
+| **870** | INNER · `SIDEARM PLATE · KSP-512 · CODE 870` |
+| **980** | `/edge` volume index |
+
+Search: substring filter on title / date / location / body / fragment. No hit cap, no locked volumes.
 
 ---
 
@@ -186,25 +191,25 @@ Search: exact keywords + words in **recovered** bodies. Cap **5** open hits (Her
 | Haider | haider, spike | **SPIKE** |
 | Vol | vol, vesper | **VESPER** (partner) |
 
-Other Log keywords: **wake/cara** (Wake), **sturm**, **dust/cowboy**, **kaph** (Deshret moon entry), **spike/prickly**, **crossing**, **absent**.
+Other searchable prose hooks (not separate airlocks): **wake**, **dust**, **cowboy**, **kaph**, **plate**, **gunsmith**, **crossing**.
 
-Claim: decrypt → click fragment word/chip → Imperial tray → wells in Chart seal order.
+Claim: click fragment word/chip → Imperial tray → wells in Chart seal order.
 
 ---
 
 ### Imperial wells (inward → outward)
 
-| # | Planet | Frag | Volume | Keywords |
-|--:|--------|------|--------|----------|
-| 1 | Qamor | **HIVE** | 512 | qamor, hive |
-| 2 | Ikeph | **OATH** | 215 | ikeph, oath |
-| 3 | Terra | **CARA** | 320 | terra, cara |
-| 4 | Deshret | **EXILE** | 430 | deshret, exile |
-| 5 | Teavicta | **FAITH** | 540 | teavicta, faith, kaph |
-| 6 | Uros | **STURM** | 650 | uros, sturm |
-| 7 | Heixin | **SILENCE** | 760 | heixin, silence |
-| 8 | Haider | **SPIKE** | 870 | haider, spike |
-| 9 | Vol | **VESPER** | 980 | vol, vesper |
+| # | Planet | Frag | Keywords |
+|--:|--------|------|----------|
+| 1 | Qamor | **HIVE** | qamor, hive |
+| 2 | Ikeph | **OATH** | ikeph, oath |
+| 3 | Terra | **CARA** | terra, cara |
+| 4 | Deshret | **EXILE** | deshret, exile |
+| 5 | Teavicta | **FAITH** | teavicta, faith, kaph |
+| 6 | Uros | **STURM** | uros, sturm |
+| 7 | Heixin | **SILENCE** | heixin, silence |
+| 8 | Haider | **SPIKE** | haider, spike |
+| 9 | Vol | **VESPER** | vol, vesper |
 
 Music: **Recursion** from pad **512** until Imperial bind; silence during UNLOCK SEALS; **Ascendancy** after banquet loads. Diagnostics **Track** dropdown (post-Imperial) switches beds. Music slider mutes.
 
@@ -245,7 +250,7 @@ EXTRA: Whisper **reward** then **no**. Eggs: `who are you` → TURN AROUND; **Ki
 1. `/outer` → **G512** → **S. Raei** *or* skip to `/inner`.
 2. `/inner` → **EL0 WL3 NR5** (also arms optics if needed).
 
-EXTRA: `/whoami` · `/protocol` · `/echo` · `/moon` · `/edge` · gated `/volume` · `Celeste` → Turn around. Full answers in glossary.
+EXTRA: `/landing` · `/protocol` · `/echo` · `/moon` · `/edge` · `/translate` · `/passage` · gated `/volume` · `Celeste` → Turn around. Full answers in glossary.
 
 ### 4. STATUS → INNER bays
 
@@ -260,11 +265,9 @@ EXTRA: `/whoami` · `/protocol` · `/echo` · `/moon` · `/edge` · gated `/volu
 
 ### 6. Flight Log
 
-1. Uros open (tutorial). Other volumes need distinct discovery trails (glossary).
-2. Search keywords / recovered prose; max **5** hits; locked **KEYWORD PING**.
-3. Click fragment → tray → wells.
-
-Phase B soft loop: **STURM** (Uros) → **HIVE** (`512`) → **OATH** (`215`) → **CARA** (`320`).
+1. Flat list after PERSONAL RECORD bay — no per-planet airlocks.
+2. Search filters the list; open entries; click fragment words into the tray.
+3. Soft loop: claim **STURM** → **HIVE** → **OATH** → **CARA** (then outer worlds).
 
 ### 7. Imperial Clearance
 
@@ -339,9 +342,9 @@ No handshake → you arrive unsecured. Guest Channel stays colder.
 ### Phase B
 
 1. `?cold=1`  
-2. Handshake → bays → Sturm free → Uros → claim **STURM**  
-3. Qamor **512** → **HIVE**; Ikeph **215** → **OATH**; Terra **320** → **CARA**  
-4. Chart puzzles unlock dossiers (order); volumes stay separate trails  
+2. Handshake → bays → Sturm free → claim **STURM**  
+3. Browse / search Log → **HIVE** · **OATH** · **CARA**  
+4. Chart puzzles unlock dossiers (bind order)  
 5. Tray bind; Terminal instruments + `Celeste` egg  
 
 If the first ten minutes feel stingy, intrigue fails. Depth = MASTER Phases B/C.
@@ -353,8 +356,8 @@ If the first ten minutes feel stingy, intrigue fails. Depth = MASTER Phases B/C.
 | What | File |
 |------|------|
 | STATUS / Imperial / Chart puzzles / FTH strings | `content/arg-path.js` |
-| Pad, Whisper, Guest, Flight Log build | `content/boot-content.js` |
-| Blood poem | `content/blood-lyrics.js` |
-| Flight Log stories | `lore/Player Facing/Flight Log/` → `node scripts/build-flight-log.js` |
+| Pad, Whisper, Guest, SYSTEM_CHART | `content/boot-content.js` |
+| Blood poem | `content/arg-path.js` → `BLOOD_LYRICS` |
+| Flight Log stories (+ `audio` paths) | `content/flight-log-entries.js` |
 | Radio freqs / eggs | `src/intercept.js` |
 | Design / phases | [`MASTER.md`](./MASTER.md) |

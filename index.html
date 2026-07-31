@@ -15,11 +15,18 @@
   <body>
 
     <!-- =====================================================================
-         CRT OVERLAY — scanlines / vignette / flicker (visual only)
+         CRT OVERLAY — diegetic tube stack (visual only; palette/fonts unchanged)
          ===================================================================== -->
     <div class="crt" aria-hidden="true">
+      <div class="crt__glass"></div>
+      <div class="crt__burn"></div>
+      <div class="crt__rgb"></div>
       <div class="crt__scanlines"></div>
+      <div class="crt__grille"></div>
+      <div class="crt__noise"></div>
+      <div class="crt__hsync"></div>
       <div class="crt__vignette"></div>
+      <div class="crt__bezel"></div>
       <div class="crt__flicker"></div>
     </div>
 
@@ -27,8 +34,8 @@
     <!-- =====================================================================
          SCREEN: BOOT — Lattice OS resuscitation sequence
          Edit copy / code in: content/boot-content.js
-         Flight Log stories: lore/Player Facing/Flight Log/ (Obsidian)
-         Rebuilds: node scripts/build-flight-log.js · node scripts/build-lore-catalog.js
+         Flight Log stories: content/flight-log-entries.js (audio under assets/audio/voice/flight-log/)
+         Rebuilds: node scripts/build-lore-catalog.js · (optional Obsidian) node scripts/build-flight-log.js
          Sequence: clearance keypad → log → logo → hub
          ===================================================================== -->
     <section id="boot" class="screen screen--boot" aria-label="System boot">
@@ -121,7 +128,7 @@
             <button type="button" class="gate__key" data-key="9">9</button>
             <button type="button" class="gate__key gate__key--action" data-key="clear" aria-label="Clear">×</button>
             <button type="button" class="gate__key" data-key="0">0</button>
-            <button type="button" class="gate__key gate__key--action" data-key="enter" aria-label="Enter">✓</button>
+            <button type="button" class="gate__key gate__key--action" data-key="enter" aria-label="Commit">✓</button>
           </div>
           <nav class="lattice-routes lattice-routes--gate" id="gate-routes" aria-label="Site routes">
             <a class="lattice-route" data-route="tuner" href="intercept.html" aria-label="Return to tuner">
@@ -144,7 +151,7 @@
             </button>
           </nav>
           <div class="gate__eyes" id="gate-eyes" hidden aria-hidden="true">
-            <img class="gate__face" src="assets/images/666face.png" alt="" />
+            <img class="gate__face" src="assets/images/666face.webp" alt="" />
             <button type="button" class="gate__face-caption">I WEAR NO MASK</button>
           </div>
         </div>
@@ -807,9 +814,10 @@
                           <div class="imperial-tri__banquet" id="imperial-banquet" aria-hidden="true">
                             <img
                               class="imperial-tri__banquet-img"
-                              src="assets/images/banquet.png"
+                              data-src="assets/images/banquet.webp"
                               alt=""
                               draggable="false"
+                              decoding="async"
                             />
                             <p class="imperial-tri__banquet-caption">
                               412042414E51554554204F4620454E54524F5059
@@ -886,7 +894,7 @@
                         maxlength="1"
                         autocomplete="off"
                         spellcheck="false"
-                        aria-label="Type Y or N, then press Enter"
+                        aria-label="Type Y or N, then press Commit"
                       />
                     </label>
                   </div>
@@ -1108,6 +1116,6 @@
     <!-- =====================================================================
          SCRIPTS
          ===================================================================== -->
-    <script src="src/main.js?v=20260723flog" type="module"></script>
+    <script src="src/main.js?v=20260731fuse" type="module"></script>
   </body>
 </html>

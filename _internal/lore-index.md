@@ -12,7 +12,7 @@ The website **is** the terminal of **Cara** — a **G512 Carapace-class** Arkhid
 
 - **Setting:** Crashed on **Sturm**, moon of **Uros**. Splinter space; Empire relay dead.
 - **Spike:** Nickname for **Solus**; later the name of her gun (**KSP-512 / Spike**) so she remembers her partner.
-- **Partner:** Named **VESPER** at the Vol / NONUS fragment (`partnerReveal`). Spike remains Solus’s nickname / gun.
+- **Partner:** Named **VESPER** at the Vol fragment (`partnerReveal`). Spike remains Solus’s nickname / gun.
 - **Ending intent (unwritten in prose):** Solus chooses **not** to repair Cara for flight back to the Hive. She remains alive (Sturm or elsewhere) — possible table NPC.
 - **Tone:** Scarlet faith tech, damaged systems, CRT void. Triangle (▽) = Imperial Triad.
 - **Campaigns:** Guest Channel (`GUEST_CAMPAIGNS` in `content/boot-content.js`).
@@ -62,25 +62,29 @@ Stingers (Web Audio): `milestone`, `reveal`, `imperial` — Her Story / Immortal
 | What | Where | Rebuild |
 |------|--------|---------|
 | Archives digests | `lore/Player Facing/*.md` (not Flight Log) → UI: **Ship Memory** | `node scripts/build-lore-catalog.js` |
-| Flight Log story | `lore/Player Facing/Flight Log/` | `node scripts/build-flight-log.js` |
+| Flight Log story | `content/flight-log-entries.js` (live) | Optional: `node scripts/build-flight-log.js` from Obsidian later |
 | Boot / Whisper / pad | `content/boot-content.js` | — |
+| ARG puzzles / dossiers / blood poem | `content/arg-path.js` | — |
 
-Flight Log frontmatter: `writeOrder` (your chronology) vs `tellOrder` (ARG reveal). See `Flight Log/README.md`.
+Flight Log audio: drop MP3s in `assets/audio/voice/flight-log/` and set `audio` on the entry.
 
 ---
 
 ## Code layout
 
 ```text
-src/           ES modules (boot, clearance, whisper, flight-log, …)
-content/       boot-content.js · lore-catalog.js · flight-log.generated.js
-scripts/       build-lore-catalog.js · build-flight-log.js
-assets/        images · audio
+src/           ES modules — fused access/progress/motion helpers
+               main · boot · nav · clearance · progress · motion · chrono · compass
+               cartography · flight-log · hull · imperial · whisper · archives
+               audio · intercept (standalone page module)
+content/       arg-path.js · boot-content.js · flight-log-entries.js · lore-catalog.js
+scripts/       build-lore-catalog.js · build-flight-log.js (Obsidian framework)
+assets/        images · audio/{music,ui-sfx,voice,voice/flight-log}
 _internal/     author docs — lore-index.md · arg/MASTER.md · arg/README.md
 lore/          → Obsidian Sol System
 ```
 
-Entry: `index.html` → `src/main.js`
+Entry: `index.html` → `src/main.js` · Intercept: `intercept.html` → `src/intercept.js`
 
 ---
 

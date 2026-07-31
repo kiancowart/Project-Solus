@@ -11,30 +11,7 @@ import {
   markFragmentRecovered,
   isDossierUnlocked,
 } from "./progress.js";
-import { prefersReducedMotion, sleep } from "./motion.js";
-
-/** Block/shade glyphs only — no punctuation or math symbols */
-const SCRAMBLE_GLYPHS = "░▒▓█▄▀■□▪▫";
-
-function scrambleText(clear, seed = 0) {
-  const src = String(clear ?? "");
-  if (!src) return "";
-  const n = SCRAMBLE_GLYPHS.length;
-  let out = "";
-  for (let i = 0; i < src.length; i++) {
-    const ch = src[i];
-    if (ch === " " || ch === "\n" || ch === "-" || ch === ".") {
-      out += ch;
-      continue;
-    }
-    // Mix per index (coprime step) so runs aren't identical glyphs
-    const idx =
-      ((seed + 1) * 31 + i * 13 + src.length * 7 + (src.charCodeAt(i) || 0)) %
-      n;
-    out += SCRAMBLE_GLYPHS[idx < 0 ? idx + n : idx];
-  }
-  return out;
-}
+import { prefersReducedMotion, sleep, scrambleText, SCRAMBLE_GLYPHS } from "./motion.js";
 
 async function runDescramble(el, clearText, { durationMs = 900 } = {}) {
   if (!el) return;
@@ -96,10 +73,114 @@ export function initFlightLog() {
   let filterQuery = "";
   let pages = [];
   let pageIndex = 0;
+  let entryAudio = null;
+  let entryAudioRaf = 0;
   /** Descramble plays once per entry per Flight Log channel visit */
   const descrambledIds = new Set();
   /** While set, paint fragments as scrambled so descramble has something to reveal */
   let pendingDescrambleId = null;
+
+  const stopEntryAudio = () => {
+    if (entryAudioRaf) {
+      cancelAnimationFrame(entryAudioRaf);
+      entryAudioRaf = 0;
+    }
+    if (entryAudio) {
+      try {
+        entryAudio.pause();
+      } catch {
+        /* ignore */
+      }
+      entryAudio = null;
+    }
+  };
+
+  const formatClock = (sec) => {
+    if (!Number.isFinite(sec) || sec < 0) return "--:--";
+    const s = Math.floor(sec);
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+  };
+
+  const bindEntryAudio = (entry) => {
+    stopEntryAudio();
+    const root = reader.querySelector("[data-flog-audio]");
+    if (!root) return;
+    const btn = root.querySelector("[data-flog-audio-toggle]");
+    const fill = root.querySelector("[data-flog-audio-fill]");
+    const timeEl = root.querySelector("[data-flog-audio-time]");
+    const src = entry?.audio ? String(entry.audio) : "";
+    if (!src || !btn) {
+      root.classList.add("is-disabled");
+      root.setAttribute("aria-disabled", "true");
+      if (btn) btn.disabled = true;
+      if (timeEl) timeEl.textContent = "--:--";
+      if (fill) fill.style.transform = "scaleX(0)";
+      return;
+    }
+
+    root.classList.remove("is-disabled");
+    root.removeAttribute("aria-disabled");
+    btn.disabled = false;
+    const media = new Audio(src);
+    media.preload = "metadata";
+    entryAudio = media;
+
+    const syncUi = () => {
+      if (!entryAudio) return;
+      const dur = entryAudio.duration;
+      const cur = entryAudio.currentTime || 0;
+      const pct = dur > 0 ? Math.min(1, cur / dur) : 0;
+      if (fill) fill.style.transform = `scaleX(${pct})`;
+      if (timeEl) {
+        timeEl.textContent = Number.isFinite(dur)
+          ? `${formatClock(cur)} / ${formatClock(dur)}`
+          : `${formatClock(cur)} / --:--`;
+      }
+      btn.textContent = entryAudio.paused ? "▶" : "❚❚";
+      btn.setAttribute(
+        "aria-label",
+        entryAudio.paused ? "Play log audio" : "Pause log audio"
+      );
+    };
+
+    const tick = () => {
+      syncUi();
+      if (entryAudio && !entryAudio.paused) {
+        entryAudioRaf = requestAnimationFrame(tick);
+      } else {
+        entryAudioRaf = 0;
+      }
+    };
+
+    media.addEventListener("loadedmetadata", syncUi);
+    media.addEventListener("ended", syncUi);
+    media.addEventListener("error", () => {
+      root.classList.add("is-disabled");
+      btn.disabled = true;
+      if (timeEl) timeEl.textContent = "ERR";
+    });
+
+    btn.addEventListener("click", async () => {
+      if (!entryAudio) return;
+      audio.play("click");
+      try {
+        if (entryAudio.paused) {
+          await entryAudio.play();
+          if (!entryAudioRaf) entryAudioRaf = requestAnimationFrame(tick);
+        } else {
+          entryAudio.pause();
+        }
+      } catch {
+        root.classList.add("is-disabled");
+        btn.disabled = true;
+      }
+      syncUi();
+    });
+
+    syncUi();
+  };
 
   const knownFragments = new Set(
     IMPERIAL_SLOTS.map((s) => String(s.fragment).toUpperCase())
@@ -308,6 +389,7 @@ export function initFlightLog() {
   };
 
   const showIdle = () => {
+    stopEntryAudio();
     activeEntry = null;
     pages = [];
     pageIndex = 0;
@@ -321,6 +403,7 @@ export function initFlightLog() {
   };
 
   const openEntry = async (entry, { replayDescramble = true } = {}) => {
+    stopEntryAudio();
     activeEntry = entry;
     pageIndex = 0;
     const scramble = needsScramble(entry);
@@ -341,16 +424,35 @@ export function initFlightLog() {
 
     reader.innerHTML = `
       <header class="flog-reader__head">
-        <h3 class="flog-reader__title">${escapeHtml(entry.title)}</h3>
-        <div class="flog-reader__cats">
-          <p class="flog-reader__cat">
-            <span class="flog-reader__cat-label">DATE</span>
-            <span class="flog-reader__date">${escapeHtml(entry.date)}</span>
-          </p>
-          <p class="flog-reader__cat">
-            <span class="flog-reader__cat-label">LOCATION</span>
-            <span class="flog-reader__planet${planetCls ? ` ${planetCls}` : ""}" data-flog-planet>${locationInnerHtml(metaShow, { scrambled: locScrambled, hasFragment: Boolean(entry.fragment) })}</span>
-          </p>
+        <div class="flog-reader__head-main">
+          <h3 class="flog-reader__title">${escapeHtml(entry.title)}</h3>
+          <div class="flog-reader__cats">
+            <p class="flog-reader__cat">
+              <span class="flog-reader__cat-label">DATE</span>
+              <span class="flog-reader__date">${escapeHtml(entry.date)}</span>
+            </p>
+            <p class="flog-reader__cat">
+              <span class="flog-reader__cat-label">LOCATION</span>
+              <span class="flog-reader__planet${planetCls ? ` ${planetCls}` : ""}" data-flog-planet>${locationInnerHtml(metaShow, { scrambled: locScrambled, hasFragment: Boolean(entry.fragment) })}</span>
+            </p>
+          </div>
+        </div>
+        <div
+          class="flog-reader__audio"
+          data-flog-audio
+          ${entry.audio ? "" : 'aria-disabled="true"'}
+        >
+          <button
+            type="button"
+            class="flog-reader__audio-toggle"
+            data-flog-audio-toggle
+            aria-label="Play log audio"
+            ${entry.audio ? "" : "disabled"}
+          >▶</button>
+          <div class="flog-reader__audio-track" aria-hidden="true">
+            <div class="flog-reader__audio-fill" data-flog-audio-fill></div>
+          </div>
+          <span class="flog-reader__audio-time" data-flog-audio-time>--:--</span>
         </div>
       </header>
       <div class="flog-reader__stage">
@@ -362,6 +464,8 @@ export function initFlightLog() {
         <button type="button" class="flog-turn flog-turn--next" aria-label="Next page" disabled>›</button>
       </div>
       <p class="flog-reader__folio">PAGE 1 / 1</p>`;
+
+    bindEntryAudio(entry);
 
     reader.querySelector(".flog-turn--prev")?.addEventListener("click", () => {
       if (pageIndex <= 0) return;

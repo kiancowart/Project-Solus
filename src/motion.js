@@ -126,3 +126,119 @@ export async function revealPanel(panel) {
   if (body) await revealTopToBottom(body);
   panel.classList.remove("is-revealing");
 }
+
+/* ==========================================================================
+   CORRUPTION / SCRAMBLE GLYPHS — Flight Log · Chart · chrome
+   ========================================================================== */
+
+/** Block/shade glyphs only — no punctuation or math symbols */
+export const SCRAMBLE_GLYPHS = "░▒▓█▄▀■□▪▫";
+
+export function scrambleText(clear, seed = 0) {
+  const src = String(clear ?? "");
+  if (!src) return "";
+  const n = SCRAMBLE_GLYPHS.length;
+  let out = "";
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === " " || ch === "\n" || ch === "-" || ch === ".") {
+      out += ch;
+      continue;
+    }
+    const idx =
+      ((seed + 1) * 31 + i * 13 + src.length * 7 + (src.charCodeAt(i) || 0)) %
+      n;
+    out += SCRAMBLE_GLYPHS[idx < 0 ? idx + n : idx];
+  }
+  return out;
+}
+
+/**
+ * Punch a few letters out of a string (corruption vibe, still mostly readable).
+ * Non-letters and spaces stay. Deterministic per seed.
+ */
+export function punchLetters(clear, { ratio = 0.18, seed = 1 } = {}) {
+  const src = String(clear ?? "");
+  if (!src) return "";
+  const letters = [];
+  for (let i = 0; i < src.length; i++) {
+    if (/[A-Za-z]/.test(src[i])) letters.push(i);
+  }
+  const punchCount = Math.max(
+    1,
+    Math.min(letters.length - 1, Math.round(letters.length * ratio))
+  );
+  const pick = new Set();
+  let s = (seed * 1103515245 + 12345) >>> 0;
+  while (pick.size < punchCount && letters.length) {
+    s = (s * 1103515245 + 12345) >>> 0;
+    pick.add(letters[s % letters.length]);
+  }
+  let out = "";
+  for (let i = 0; i < src.length; i++) {
+    if (pick.has(i)) {
+      out += SCRAMBLE_GLYPHS[(i * 7 + seed) % SCRAMBLE_GLYPHS.length];
+    } else out += src[i];
+  }
+  return out;
+}
+
+/** Light chrome corruption — a few glyphs, keeps the string recognizable. */
+export function corruptChromeLabel(clear, seed = 3) {
+  return punchLetters(clear, { ratio: 0.22, seed });
+}
+
+function noiseLine(width, seed, t) {
+  const n = SCRAMBLE_GLYPHS.length;
+  let out = "";
+  for (let i = 0; i < width; i++) {
+    const idx = (seed * 17 + i * 13 + t * 7) % n;
+    out += SCRAMBLE_GLYPHS[idx < 0 ? idx + n : idx];
+  }
+  return out;
+}
+
+/**
+ * Animate corruption streams inside `.chart-corrupt-bar` elements.
+ * Returns a stop() function.
+ */
+export function animateCorruptBars(root, clearTitle = "") {
+  if (!root) return () => {};
+  const streams = [...root.querySelectorAll("[data-corrupt-stream]")];
+  const titleEl = root.querySelector("[data-corrupt-title]");
+  if (prefersReducedMotion()) {
+    streams.forEach((el) => {
+      el.textContent = noiseLine(48, 2, 0);
+    });
+    if (titleEl && clearTitle) {
+      titleEl.textContent = scrambleText(clearTitle, 5);
+    }
+    return () => {};
+  }
+
+  let frame = 0;
+  let raf = 0;
+  let alive = true;
+
+  const tick = () => {
+    if (!alive) return;
+    frame += 1;
+    // ~20fps text churn is enough; full 60fps DOM writes were expensive
+    if (frame % 3 === 0) {
+      streams.forEach((el, si) => {
+        const w = Math.max(36, Math.floor((el.parentElement?.clientWidth || 220) / 7));
+        el.textContent = noiseLine(w, si + 3, frame);
+      });
+      if (titleEl && clearTitle && frame % 6 === 0) {
+        titleEl.textContent = scrambleText(clearTitle, frame);
+      }
+    }
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+
+  return () => {
+    alive = false;
+    if (raf) cancelAnimationFrame(raf);
+  };
+}

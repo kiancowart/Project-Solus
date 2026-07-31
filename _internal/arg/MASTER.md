@@ -70,7 +70,7 @@ You do **not** need everyone to finish Imperial Clearance. You need:
 - First reward must arrive **fast** (glow, lock, Celeste, gate).
 - Public proof beats private progress (one `#signals` screenshot > one more hidden layer).
 - Never advertise “finish all nine” as entry.
-- Share **method**, not codes (“read Chart Dominion Seals,” not “journal 4 is 430”).
+- Share **method**, not codes (“read Chart Dominion Seals,” not leftover crumb digits).
 
 ---
 
@@ -217,32 +217,32 @@ Damaged serials (damage order): ENG·L **EL0** → WINGS L **WL3** → NDL·R **
 
 ### Imperial slots (live map)
 
-Orbit **inward → outward**. Moons are entries under parent journals, not separate volumes.
+Orbit **inward → outward**. Flight Log is flat (no per-planet journal airlocks).
 
 **Two layers, not one:**
 
 | Layer | Format | Role |
 |-------|--------|------|
-| **Volume code** | 3-digit (`512`, `215`…) | Journal airlock — earned by that planet’s small puzzle |
-| **Fragment** | Short **diegetic word** (`HIVE`, `VESPER`…) | Imperial well payload — recovered via keyword search, then **click-to-tray** |
+| **Fragment** | Short **diegetic word** (`HIVE`, `VESPER`…) | Imperial well payload — find in Log prose, **click-to-tray** |
+| **Chart dossier** | Liturgical seal prose | Bind **order** only (unlocked per-world Chart puzzle) |
+
+Residue 3-digit crumbs in STATUS / Terminal are flavor tips, not chapter locks.
 
 Fragments tell Solus’s story when read inward → outward. Wrong full bind → **deny-shake** on the wells (no `SEAL HOLDS` copy).
 
-| Slot | Planet | Journal | Fragment | Volume code | Keywords (bind entry) |
-|-----:|--------|---------|----------|-------------|------------------------|
-| 1 | Qamor | j-qamor | **HIVE** | **512** | qamor, hive |
-| 2 | Ikeph | j-ikeph | **OATH** | **215** | ikeph, oath |
-| 3 | Terra | j-terra | **CARA** | **320** | terra, cara |
-| 4 | Deshret | j-deshret | **EXILE** | **430** | deshret, exile |
-| 5 | Teavicta | j-kaph | **FAITH** | **540** | teavicta, faith, kaph |
-| 6 | Uros | j-uros-belt (**starts open**) | **STURM** | **650** | uros, sturm |
-| 7 | Heixin | j-heixin | **SILENCE** | **760** | heixin, silence |
-| 8 | Haider | j-spike | **SPIKE** | **870** | haider, spike |
-| 9 | Vol | j-vol | **VESPER** (partner) | **980** | vol, vesper |
+| Slot | Planet | Fragment | Keywords (search / prose) |
+|-----:|--------|----------|---------------------------|
+| 1 | Qamor | **HIVE** | qamor, hive |
+| 2 | Ikeph | **OATH** | ikeph, oath |
+| 3 | Terra | **CARA** | terra, cara |
+| 4 | Deshret | **EXILE** | deshret, exile |
+| 5 | Teavicta | **FAITH** | teavicta, faith, kaph |
+| 6 | Uros | **STURM** | uros, sturm |
+| 7 | Heixin | **SILENCE** | heixin, silence |
+| 8 | Haider | **SPIKE** | haider, spike |
+| 9 | Vol | **VESPER** (partner) | vol, vesper |
 
-**Moon notes:** Kaph = titled entry under Deshret (`desh-kaph`). Sturm arc = under Uros (`sturm-impact`, `sturm-wake`, `uros-sturm`, `sturm-dust`).
-
-Imperial Clearance opens Archives + Guest and decrypts all Log entries.
+Imperial Clearance opens Archives + Guest and decrypts all Log chrome.
 
 ### Hub save keys
 
@@ -256,34 +256,28 @@ Imperial Clearance opens Archives + Guest and decrypts all Log entries.
 
 | Layer | Role |
 |-------|------|
-| **1 journal ↔ 1 planet** | `IMPERIAL_SLOTS.journalId`. Moons stay *entries* under Deshret / Uros. |
-| **Volume code (3-digit)** | Opens that planet’s journal. Found by solving that planet’s **small puzzle**. |
-| **One bind entry per journal** | Synthetic `{planet}-imperial-key` → fragment **word** for wells. |
-| **Click-to-tray** | Discover bind entry → **clickable fragment chip** → `markFragmentRecovered` → Imperial tray → drag/click into wells. |
-| **Uros** | `startsOpen` tutorial; teaches keyword search; points at Chart seals / Terminal / Terra crumb. |
-| **Qamor** | Volume `512` free after pad (teaches volume-key grammar). |
+| **Flat Flight Log** | `content/flight-log-entries.js` — chronological; fragment entries scramble LOC until Chart dossier. |
+| **Click-to-tray** | Fragment word in prose → click → `markFragmentRecovered` → Imperial tray → wells. |
+| **Chart dossier** | Per-planet Chart puzzle → seal order prose. Sturm free (tutorial). |
+| **Residue crumbs** | STATUS / Terminal 3-digit tips (`215`, `540`, `870`…) — flavor only, not airlocks. |
 
-**Avoid:** nine identical “find three digits on the Chart” hunts.
+**Avoid:** nine identical “find three digits to unlock a journal” hunts (Log no longer uses airlocks).
 
-### Dual-layer contract (volume vs fragment)
+### Dual-layer contract (dossier vs fragment)
 
 ```text
 Planet Chart puzzle → Sturm-style dossier (seal ORDER only)
-Separate volume discovery → Flight Log journal unlock
-    → keyword search
-    → bind entry decrypts
-    → click fragment word/chip → tray
+Flight Log prose → keyword / browse → click fragment word/chip → tray
     → Chart Dominion Seal order → Imperial wells
 ```
 
-- **Volume code** = you *earned* this chapter (airlock) via a distinct discovery verb.
 - **Chart puzzle** = you *earned* the dossier (ordinal / order).
-- **Keyword query** = you *understand* this chapter (search → reframe).
 - **Fragment word** = physical token for the wells (diegetic Solus-arc word).
+- **`/volume <planet>`** = confirms a claimed fragment (not an unlock).
 
-Good: open Qamor with 512 → short entries → search `qamor`/`hive` → click **HIVE** into tray.  
-Bad: crack every volume before any voice hook; or free dossiers that also spell volume digits.  
-Social: share **method** (“unlock Chart dossiers for seal order”), not “journal 4 is 430.”
+Good: browse Log → find **HIVE** → click into tray; Chart Qamor purge for DEVOTION order.  
+Bad: treat STATUS checksums as journal passwords.  
+Social: share **method** (“unlock Chart dossiers for seal order”), not leftover crumb digits.
 
 ### Chart order — Dominion Seals (gated)
 
@@ -296,19 +290,19 @@ Do use a Signalis-*shaped skill* (collect motifs → sort by known grammar):
 - **Sturm** is free (tutorial shape). The Nine are locked. Nu Lunae `?` is a non-Imperial egg.
 - Chart rings are secondary confirmation; dossiers are the shareable method.
 
-### Per-planet puzzles — Chart verb vs volume verb
+### Per-planet puzzles — Chart verb vs residue crumb
 
-| Slot | Planet | Chart verb | Volume discovery | Phase |
-|-----:|--------|------------|------------------|-------|
-| 1 | Qamor | Flare sequence B·A·C | Pad key reuse `512` | **B** |
-| 2 | Ikeph | Hymn reorder | INNER checksum `215` | **B** |
-| 3 | Terra | Cradle glyph assemble | Uros cycle scrap `320` | **B** |
-| 4 | Deshret | Shadow dial tick 5 | `/moon kaph` → `430` | C |
-| 5 | Teavicta | `/protocol` flag | Protocol residue `540` | C |
-| 6 | Uros | Local fix VX-48 (Sturm) | Starts open | **B** |
-| 7 | Heixin | Serial echo | `/echo` time rule `760` | C |
-| 8 | Haider | Spike brand cipher | Gun plate `870` | C |
-| 9 | Vol | `/edge` flag | Carrier `980` | C |
+| Slot | Planet | Chart verb | Residue crumb (flavor) | Phase |
+|-----:|--------|------------|------------------------|-------|
+| 1 | Qamor | Landing sequence L-2→L-1→L-3→L-5 | Pad / ship **512** | **B** |
+| 2 | Ikeph | Blood hymn reorder | INNER checksum **215** | **B** |
+| 3 | Terra | Chrono rings realign | Log / lore scrap **320** | **B** |
+| 4 | Deshret | Empire phrase text | `/moon kaph` **430** | C |
+| 5 | Teavicta | Cardinal eye E→W→N→S | `/protocol` **540** | C |
+| 6 | Uros | Old name Zezura (Sturm) | — | **B** |
+| 7 | Heixin | Partner Morse → plaintext | `/echo` **760** | C |
+| 8 | Haider | Lights-out 3×5 — blocks **01·04·05·09·10·12** | Plate crumb **870** | C |
+| 9 | Vol | First 3 purges on tray → order bar inner→outer | `/edge` **980** | C |
 
 ---
 
@@ -320,15 +314,21 @@ Do use a Signalis-*shaped skill* (collect motifs → sort by known grammar):
 |-----|----------|
 | `/help` | Command list (purposeful only) |
 | `/outer` `/inner` | STATUS unlock spine |
-| `/whoami` | Identity + flare seq + plate **870** |
+| `/landing` | Landing profiles (Qamor Chart spoil sequence) |
 | `/volume` / `/volume <planet>` | Confirm fragment after claim |
-| `/protocol` | Teavicta flag + volume **540** |
+| `/protocol` | Volume residue **540** (Teavicta Chart is cardinal eye) |
 | `/echo` | Heixin instrument (needs INNER) |
 | `/moon <name>` | Kaph catalog → **430** |
-| `/edge` | Vol flag + volume **980** |
+| `/edge` | Volume **980** (carrier greeting) |
+| `/translate` | Partial lexicon — Empire blood phrase + partner Morse |
+| `/passage` | Ikeph Empress verse dump |
 | `Celeste` / `celeste` | Easter: “Turn around.” |
 
 Removed: `/catalog` `/orbit` `/seal` (redundant order spoilers).
+
+### Planet dossier copy
+
+Edit `PLANET_DOSSIERS` in `content/arg-path.js` (one object per planet: `facts`, `sealWhy`). Sturm free blurb: `SYSTEM_CHART.sturm` in `content/boot-content.js`.
 
 ### Phase C notes
 
@@ -396,11 +396,11 @@ If an entry wants >200 words: split, or move to Archives / Guest. Imperial bind 
 
 1. `?cold=1` wipe (clears obsolete fragment drafts)  
 2. Handshake → pad → `/outer` → `/inner` → both bays  
-3. Terminal: `/help`, `/whoami`; type `Celeste` → “Turn around.”  
-4. Sturm free on Chart; Uros open: Impact teaches search → keyword wake → claim **STURM**  
-5. Qamor: volume **512** → search `hive`/`qamor` → claim **HIVE**; Chart flare puzzle → PRIMUS  
-6. Ikeph: checksum **215** → Log → claim **OATH**; Chart hymn → SECUNDUS  
-7. Terra: Uros cycle scrap → **320** → claim **CARA**; Chart cradle → TERTIUS  
+3. Terminal: `/help`, `/landing`; type `Celeste` → “Turn around.”  
+4. Sturm free on Chart; browse Log → claim **STURM**  
+5. Search `hive`/`qamor` → claim **HIVE**; Chart landing sequence → DEVOTION  
+6. Browse Ikeph scrap → claim **OATH**; Chart blood hymn → ERUDITION  
+7. Browse Terra scrap → claim **CARA**; Chart chrono rings → RESOLUTION  
 8. Infer bind **order** from unlocked dossiers  
 9. Partial Imperial bind from tray (wrong seals = deny-shake)  
 
@@ -416,8 +416,8 @@ Deshret/Kaph (`/moon`), Teavicta `/protocol`, Heixin `/echo`, Haider/Vol, Nu Lun
 |------|--------|
 | STATUS / Imperial / slots / dossiers | [`content/arg-path.js`](../../content/arg-path.js) |
 | Pad, Whisper, boot, ambience | [`content/boot-content.js`](../../content/boot-content.js) |
-| Blood poem | [`content/blood-lyrics.js`](../../content/blood-lyrics.js) |
-| Flight Log stories | `lore/Player Facing/Flight Log/` → `node scripts/build-flight-log.js` (or ship `flight-log.generated.js`) |
+| Blood poem | [`content/arg-path.js`](../../content/arg-path.js) → `BLOOD_LYRICS` |
+| Flight Log stories | `content/flight-log-entries.js` (live). Optional Obsidian builder: `node scripts/build-flight-log.js` |
 | Chart geometry | `SYSTEM_CHART` in `boot-content.js` |
 | Broader world | [`_internal/lore-index.md`](../lore-index.md) |
 | Day-of guide + glossary | [`README.md`](./README.md) |
@@ -433,7 +433,7 @@ Deshret/Kaph (`/moon`), Teavicta `/protocol`, Heixin `/echo`, Haider/Vol, Nu Lun
 ## Success criteria
 
 - Friends can invest in **Phase A** in one evening without waiting for Imperial.  
-- Chart puzzles yield bind **order** (dossiers); separate volume discoveries yield **airlocks**; Log keywords yield **fragments** (click-to-tray).  
+- Chart puzzles yield bind **order** (dossiers); Log prose yields **fragments** (click-to-tray).  
 - Terminal feels like Cara’s OS with purposeful instruments only.  
 - Campaign and oneshot groups share the door, diverge at Guest.  
 - This file is the single source of author truth.
