@@ -20,6 +20,8 @@ import {
   isDossierUnlocked,
   markDossierUnlocked,
   getVolTrayPlanets,
+  hasSeenDescramble,
+  markDescrambleSeen,
 } from "./progress.js";
 import { hasImperialClearance } from "./clearance.js";
 import {
@@ -1527,6 +1529,7 @@ export function initCartography() {
       const label = g.querySelector(".chart-svg__label");
       if (!body || !label) return;
       const clear = String(body.name ?? id).toUpperCase();
+      const seenId = `planet:${id}`;
       if (isDossierUnlocked(id)) {
         g.setAttribute("aria-label", body.name);
         // Don't clobber an in-flight descramble (unlock fires refresh twice)
@@ -1534,7 +1537,10 @@ export function initCartography() {
           fitSelectBox(g);
           return;
         }
-        if (animate && label.dataset.latticeClear !== "1") {
+        const alreadySeen =
+          hasSeenDescramble(seenId) || label.dataset.latticeClear === "1";
+        if (animate && !alreadySeen) {
+          markDescrambleSeen(seenId);
           label.dataset.latticeClear = "1";
           if (!label.classList.contains("is-scrambled")) {
             label.textContent = scrambleText(clear, clear.length + 3);
@@ -1544,6 +1550,7 @@ export function initCartography() {
             onFrame: () => fitSelectBox(g),
           }).then(() => fitSelectBox(g));
         } else {
+          markDescrambleSeen(seenId);
           label.dataset.latticeClear = "1";
           label.textContent = clear;
           label.classList.remove("is-scrambled", "is-descrambling");

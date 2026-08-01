@@ -225,7 +225,7 @@ Music: **Recursion** from pad **512** until Imperial bind; silence during UNLOCK
 | Corrupt sub-label | `▓█░4F2·92A` until Imperial |
 | Nu Lunae | Chart `?` / oneshot — Phase C |
 
-Wipe keys (`?cold=1`): `lattice.interceptTuned`, `interceptEcho`, `whisperStep`/`Done`, `hull`, `unlock`, `milestones`, `journals`, `fragments`, `planets`, `clearance` + `.draft`.
+Wipe keys (`?cold=1`): `lattice.interceptTuned`, `interceptEcho`, `whisperStep`/`Done`, `hull`, `unlock`, `milestones`, `journals`, `fragments`, `planets`, `descrambled`, `clearance` + `.draft`.
 
 ---
 

@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="main.css?v=20260731listloc" />
+    <link rel="stylesheet" href="main.css?v=20260731railhide" />
   </head>
   <body>
 
@@ -97,7 +97,7 @@
               <div class="whisper__head" id="whisper-head">KHARON-CELESTE</div>
               <div class="whisper__body">
                 <div class="whisper__log" id="whisper-log" role="log" aria-live="polite"></div>
-                <aside class="whisper__rail crt-rail" id="whisper-rail" hidden aria-hidden="true">
+                <aside class="whisper__rail crt-rail" id="whisper-rail" aria-hidden="true" hidden>
                   <div class="crt-rail__fill" id="whisper-scroll-fill"></div>
                 </aside>
               </div>
@@ -553,7 +553,8 @@
                         </p>
                       </div>
 
-                      <aside class="hull-mon__detail" id="hull-mon-detail">
+                      <div class="hull-mon__detail-scroll crt-scroll">
+                      <aside class="hull-mon__detail crt-scroll__host" id="hull-mon-detail">
                         <div class="hull-mon__await" id="hull-detail-await">
                           <p class="hull-mon__section">HT · FEED</p>
                           <p class="hull-await-copy">AWAITING RECOVERY</p>
@@ -651,6 +652,10 @@
                           </div>
                         </div>
                       </aside>
+                      <aside class="crt-rail crt-scroll__rail" aria-hidden="true" hidden>
+                        <div class="crt-rail__fill"></div>
+                      </aside>
+                      </div>
                     </div>
                   </div>
 
@@ -667,7 +672,8 @@
                       <p class="hull-inner__code">HT.INNER | STATUS // CORRUPTED</p>
                       <p class="hull-await-copy">AWAITING TERMINAL RECOVERY CODE</p>
                     </div>
-                    <div class="hull-inner hull-inner--live" id="hull-inner-live" hidden>
+                    <div class="hull-inner hull-inner--live crt-scroll" id="hull-inner-live" hidden>
+                      <div class="hull-inner__scroll crt-scroll__host">
                       <div class="hull-inner__theatre" aria-hidden="true">
                         <p class="hull-inner__sigil hull-inner__sigil--live">▽</p>
                         <p class="hull-inner__scan is-scan">SCAN · INNER BUS</p>
@@ -693,6 +699,10 @@
                           <p class="hull-bay__hint">MANUAL FLIGHT LOG CORRUPTION PURGE</p>
                         </button>
                       </div>
+                      </div>
+                      <aside class="crt-rail crt-scroll__rail" aria-hidden="true" hidden>
+                        <div class="crt-rail__fill"></div>
+                      </aside>
                     </div>
                   </div>
                 </div>
@@ -709,9 +719,14 @@
               <div class="fth-console" id="fth-console" aria-label="FTHFLL kernel console">
                 <div class="fth-console__head">
                   <span>FTHFLL · KERNEL INTERFACE</span>
-                  <span class="fth-console__mode">RECOVERY</span>
+                  <span class="fth-console__mode">ONLINE</span>
                 </div>
-                <div class="fth-console__log" id="fth-console-log" role="log" aria-live="polite"></div>
+                <div class="fth-console__scroll crt-scroll">
+                  <div class="fth-console__log crt-scroll__host" id="fth-console-log" role="log" aria-live="polite"></div>
+                  <aside class="fth-console__rail crt-rail crt-scroll__rail" aria-hidden="true" hidden>
+                    <div class="crt-rail__fill" id="fth-console-rail-fill"></div>
+                  </aside>
+                </div>
                 <form class="fth-console__form" id="fth-console-form">
                   <p class="fth-console__await is-blink" id="fth-console-await">
                     AWAITING OPERATOR INPUT
@@ -768,7 +783,7 @@
                         INDEX MISS // NO ENTRIES MATCH QUERY
                       </p>
                     </div>
-                    <aside class="flog__rail crt-rail" id="flog-rail" hidden aria-hidden="true">
+                    <aside class="flog__rail crt-rail" id="flog-rail" aria-hidden="true" hidden>
                       <div class="crt-rail__fill" id="flog-rail-fill"></div>
                     </aside>
                   </div>
@@ -918,8 +933,13 @@
                 </header>
                 <div class="adb__main">
                   <aside class="adb__term" aria-label="Archive query terminal">
-                    <div class="adb__log" id="adb-log" role="log" aria-live="polite">
-                      <p class="adb__line adb__line--sys">awaiting index query…</p>
+                    <div class="adb__log-scroll crt-scroll">
+                      <div class="adb__log crt-scroll__host" id="adb-log" role="log" aria-live="polite">
+                        <p class="adb__line adb__line--sys">awaiting index query…</p>
+                      </div>
+                      <aside class="crt-rail crt-scroll__rail" aria-hidden="true" hidden>
+                        <div class="crt-rail__fill"></div>
+                      </aside>
                     </div>
                     <form class="adb__form" id="adb-search" role="search">
                       <label class="visually-hidden" for="adb-query">Archive query</label>
@@ -935,9 +955,14 @@
                       />
                     </form>
                   </aside>
-                  <section class="adb__pane" id="adb-pane" aria-live="polite">
-                    <p class="adb__idle">AWAITING SEARCH</p>
-                  </section>
+                  <div class="adb__pane-scroll crt-scroll">
+                    <section class="adb__pane crt-scroll__host" id="adb-pane" aria-live="polite">
+                      <p class="adb__idle">AWAITING SEARCH</p>
+                    </section>
+                    <aside class="crt-rail crt-scroll__rail" aria-hidden="true" hidden>
+                      <div class="crt-rail__fill"></div>
+                    </aside>
+                  </div>
                 </div>
               </div>
             </div>
@@ -951,8 +976,13 @@
             <div class="panel__body">
               <div class="chart">
                 <div class="chart__map" id="chart-map" aria-label="Orbital map of The Nine"></div>
-                <aside class="chart__readout" id="chart-readout" aria-live="polite">
-                  <p class="chart__idle">SELECT ORBITAL BODY</p>
+                <aside class="chart__readout-shell crt-scroll">
+                  <div class="chart__readout crt-scroll__host" id="chart-readout" aria-live="polite">
+                    <p class="chart__idle">SELECT ORBITAL BODY</p>
+                  </div>
+                  <aside class="crt-rail crt-scroll__rail" aria-hidden="true" hidden>
+                    <div class="crt-rail__fill"></div>
+                  </aside>
                 </aside>
               </div>
               <section
@@ -964,12 +994,17 @@
                   <span class="chart-archive__title">SYSTEM ARCHIVE</span>
                   <span class="chart-archive__mode">OFFLINE</span>
                 </header>
-                <div class="chart-archive__body" id="chart-archive-body">
-                  <p class="chart-archive__code">CART.ARCHIVE // STATUS=NONFUNCTIONAL</p>
-                  <p class="chart-archive__text">
-                    Archive mesh is still repairing after impact. Planetary extracts and
-                    cross-indexed memory are inaccessible.
-                  </p>
+                <div class="chart-archive__scroll crt-scroll">
+                  <div class="chart-archive__body crt-scroll__host" id="chart-archive-body">
+                    <p class="chart-archive__code">CART.ARCHIVE // STATUS=NONFUNCTIONAL</p>
+                    <p class="chart-archive__text">
+                      Archive mesh is still repairing after impact. Planetary extracts and
+                      cross-indexed memory are inaccessible.
+                    </p>
+                  </div>
+                  <aside class="crt-rail crt-scroll__rail" aria-hidden="true" hidden>
+                    <div class="crt-rail__fill"></div>
+                  </aside>
                 </div>
               </section>
             </div>
@@ -1041,18 +1076,7 @@
                 </div>
                 <div class="sys-row sys-row--track" id="music-track-row" hidden>
                   <span class="sys-row__label">Track</span>
-                  <label class="sys-select-wrap">
-                    <span class="visually-hidden">Music track</span>
-                    <select
-                      class="sys-select"
-                      id="music-track"
-                      aria-label="Music track"
-                      data-sfx="dropdownToggle"
-                    >
-                      <option value="recursion">Recursion</option>
-                      <option value="ascendancy">Ascendancy</option>
-                    </select>
-                  </label>
+                  <div class="sys-select-wrap" id="music-track" aria-label="Music track"></div>
                 </div>
                 <div class="sys-row">
                   <span class="sys-row__label">Scanline Intensity</span>
@@ -1116,6 +1140,6 @@
     <!-- =====================================================================
          SCRIPTS
          ===================================================================== -->
-    <script src="src/main.js?v=20260731listloc" type="module"></script>
+    <script src="src/main.js?v=20260731railhide" type="module"></script>
   </body>
 </html>

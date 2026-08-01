@@ -25,6 +25,8 @@ import {
   setHullProgress,
   setChannelUnlock,
   isPlanetCleared,
+  hasSeenDescramble,
+  markDescrambleSeen,
 } from "./progress.js";
 import { applyClearanceUI } from "./clearance.js";
 
@@ -248,8 +250,14 @@ export function initHullPlan() {
       if (tab.dataset.chromeCorrupt === "1") {
         tab.dataset.chromeCorrupt = "0";
         if (!tab.classList.contains("is-descrambling")) {
-          tab.textContent = corruptChromeLabel(label, seed);
-          void descrambleText(tab, label);
+          const seenId = `hull:${label.toLowerCase()}`;
+          if (hasSeenDescramble(seenId)) {
+            tab.textContent = label;
+          } else {
+            markDescrambleSeen(seenId);
+            tab.textContent = corruptChromeLabel(label, seed);
+            void descrambleText(tab, label);
+          }
         }
       } else if (!tab.classList.contains("is-descrambling")) {
         tab.textContent = label;

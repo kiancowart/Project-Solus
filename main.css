@@ -82,29 +82,21 @@ summary {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* CRT scroll rails — match Flight Log phosphor rail */
+/* CRT scroll rails — native bars hidden; custom .crt-rail matches intercept */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--phosphor) rgba(255, 47, 24, 0.06);
+  scrollbar-width: none;
 }
 
 *::-webkit-scrollbar {
-  width: 0.35rem;
-  height: 0.35rem;
+  width: 0;
+  height: 0;
+  display: none;
 }
 
-*::-webkit-scrollbar-track {
-  background: rgba(255, 47, 24, 0.06);
-  border: 1px solid rgba(255, 47, 24, 0.35);
-}
-
-*::-webkit-scrollbar-thumb {
-  background: var(--phosphor);
-  box-shadow: 0 0 6px rgba(255, 47, 24, 0.45);
-}
-
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-thumb,
 *::-webkit-scrollbar-corner {
-  background: transparent;
+  display: none;
 }
 
 html,
@@ -597,8 +589,7 @@ button:disabled {
   text-shadow: var(--glow);
   white-space: pre-wrap;
   letter-spacing: 0.02em;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -1333,10 +1324,6 @@ button:disabled {
   margin: 0.55rem 0.35rem 0.35rem 0;
   align-self: stretch;
   min-height: 0;
-}
-
-.whisper__rail[hidden] {
-  display: none !important;
 }
 
 .whisper__line {
@@ -2380,7 +2367,7 @@ body.is-nav-locked .nav-item:not(.is-active) {
 .panel {
   max-width: 42rem;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .panel--chart,
@@ -2577,13 +2564,34 @@ body.is-nav-locked .nav-item:not(.is-active) {
   fill: var(--phosphor);
 }
 
-.chart__readout {
-  border: 1px solid var(--line);
-  padding: 0.75rem 0.8rem;
+.chart__readout-shell {
   min-height: 0;
   height: 100%;
-  overflow-y: auto;
+  border: 1px solid var(--line);
   background: #000;
+  display: flex;
+  align-items: stretch;
+}
+
+.chart__readout {
+  border: none;
+  padding: 0.75rem 0.65rem 0.75rem 0.8rem;
+  min-height: 0;
+  height: auto;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  background: transparent;
+  scrollbar-width: none;
+}
+
+.chart__readout::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.chart__readout-shell .crt-scroll__rail {
+  margin: 0.55rem 0.35rem 0.55rem 0;
 }
 
 .chart-svg__label.is-scrambled {
@@ -2685,11 +2693,29 @@ body.is-nav-locked .nav-item:not(.is-active) {
   background: var(--phosphor);
 }
 
+.chart-archive__scroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+
 .chart-archive__body {
-  padding: 0.65rem 0.75rem 0.75rem;
+  padding: 0.65rem 0.55rem 0.75rem 0.75rem;
   min-height: 0;
   flex: 1;
   overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.chart-archive__body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.chart-archive__scroll .crt-scroll__rail {
+  margin: 0.55rem 0.35rem 0.55rem 0;
 }
 
 .chart-archive__code {
@@ -2937,15 +2963,45 @@ body.is-nav-locked .nav-item:not(.is-active) {
   background: #000;
 }
 
+.adb__log-scroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+
 .adb__log {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0.55rem 0.65rem;
+  padding: 0.55rem 0.45rem 0.55rem 0.65rem;
   font-size: 0.58rem;
   line-height: 1.5;
   letter-spacing: 0.04em;
   color: var(--phosphor-dim);
+  scrollbar-width: none;
+}
+
+.adb__log::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.adb__log-scroll .crt-scroll__rail {
+  margin: 0.45rem 0.3rem 0.45rem 0;
+}
+
+.adb__pane-scroll {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.adb__pane-scroll .crt-scroll__rail {
+  margin: 0.45rem 0.3rem 0.45rem 0;
 }
 
 .adb__line {
@@ -3004,10 +3060,18 @@ body.is-nav-locked .nav-item:not(.is-active) {
   overflow-y: auto;
   min-height: 0;
   height: 100%;
-  padding: 0.85rem 0.9rem;
+  flex: 1 1 auto;
+  padding: 0.85rem 0.7rem 0.85rem 0.9rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  scrollbar-width: none;
+}
+
+.adb__pane::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .adb__idle {
@@ -3323,13 +3387,47 @@ body.is-nav-locked .nav-item:not(.is-active) {
   display: none !important;
 }
 
-/* Shared CRT phosphor rails (Flight Log + intercept message) */
+/* Shared CRT phosphor rails (Flight Log + intercept + terminal + …) */
+.crt-scroll {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.crt-scroll__host {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.crt-scroll__host::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.crt-scroll__rail,
 .crt-rail {
   flex-shrink: 0;
   width: 0.35rem;
   border: 1px solid rgba(255, 47, 24, 0.35);
   background: rgba(255, 47, 24, 0.06);
   overflow: hidden;
+  align-self: stretch;
+}
+
+.crt-rail[hidden],
+.crt-scroll__rail[hidden],
+.flog__rail[hidden],
+.whisper__rail[hidden],
+.fth-console__rail[hidden],
+.intercept__rail--scroll[hidden] {
+  display: none !important;
 }
 
 .crt-rail__fill {
@@ -4051,6 +4149,7 @@ body.is-nav-locked .nav-item:not(.is-active) {
 
 .hull-mon--outer-corrupt .hull-mon__head,
 .hull-mon--outer-corrupt .hull-mon__detail,
+.hull-mon--outer-corrupt .hull-mon__detail-scroll,
 .hull-mon--outer-corrupt .hull-mon__schematic {
   filter: contrast(1.15) saturate(1.25);
 }
@@ -4465,13 +4564,34 @@ body.is-nav-locked .nav-item:not(.is-active) {
   flex-shrink: 0;
 }
 
+.hull-mon__detail-scroll {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
 .hull-mon__detail {
-  padding: 0.65rem 0.75rem 0.55rem;
+  padding: 0.65rem 0.55rem 0.55rem 0.75rem;
   min-width: 0;
   min-height: 0;
   overflow: auto;
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  scrollbar-width: none;
+}
+
+.hull-mon__detail::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.hull-mon__detail-scroll .crt-scroll__rail {
+  margin: 0.55rem 0.3rem 0.55rem 0;
 }
 
 .hull-mon__section {
@@ -4719,8 +4839,32 @@ body.is-nav-locked .nav-item:not(.is-active) {
   margin: 0 auto;
   text-align: left;
   justify-content: flex-start;
-  overflow: auto;
+  overflow: hidden;
   gap: 0.45rem;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.hull-inner__scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  scrollbar-width: none;
+}
+
+.hull-inner__scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.hull-inner--live .crt-scroll__rail {
+  margin: 0.2rem 0 0.2rem 0.35rem;
 }
 
 .hull-inner__theatre {
@@ -5394,14 +5538,8 @@ body.is-nav-locked .nav-item:not(.is-active) {
   pointer-events: none;
 }
 
-.imperial-well {
-  position: absolute;
-  pointer-events: auto;
-  width: 6.1rem;
-  z-index: 4;
-  background: transparent;
-  border: none;
-  padding: 0;
+.imperial-well:has(.crt-select.is-open) {
+  z-index: 30;
 }
 
 .imperial-well__body {
@@ -5413,6 +5551,7 @@ body.is-nav-locked .nav-item:not(.is-active) {
   background: #000;
   width: 100%;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .imperial-well[data-corner="tl"] {
@@ -5460,10 +5599,64 @@ body.is-nav-locked .nav-item:not(.is-active) {
   text-shadow: 0 0 2px rgba(255, 47, 24, 0.28);
 }
 
-.imperial-well__planet:focus,
 .imperial-well__frag:focus {
   outline: none;
   border-color: var(--phosphor);
+}
+
+.imperial-well__planet.crt-select {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-shadow: none;
+  z-index: 5;
+}
+
+.imperial-well__planet .crt-select__trigger {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #000;
+  color: var(--phosphor);
+  font: inherit;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  padding: 0.22rem 0.35rem;
+  text-shadow: 0 0 2px rgba(255, 47, 24, 0.28);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.2rem;
+}
+
+.imperial-well__planet .crt-select__trigger:focus,
+.imperial-well__planet .crt-select__trigger:focus-visible,
+.imperial-well__planet.is-open .crt-select__trigger {
+  outline: none;
+  border-color: var(--phosphor);
+}
+
+.imperial-well__planet .crt-select__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.imperial-well__planet .crt-select__caret {
+  flex-shrink: 0;
+  font-size: 0.42rem;
+  opacity: 0.85;
+}
+
+.imperial-well__planet .crt-select__menu {
+  left: 0;
+  right: 0;
+  min-width: 7.5rem;
+  width: max-content;
+  max-width: 11rem;
 }
 
 .imperial-controls {
@@ -6689,6 +6882,13 @@ body.is-nav-locked .nav-item:not(.is-active) {
   letter-spacing: 0.12em;
 }
 
+.fth-console__scroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+
 .fth-console__log {
   flex: 1;
   min-height: 0;
@@ -6699,6 +6899,17 @@ body.is-nav-locked .nav-item:not(.is-active) {
   line-height: 1.45;
   letter-spacing: 0.04em;
   color: var(--phosphor-dim);
+  scrollbar-width: none;
+}
+
+.fth-console__log::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.fth-console__rail {
+  margin: 0.45rem 0.35rem 0.45rem 0;
 }
 
 .fth-console__line {
@@ -7380,6 +7591,13 @@ body.is-nav-locked .nav-item:not(.is-active) {
   gap: 0.75rem;
   overflow-y: auto;
   min-height: 0;
+  scrollbar-width: none;
+}
+
+.guest-roster__list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .guest-card {
@@ -7457,33 +7675,131 @@ body.is-nav-locked .nav-item:not(.is-active) {
 .sys-select-wrap {
   display: block;
   width: 100%;
+  position: relative;
 }
 
-.sys-select {
+.sys-select.crt-select,
+.crt-select.sys-select {
+  width: 100%;
+  position: relative;
+}
+
+.sys-select .crt-select__trigger {
   appearance: none;
   width: 100%;
   margin: 0;
-  padding: 0.4rem 1.75rem 0.4rem 0.55rem;
+  padding: 0.4rem 0.55rem;
   border: 1px solid var(--phosphor-dim);
-  background: #000
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23ff3d28' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E")
-    no-repeat right 0.55rem center;
+  background: #000;
   color: var(--phosphor);
   font: inherit;
   font-size: 0.7rem;
   letter-spacing: 0.1em;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  text-align: left;
 }
 
-.sys-select:hover,
-.sys-select:focus-visible {
+.sys-select .crt-select__trigger:hover,
+.sys-select .crt-select__trigger:focus-visible,
+.sys-select.is-open .crt-select__trigger {
   border-color: var(--phosphor);
   outline: none;
 }
 
-.sys-select option {
+.sys-select .crt-select__caret {
+  font-size: 0.48rem;
+  opacity: 0.9;
+}
+
+/* Shared CRT listbox — no native OS menus */
+.crt-select {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.crt-select__trigger {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  background: #000;
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.crt-select__menu {
+  position: absolute;
+  top: calc(100% + 1px);
+  left: 0;
+  right: 0;
+  z-index: 80;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--phosphor);
+  background: #000;
+  box-shadow: var(--glow-soft);
+  max-height: 12rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.crt-select__menu--up {
+  top: auto;
+  bottom: calc(100% + 1px);
+}
+
+.crt-select__menu[hidden] {
+  display: none !important;
+}
+
+.crt-select__option {
+  margin: 0;
+  padding: 0.32rem 0.45rem;
+  font: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  color: var(--phosphor-dim);
+  background: #000;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 47, 24, 0.18);
+}
+
+.crt-select__option:last-child {
+  border-bottom: none;
+}
+
+.crt-select__option:hover,
+.crt-select__option:focus {
+  outline: none;
+  color: var(--phosphor);
+  background: rgba(255, 47, 24, 0.14);
+  text-shadow: var(--glow-soft);
+}
+
+.crt-select__option.is-selected {
+  color: #000;
+  background: var(--phosphor);
+  text-shadow: none;
+}
+
+.crt-select__option.is-selected:hover,
+.crt-select__option.is-selected:focus {
+  color: #000;
+  background: var(--phosphor-bright, var(--phosphor));
+}
+
+/* Never leave native <select> chrome in the UI */
+select {
+  appearance: none;
+  border: 1px solid var(--phosphor);
   background: #000;
   color: var(--phosphor);
+  font: inherit;
 }
 
 .fill-bar {

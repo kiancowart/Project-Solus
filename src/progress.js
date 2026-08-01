@@ -16,6 +16,7 @@ const DRAFT_KEY = ARG_PROGRESS_KEYS.clearanceDraft;
 const FRAG_KEY = ARG_PROGRESS_KEYS.fragments;
 const PLANETS_KEY = ARG_PROGRESS_KEYS.planets;
 const SEAL_ORDER_KEY = ARG_PROGRESS_KEYS.sealOrder;
+const DESCRAMBLE_KEY = ARG_PROGRESS_KEYS.descrambled;
 
 let sessionHull = null;
 let sessionUnlock = null;
@@ -23,6 +24,7 @@ let sessionDraft = null;
 let sessionFrags = null;
 let sessionPlanets = null;
 let sessionSealOrder = null;
+let sessionDescrambled = null;
 
 function readJson(key, sessionRef, fallback) {
   if (sessionRef.value) return sessionRef.value;
@@ -53,6 +55,7 @@ const draftRef = { value: null };
 const fragRef = { value: null };
 const planetsRef = { value: null };
 const sealOrderRef = { value: null };
+const descrambleRef = { value: null };
 
 export function getHullProgress() {
   return readJson(HULL_KEY, hullRef, {
@@ -321,6 +324,28 @@ export function getSealForWell(slotNum) {
   return getSealWellAssignments()[Number(slotNum)] ?? null;
 }
 
+/** Ids of descramble animations the operator has already seen this playthrough. */
+function readDescrambledSet() {
+  const data = readJson(DESCRAMBLE_KEY, descrambleRef, { ids: [] });
+  const ids = Array.isArray(data?.ids) ? data.ids : [];
+  return new Set(ids.map((id) => String(id)));
+}
+
+export function hasSeenDescramble(id) {
+  const key = String(id ?? "").trim();
+  if (!key) return false;
+  return readDescrambledSet().has(key);
+}
+
+export function markDescrambleSeen(id) {
+  const key = String(id ?? "").trim();
+  if (!key) return;
+  const set = readDescrambledSet();
+  if (set.has(key)) return;
+  set.add(key);
+  writeJson(DESCRAMBLE_KEY, descrambleRef, { ids: [...set] });
+}
+
 /** Keys wiped by cold start / purge (in addition to legacy list). */
 export const PROGRESS_STORAGE_KEYS = [
   HULL_KEY,
@@ -329,6 +354,7 @@ export const PROGRESS_STORAGE_KEYS = [
   FRAG_KEY,
   PLANETS_KEY,
   SEAL_ORDER_KEY,
+  DESCRAMBLE_KEY,
 ];
 
 export function resetProgressSession() {
@@ -338,12 +364,14 @@ export function resetProgressSession() {
   fragRef.value = null;
   planetsRef.value = null;
   sealOrderRef.value = null;
+  descrambleRef.value = null;
   sessionHull = null;
   sessionUnlock = null;
   sessionDraft = null;
   sessionFrags = null;
   sessionPlanets = null;
   sessionSealOrder = null;
+  sessionDescrambled = null;
 }
 
 /* ==========================================================================

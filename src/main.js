@@ -16,6 +16,7 @@ import { initFlightLog } from "./flight-log.js";
 import { initArchives } from "./archives.js";
 import { initImperialClearance } from "./imperial.js";
 import { applyColdStartFromQuery } from "./progress.js";
+import { initCrtScrollRails } from "./motion.js";
 
 try {
   applyColdStartFromQuery();
@@ -31,6 +32,9 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error(`[lattice] ${label} init failed`, err);
     }
   };
+
+  // Shared CRT rails (terminal / chart / archives / …) — before channel inits
+  safe("crt-rails", () => initCrtScrollRails());
 
   // Whisper before boot — clearance gate toggles the pad whisper chrome
   safe("whisper", initWhisper);

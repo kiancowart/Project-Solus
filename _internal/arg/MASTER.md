@@ -246,7 +246,7 @@ Imperial Clearance opens Archives + Guest and decrypts all Log chrome.
 
 ### Hub save keys
 
-`lattice.hull`, `lattice.unlock`, `lattice.fragments`, `lattice.planets`, `lattice.clearance.draft`, `lattice.clearance`, milestones, journals, intercept/whisper keys. Wipe with `?cold=1`.
+`lattice.hull`, `lattice.unlock`, `lattice.fragments`, `lattice.planets`, `lattice.descrambled`, `lattice.clearance.draft`, `lattice.clearance`, milestones, journals, intercept/whisper keys. Wipe with `?cold=1`.
 
 ---
 

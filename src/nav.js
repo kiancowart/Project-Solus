@@ -12,8 +12,10 @@ import { MUSIC } from "../content/boot-content.js";
 import {
   areAllPlanetDossiersUnlocked,
   areAllFragmentsRecovered,
+  hasSeenDescramble,
+  markDescrambleSeen,
 } from "./progress.js";
-import { typeText, revealPanel, corruptChromeLabel, descrambleText } from "./motion.js";
+import { typeText, revealPanel, corruptChromeLabel, descrambleText, createCrtSelect } from "./motion.js";
 
 /* ==========================================================================
    NAVIGATION — channel switching + typed banner title
@@ -104,7 +106,13 @@ export function refreshChannelCorruption() {
       btn.dataset.chromeCorrupt = "0";
       btn.classList.remove("is-chrome-corrupt");
       btn.dataset.channelTitle = clearTitle;
-      void descrambleText(btn, clearLabel);
+      const seenId = `nav:${panelId}`;
+      if (hasSeenDescramble(seenId)) {
+        setNavButtonLabel(btn, clearLabel);
+      } else {
+        markDescrambleSeen(seenId);
+        void descrambleText(btn, clearLabel);
+      }
     } else {
       setNavButtonLabel(btn, clearLabel);
       btn.dataset.channelTitle = clearTitle;
@@ -132,8 +140,14 @@ export function refreshChannelCorruption() {
     } else if (btn.dataset.chromeCorrupt === "1") {
       btn.dataset.chromeCorrupt = "0";
       btn.classList.remove("is-chrome-corrupt");
-      btn.textContent = corruptChromeLabel(clear, 11);
-      void descrambleText(btn, clear).then(() => paintCaret(clear));
+      const seenId = "nav:guest";
+      if (hasSeenDescramble(seenId)) {
+        paintCaret(clear);
+      } else {
+        markDescrambleSeen(seenId);
+        btn.textContent = corruptChromeLabel(clear, 11);
+        void descrambleText(btn, clear).then(() => paintCaret(clear));
+      }
     } else {
       btn.classList.remove("is-chrome-corrupt");
       paintCaret(clear);
@@ -342,30 +356,50 @@ export function bindFillBar(bar, onChange) {
 
 export function syncMusicTrackPicker() {
   const row = document.getElementById("music-track-row");
-  const select = document.getElementById("music-track");
-  if (!row || !select) return;
+  const host = document.getElementById("music-track");
+  if (!row || !host) return;
 
   const unlocked = hasImperialClearance();
   row.hidden = !unlocked;
   if (!unlocked) return;
 
   const tracks = audio.getMusicTracks?.() ?? MUSIC?.tracks ?? [];
-  if (select.options.length !== tracks.length) {
-    select.replaceChildren();
-    for (const t of tracks) {
-      const opt = document.createElement("option");
-      opt.value = t.id;
-      opt.textContent = t.title;
-      select.appendChild(opt);
-    }
-  }
-
+  const options = tracks.map((t) => ({
+    value: t.id,
+    label: t.title,
+  }));
   const active =
     audio.getActiveTrackId?.() ||
     MUSIC?.postImperialDefault ||
     "ascendancy";
-  if ([...select.options].some((o) => o.value === active)) {
-    select.value = active;
+
+  let api = host._crtSelect;
+  if (!api) {
+    api = createCrtSelect({
+      className: "sys-select",
+      ariaLabel: "Music track",
+      placeholder: "TRACK",
+      value: options.some((o) => o.value === active) ? active : options[0]?.value ?? "",
+      options,
+      onChange: async (id) => {
+        if (!id) return;
+        audio.play("dropdownToggle");
+        try {
+          if (!audio.enabled) await audio.enable();
+          await audio.setMusicTrack(id);
+          syncMusicTrackPicker();
+        } catch {
+          /* ignore */
+        }
+      },
+    });
+    host.replaceChildren(api.root);
+    host._crtSelect = api;
+  } else {
+    api.setOptions(options);
+    if (options.some((o) => o.value === active)) {
+      api.setValue(active, { silent: true });
+    }
   }
 }
 
@@ -376,7 +410,6 @@ export function initSystems() {
   const sfxGain = document.getElementById("sfx-gain");
   const ambienceGain = document.getElementById("ambience-gain");
   const musicGain = document.getElementById("music-gain");
-  const musicTrack = document.getElementById("music-track");
   const scan = document.getElementById("scan-intensity");
 
   form?.addEventListener("submit", (e) => e.preventDefault());
@@ -410,18 +443,6 @@ export function initSystems() {
   });
   audio.setMusicGain(readFillBarValue(musicGain) / 100);
 
-  musicTrack?.addEventListener("change", async () => {
-    const id = musicTrack.value;
-    if (!id) return;
-    audio.play("dropdownToggle");
-    try {
-      if (!audio.enabled) await audio.enable();
-      await audio.setMusicTrack(id);
-      syncMusicTrackPicker();
-    } catch {
-      /* ignore */
-    }
-  });
   syncMusicTrackPicker();
   window.addEventListener("lattice:clearance", syncMusicTrackPicker);
 

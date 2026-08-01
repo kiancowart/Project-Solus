@@ -10,6 +10,8 @@ import {
   getRecoveredFragments,
   markFragmentRecovered,
   isDossierUnlocked,
+  hasSeenDescramble,
+  markDescrambleSeen,
 } from "./progress.js";
 import { scrambleText, descrambleText } from "./motion.js";
 
@@ -39,12 +41,14 @@ export function initFlightLog() {
   let pageIndex = 0;
   let entryAudio = null;
   let entryAudioRaf = 0;
-  /** Descramble plays once per entry per Flight Log channel visit */
-  const descrambledIds = new Set();
-  /** List-row LOC descramble — once per entry per channel visit */
-  const listDescrambledIds = new Set();
   /** While set, paint fragments as scrambled so descramble has something to reveal */
   let pendingDescrambleId = null;
+
+  const flogDescrambleId = (entryId) => `flog:${entryId}`;
+  const sawFlogDescramble = (entryId) =>
+    hasSeenDescramble(flogDescrambleId(entryId));
+  const noteFlogDescramble = (entryId) =>
+    markDescrambleSeen(flogDescrambleId(entryId));
 
   const stopEntryAudio = () => {
     if (entryAudioRaf) {
@@ -377,7 +381,7 @@ export function initFlightLog() {
     const canDescramble =
       Boolean(entry.fragment) && !scramble && isDossierUnlocked(entry.planetId);
     const playDescramble =
-      replayDescramble && canDescramble && !descrambledIds.has(entry.id);
+      replayDescramble && canDescramble && !sawFlogDescramble(entry.id);
     const metaShow =
       scramble || playDescramble ? scrambleText(metaClear, 1) : metaClear;
     const locScrambled = scramble || playDescramble;
@@ -448,7 +452,7 @@ export function initFlightLog() {
 
     if (playDescramble) {
       pendingDescrambleId = entry.id;
-      descrambledIds.add(entry.id);
+      noteFlogDescramble(entry.id);
     } else {
       pendingDescrambleId = null;
     }
@@ -520,7 +524,7 @@ export function initFlightLog() {
         hasFrag &&
         !scramble &&
         Boolean(entry.planetId) &&
-        !listDescrambledIds.has(entry.id);
+        !sawFlogDescramble(entry.id);
       const showScrambled = scramble || playListDescramble;
       const meta = showScrambled
         ? scrambleText(metaClear, 2)
@@ -551,7 +555,7 @@ export function initFlightLog() {
       });
       host.appendChild(btn);
       if (playListDescramble) {
-        listDescrambledIds.add(entry.id);
+        noteFlogDescramble(entry.id);
         pendingListDescramble.push({
           entryId: entry.id,
           clear: metaClear,
@@ -651,9 +655,8 @@ export function initFlightLog() {
   window.addEventListener("lattice:channel", (e) => {
     const here = e.detail?.panel === "flightlog";
     if (here && !onFlightLogChannel) {
-      descrambledIds.clear();
-      listDescrambledIds.clear();
-      if (activeEntry) void openEntry(activeEntry, { replayDescramble: true });
+      // Revisit: keep prior descrambles — show clear text, do not replay
+      if (activeEntry) void openEntry(activeEntry, { replayDescramble: false });
       else paintList();
     }
     onFlightLogChannel = here;

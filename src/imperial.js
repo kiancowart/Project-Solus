@@ -6,7 +6,7 @@ import { IMPERIAL_SLOTS, EMPIRE_SEALS } from "../content/arg-path.js";
 import { wipeLatticeProgress } from "./progress.js";
 import { playBootLogo } from "./boot.js";
 import { audio } from "./audio.js";
-import { sleep, bootMs, prefersReducedMotion, scrambleText, descrambleText } from "./motion.js";
+import { sleep, bootMs, prefersReducedMotion, scrambleText, descrambleText, createCrtSelect } from "./motion.js";
 import {
   grantImperialClearance,
   hasImperialClearance,
@@ -21,6 +21,8 @@ import {
   getSealForWell,
   getSealWellAssignments,
   isDossierUnlocked,
+  hasSeenDescramble,
+  markDescrambleSeen,
 } from "./progress.js";
 import { initHullPlan } from "./hull.js";
 import { initFlightLog } from "./flight-log.js";
@@ -102,8 +104,6 @@ export function initImperialClearance() {
 
   let busy = false;
   const slotState = {};
-  /** Descramble tray chips once per Imperial channel visit */
-  const descrambledTray = new Set();
 
   // Ensure shuffle exists for this playthrough
   getSealWellAssignments();
@@ -193,13 +193,14 @@ export function initImperialClearance() {
         }
       });
       tray.appendChild(chip);
-      if (descrambledTray.has(s.fragment)) {
+      const trayId = `tray:${s.fragment}`;
+      if (hasSeenDescramble(trayId)) {
         chip.textContent = s.fragment;
         chip.classList.remove("is-scrambled");
       } else {
         chip.classList.add("is-scrambled");
         chip.textContent = scrambleText(s.fragment, 4);
-        descrambledTray.add(s.fragment);
+        markDescrambleSeen(trayId);
         void descrambleText(chip, s.fragment, { durationMs: 850 });
       }
     }
@@ -222,24 +223,23 @@ export function initImperialClearance() {
     idx.textContent = seal?.name ?? "····";
     idx.title = seal?.facet ?? "";
 
-    const planet = document.createElement("select");
-    planet.className = "imperial-well__planet";
-    planet.setAttribute("aria-label", `${seal?.name ?? "Seal"} planet`);
-    const blank = document.createElement("option");
-    blank.value = "";
-    blank.textContent = "▽";
-    planet.appendChild(blank);
-    for (const s of EMPIRE_SEALS) {
-      const opt = document.createElement("option");
-      opt.value = s.planetId;
-      opt.textContent = s.planetName;
-      planet.appendChild(opt);
-    }
-    planet.value = st.planetId || "";
-    planet.addEventListener("change", () => {
-      st.planetId = planet.value;
-      persistDraft();
-      audio.play("dropdownToggle");
+    const planetSelect = createCrtSelect({
+      className: "imperial-well__planet",
+      ariaLabel: `${seal?.name ?? "Seal"} planet`,
+      placeholder: "▽",
+      value: st.planetId || "",
+      options: [
+        { value: "", label: "▽" },
+        ...EMPIRE_SEALS.map((s) => ({
+          value: s.planetId,
+          label: s.planetName,
+        })),
+      ],
+      onChange: (v) => {
+        st.planetId = v;
+        persistDraft();
+        audio.play("dropdownToggle");
+      },
     });
 
     const frag = document.createElement("input");
@@ -269,7 +269,7 @@ export function initImperialClearance() {
       audio.play("click");
     });
 
-    body.append(idx, planet, frag);
+    body.append(idx, planetSelect.root, frag);
     well.appendChild(body);
 
     body.addEventListener("animationend", (e) => {
@@ -467,7 +467,7 @@ export function initImperialClearance() {
   window.addEventListener("lattice:channel", (e) => {
     const here = e.detail?.panel === "imperial";
     if (here && !onImperialChannel) {
-      descrambledTray.clear();
+      // Revisit: keep prior tray descrambles — show clear text, do not replay
       renderTray();
     }
     onImperialChannel = here;

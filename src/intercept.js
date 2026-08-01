@@ -132,11 +132,14 @@ export function initInterceptMessageAudio(els = {}) {
 
   const syncScrollRail = () => {
     if (!scrollHost || !scrollFill) return;
+    const rail = scrollFill.closest(".crt-rail");
     const max = scrollHost.scrollHeight - scrollHost.clientHeight;
     if (max <= 0) {
-      setRailFill(scrollFill, 1);
+      if (rail) rail.hidden = true;
+      setRailFill(scrollFill, 0);
       return;
     }
+    if (rail) rail.hidden = false;
     setRailFill(scrollFill, scrollHost.scrollTop / max);
   };
 

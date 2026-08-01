@@ -263,3 +263,297 @@ export async function descrambleText(el, clearText, opts = {}) {
   el.classList.add("is-clear");
   onFrame?.(el, clear);
 }
+
+/* ==========================================================================
+   CRT scroll rails — match intercept message (progress fill, native bar hidden)
+   ========================================================================== */
+
+/** Set phosphor rail fill amount (0–1). Origin is top, like intercept. */
+export function setCrtRailFill(fillEl, amount) {
+  if (!fillEl) return;
+  const t = Math.max(0, Math.min(1, Number(amount) || 0));
+  fillEl.style.transform = `scaleY(${t})`;
+}
+
+/**
+ * Sync a CRT rail to a scroll host.
+ * Rail is hidden unless content overflows (same rule as a real scrollbar).
+ * Returns `{ update, destroy }`.
+ */
+export function bindCrtScrollRail(scrollEl, fillEl, { railEl = null } = {}) {
+  if (!scrollEl || !fillEl) {
+    return { update() {}, destroy() {} };
+  }
+
+  const rail =
+    railEl ||
+    fillEl.closest?.(".crt-rail") ||
+    fillEl.closest?.(".crt-scroll__rail") ||
+    null;
+
+  const update = () => {
+    if (!scrollEl.isConnected || !fillEl.isConnected) return;
+    const max = scrollEl.scrollHeight - scrollEl.clientHeight;
+    if (max <= 0) {
+      if (rail) rail.hidden = true;
+      setCrtRailFill(fillEl, 0);
+      return;
+    }
+    if (rail) rail.hidden = false;
+    setCrtRailFill(fillEl, scrollEl.scrollTop / max);
+  };
+
+  scrollEl.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+  let ro = null;
+  let mo = null;
+  if (typeof ResizeObserver !== "undefined") {
+    ro = new ResizeObserver(update);
+    ro.observe(scrollEl);
+  }
+  if (typeof MutationObserver !== "undefined") {
+    mo = new MutationObserver(update);
+    mo.observe(scrollEl, { childList: true, subtree: true, characterData: true });
+  }
+  update();
+
+  return {
+    update,
+    destroy() {
+      scrollEl.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      ro?.disconnect();
+      mo?.disconnect();
+    },
+  };
+}
+
+/** Bind every `.crt-scroll` shell under `root` (host + rail fill). */
+export function initCrtScrollRails(root = document) {
+  const shells = root.querySelectorAll?.(".crt-scroll") ?? [];
+  const bindings = [];
+  for (const shell of shells) {
+    const host =
+      shell.querySelector(".crt-scroll__host") ||
+      shell.querySelector("[data-crt-scroll-host]");
+    const fill =
+      shell.querySelector(".crt-rail__fill") ||
+      shell.querySelector("[data-crt-scroll-fill]");
+    const rail = shell.querySelector(".crt-rail");
+    if (!host || !fill) continue;
+    if (host.dataset.crtRailBound === "1") continue;
+    host.dataset.crtRailBound = "1";
+    bindings.push(bindCrtScrollRail(host, fill, { railEl: rail }));
+  }
+  return bindings;
+}
+
+/* ==========================================================================
+   CRT select — custom listbox (never use native <select> popups)
+   ========================================================================== */
+
+let crtSelectDocBound = false;
+
+function closeAllCrtSelects(except = null) {
+  document.querySelectorAll(".crt-select.is-open").forEach((el) => {
+    if (except && el === except) return;
+    el._crtSelect?.close?.();
+  });
+}
+
+/**
+ * Custom phosphor dropdown. Returns `{ root, getValue, setValue, setOptions, open, close }`.
+ * @param {{
+ *   options?: { value: string, label: string }[],
+ *   value?: string,
+ *   className?: string,
+ *   ariaLabel?: string,
+ *   placeholder?: string,
+ *   onChange?: (value: string) => void,
+ * }} opts
+ */
+export function createCrtSelect({
+  options = [],
+  value = "",
+  className = "",
+  ariaLabel = "",
+  placeholder = "—",
+  onChange = null,
+} = {}) {
+  const root = document.createElement("div");
+  root.className = ["crt-select", className].filter(Boolean).join(" ");
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "crt-select__trigger";
+  trigger.setAttribute("aria-haspopup", "listbox");
+  trigger.setAttribute("aria-expanded", "false");
+  if (ariaLabel) trigger.setAttribute("aria-label", ariaLabel);
+
+  const labelEl = document.createElement("span");
+  labelEl.className = "crt-select__label";
+  const caret = document.createElement("span");
+  caret.className = "crt-select__caret";
+  caret.setAttribute("aria-hidden", "true");
+  caret.textContent = "▼";
+  trigger.append(labelEl, caret);
+
+  const menu = document.createElement("ul");
+  menu.className = "crt-select__menu";
+  menu.setAttribute("role", "listbox");
+  menu.hidden = true;
+  if (ariaLabel) menu.setAttribute("aria-label", ariaLabel);
+
+  root.append(trigger, menu);
+
+  let opts = (options ?? []).map((o) => ({
+    value: String(o.value ?? ""),
+    label: String(o.label ?? o.value ?? ""),
+  }));
+  let current = String(value ?? "");
+
+  const labelFor = (v) => {
+    const hit = opts.find((o) => o.value === v);
+    return hit ? hit.label : placeholder;
+  };
+
+  const paintTrigger = () => {
+    labelEl.textContent = labelFor(current);
+    root.dataset.value = current;
+    root.classList.toggle("is-empty", !current);
+    menu.querySelectorAll(".crt-select__option").forEach((li) => {
+      const on = li.dataset.value === current;
+      li.classList.toggle("is-selected", on);
+      li.setAttribute("aria-selected", on ? "true" : "false");
+    });
+  };
+
+  const paintMenu = () => {
+    menu.replaceChildren();
+    for (const o of opts) {
+      const li = document.createElement("li");
+      li.className = "crt-select__option";
+      li.setAttribute("role", "option");
+      li.dataset.value = o.value;
+      li.textContent = o.label;
+      li.tabIndex = -1;
+      li.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        api.setValue(o.value);
+        api.close();
+        trigger.focus();
+      });
+      menu.appendChild(li);
+    }
+    paintTrigger();
+  };
+
+  const api = {
+    root,
+    getValue: () => current,
+    setValue(next, { silent = false } = {}) {
+      const v = String(next ?? "");
+      const prev = current;
+      current = v;
+      paintTrigger();
+      if (!silent && v !== prev) onChange?.(v);
+    },
+    setOptions(next, { keepValue = true } = {}) {
+      opts = (next ?? []).map((o) => ({
+        value: String(o.value ?? ""),
+        label: String(o.label ?? o.value ?? ""),
+      }));
+      if (keepValue && !opts.some((o) => o.value === current) && current) {
+        /* keep stale label until sync clears it */
+      }
+      if (!keepValue || (current && !opts.some((o) => o.value === current))) {
+        current = opts.some((o) => o.value === current) ? current : "";
+      }
+      paintMenu();
+    },
+    open() {
+      closeAllCrtSelects(root);
+      root.classList.add("is-open");
+      menu.hidden = false;
+      menu.classList.remove("crt-select__menu--up");
+      trigger.setAttribute("aria-expanded", "true");
+      requestAnimationFrame(() => {
+        const rect = menu.getBoundingClientRect();
+        if (rect.bottom > window.innerHeight - 8) {
+          menu.classList.add("crt-select__menu--up");
+        }
+      });
+    },
+    close() {
+      root.classList.remove("is-open");
+      menu.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+    },
+  };
+
+  root._crtSelect = api;
+
+  trigger.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (root.classList.contains("is-open")) api.close();
+    else api.open();
+  });
+
+  trigger.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      api.open();
+      const focusOpt =
+        menu.querySelector(".crt-select__option.is-selected") ||
+        menu.querySelector(".crt-select__option");
+      focusOpt?.focus?.();
+    } else if (e.key === "Escape") {
+      api.close();
+    }
+  });
+
+  menu.addEventListener("keydown", (e) => {
+    const items = [...menu.querySelectorAll(".crt-select__option")];
+    const i = items.indexOf(document.activeElement);
+    if (e.key === "Escape") {
+      e.preventDefault();
+      api.close();
+      trigger.focus();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      items[Math.min(items.length - 1, i + 1)]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      items[Math.max(0, i - 1)]?.focus();
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      document.activeElement?.click?.();
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      items[0]?.focus();
+    } else if (e.key === "End") {
+      e.preventDefault();
+      items[items.length - 1]?.focus();
+    }
+  });
+
+  if (!crtSelectDocBound) {
+    crtSelectDocBound = true;
+    document.addEventListener(
+      "pointerdown",
+      (e) => {
+        const hit = e.target?.closest?.(".crt-select");
+        if (!hit) closeAllCrtSelects();
+      },
+      true
+    );
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeAllCrtSelects();
+    });
+  }
+
+  paintMenu();
+  return api;
+}

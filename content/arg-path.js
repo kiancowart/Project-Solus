@@ -14,6 +14,8 @@ export const ARG_PROGRESS_KEYS = {
   planets: "lattice.planets",
   /** Shuffled seal ids within veil / neutral / scourge bands */
   sealOrder: "lattice.sealOrder",
+  /** Descramble animations already played (persist across channel revisits) */
+  descrambled: "lattice.descrambled",
 };
 
 /* ---------------------------------------------------------------------------
