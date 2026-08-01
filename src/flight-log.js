@@ -11,43 +11,7 @@ import {
   markFragmentRecovered,
   isDossierUnlocked,
 } from "./progress.js";
-import { prefersReducedMotion, sleep, scrambleText, SCRAMBLE_GLYPHS } from "./motion.js";
-
-async function runDescramble(el, clearText, { durationMs = 900 } = {}) {
-  if (!el) return;
-  const clear = String(clearText ?? "");
-  if (!clear) {
-    el.textContent = "";
-    return;
-  }
-  if (prefersReducedMotion()) {
-    el.textContent = clear;
-    el.classList.remove("is-scrambled");
-    el.classList.add("is-clear");
-    return;
-  }
-  el.classList.add("is-descrambling");
-  const steps = Math.max(8, Math.min(22, Math.round(durationMs / 45)));
-  for (let s = 0; s <= steps; s++) {
-    const t = s / steps;
-    let out = "";
-    for (let i = 0; i < clear.length; i++) {
-      const ch = clear[i];
-      if (ch === " " || ch === "\n") {
-        out += ch;
-        continue;
-      }
-      const threshold = t * 1.15 - (i / Math.max(1, clear.length)) * 0.35;
-      if (Math.random() < threshold) out += ch;
-      else out += SCRAMBLE_GLYPHS[(i * 13 + s * 7) % SCRAMBLE_GLYPHS.length];
-    }
-    el.textContent = out;
-    await sleep(Math.round(durationMs / steps));
-  }
-  el.textContent = clear;
-  el.classList.remove("is-descrambling", "is-scrambled");
-  el.classList.add("is-clear");
-}
+import { scrambleText, descrambleText } from "./motion.js";
 
 export function initFlightLog() {
   const flog = document.getElementById("flog");
@@ -77,6 +41,8 @@ export function initFlightLog() {
   let entryAudioRaf = 0;
   /** Descramble plays once per entry per Flight Log channel visit */
   const descrambledIds = new Set();
+  /** List-row LOC descramble — once per entry per channel visit */
+  const listDescrambledIds = new Set();
   /** While set, paint fragments as scrambled so descramble has something to reveal */
   let pendingDescrambleId = null;
 
@@ -500,11 +466,11 @@ export function initFlightLog() {
     if (playDescramble) {
       const planetEl = reader.querySelector("[data-flog-planet]");
       audio.play("glitchClick");
-      await runDescramble(planetEl, metaClear);
+      await descrambleText(planetEl, metaClear);
       const fragBtns = [...reader.querySelectorAll("[data-inline-frag]")];
       await Promise.all(
         fragBtns.map((btn) =>
-          runDescramble(btn, btn.dataset.inlineFrag || btn.textContent)
+          descrambleText(btn, btn.dataset.inlineFrag || btn.textContent)
         )
       );
       pendingDescrambleId = null;
@@ -540,6 +506,8 @@ export function initFlightLog() {
         });
 
     host.replaceChildren();
+    const pendingListDescramble = [];
+
     for (const entry of visible) {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -547,12 +515,19 @@ export function initFlightLog() {
       btn.dataset.entryId = entry.id;
       const scramble = needsScramble(entry);
       const hasFrag = Boolean(entry.fragment);
-      const meta = scramble
-        ? scrambleText(planetMetaClear(entry), 2)
-        : planetMetaClear(entry);
+      const metaClear = planetMetaClear(entry);
+      const playListDescramble =
+        hasFrag &&
+        !scramble &&
+        Boolean(entry.planetId) &&
+        !listDescrambledIds.has(entry.id);
+      const showScrambled = scramble || playListDescramble;
+      const meta = showScrambled
+        ? scrambleText(metaClear, 2)
+        : metaClear;
       const planetCls = [
-        scramble ? "is-scrambled" : "",
-        hasFrag && !scramble ? "is-frag-clear" : "",
+        showScrambled ? "is-scrambled" : "",
+        hasFrag && !showScrambled ? "is-frag-clear" : "",
       ]
         .filter(Boolean)
         .join(" ");
@@ -561,7 +536,7 @@ export function initFlightLog() {
         <span class="flog-entry__date">${escapeHtml(entry.date)}</span>
         <span class="flog-entry__loc">
           <span class="flog-entry__loc-label">LOC</span>
-          <span class="flog-entry__planet${planetCls ? ` ${planetCls}` : ""}">${locationInnerHtml(meta, { scrambled: scramble, hasFragment: hasFrag })}</span>
+          <span class="flog-entry__planet${planetCls ? ` ${planetCls}` : ""}">${locationInnerHtml(meta, { scrambled: showScrambled, hasFragment: hasFrag })}</span>
         </span>`;
       if (activeEntry?.id === entry.id) {
         btn.classList.add("is-active");
@@ -575,6 +550,26 @@ export function initFlightLog() {
         void openEntry(entry);
       });
       host.appendChild(btn);
+      if (playListDescramble) {
+        listDescrambledIds.add(entry.id);
+        pendingListDescramble.push({
+          entryId: entry.id,
+          clear: metaClear,
+        });
+      }
+    }
+
+    for (const item of pendingListDescramble) {
+      const planetEl = host.querySelector(
+        `[data-entry-id="${item.entryId}"] .flog-entry__planet`
+      );
+      if (!planetEl) continue;
+      void descrambleText(planetEl, item.clear).then(() => {
+        if (!planetEl.isConnected) return;
+        planetEl.classList.remove("is-scrambled");
+        planetEl.classList.add("is-frag-clear", "is-clear");
+        planetEl.innerHTML = `<strong>${escapeHtml(item.clear)}</strong>`;
+      });
     }
 
     if (journalCountEl) {
@@ -657,7 +652,9 @@ export function initFlightLog() {
     const here = e.detail?.panel === "flightlog";
     if (here && !onFlightLogChannel) {
       descrambledIds.clear();
+      listDescrambledIds.clear();
       if (activeEntry) void openEntry(activeEntry, { replayDescramble: true });
+      else paintList();
     }
     onFlightLogChannel = here;
   });

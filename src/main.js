@@ -17,20 +17,38 @@ import { initArchives } from "./archives.js";
 import { initImperialClearance } from "./imperial.js";
 import { applyColdStartFromQuery } from "./progress.js";
 
-applyColdStartFromQuery();
+try {
+  applyColdStartFromQuery();
+} catch (err) {
+  console.error("[lattice] cold start threw", err);
+}
 
 document.addEventListener("DOMContentLoaded", () => {
-  initNav();
-  initSystems();
-  initImagoReturn();
-  initWhisper();
-  initCompass();
-  initCartography();
-  initHullPlan();
-  initFthConsole();
-  initFlightLog();
-  initArchives();
-  initImperialClearance();
-  applyClearanceUI();
-  runBoot();
+  const safe = (label, fn) => {
+    try {
+      fn();
+    } catch (err) {
+      console.error(`[lattice] ${label} init failed`, err);
+    }
+  };
+
+  // Whisper before boot — clearance gate toggles the pad whisper chrome
+  safe("whisper", initWhisper);
+
+  // Pad first — never blocked behind channel inits
+  void runBoot().catch((err) => {
+    console.error("[lattice] boot failed", err);
+  });
+
+  safe("nav", initNav);
+  safe("systems", initSystems);
+  safe("imago", initImagoReturn);
+  safe("compass", initCompass);
+  safe("cartography", initCartography);
+  safe("hull", initHullPlan);
+  safe("fth", initFthConsole);
+  safe("flight-log", initFlightLog);
+  safe("archives", initArchives);
+  safe("imperial", initImperialClearance);
+  safe("clearance-ui", applyClearanceUI);
 });

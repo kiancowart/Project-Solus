@@ -13,7 +13,7 @@ import {
   areAllPlanetDossiersUnlocked,
   areAllFragmentsRecovered,
 } from "./progress.js";
-import { typeText, revealPanel, corruptChromeLabel } from "./motion.js";
+import { typeText, revealPanel, corruptChromeLabel, descrambleText } from "./motion.js";
 
 /* ==========================================================================
    NAVIGATION — channel switching + typed banner title
@@ -95,9 +95,16 @@ export function refreshChannelCorruption() {
     const clearTitle = btn.dataset.clearTitle;
 
     if (corrupt) {
+      if (btn.classList.contains("is-descrambling")) return;
       setNavButtonLabel(btn, corruptChromeLabel(clearLabel, seed));
       btn.dataset.channelTitle = corruptChromeLabel(clearTitle, seed + 2);
       btn.classList.add("is-chrome-corrupt");
+      btn.dataset.chromeCorrupt = "1";
+    } else if (btn.dataset.chromeCorrupt === "1") {
+      btn.dataset.chromeCorrupt = "0";
+      btn.classList.remove("is-chrome-corrupt");
+      btn.dataset.channelTitle = clearTitle;
+      void descrambleText(btn, clearLabel);
     } else {
       setNavButtonLabel(btn, clearLabel);
       btn.dataset.channelTitle = clearTitle;
@@ -109,15 +116,28 @@ export function refreshChannelCorruption() {
     if (!btn.dataset.clearLabel) btn.dataset.clearLabel = "GUEST CHANNEL";
     const locked = btn.classList.contains("is-locked");
     const clear = btn.dataset.clearLabel;
-    const label = locked ? corruptChromeLabel(clear, 11) : clear;
-    btn.classList.toggle("is-chrome-corrupt", locked);
-    btn.replaceChildren();
-    btn.append(document.createTextNode(`${label} `));
-    const caret = document.createElement("span");
-    caret.className = "nav-item__caret";
-    caret.setAttribute("aria-hidden", "true");
-    caret.textContent = "▼";
-    btn.appendChild(caret);
+    const paintCaret = (label) => {
+      btn.replaceChildren();
+      btn.append(document.createTextNode(`${label} `));
+      const caret = document.createElement("span");
+      caret.className = "nav-item__caret";
+      caret.setAttribute("aria-hidden", "true");
+      caret.textContent = "▼";
+      btn.appendChild(caret);
+    };
+    if (locked) {
+      btn.classList.add("is-chrome-corrupt");
+      btn.dataset.chromeCorrupt = "1";
+      paintCaret(corruptChromeLabel(clear, 11));
+    } else if (btn.dataset.chromeCorrupt === "1") {
+      btn.dataset.chromeCorrupt = "0";
+      btn.classList.remove("is-chrome-corrupt");
+      btn.textContent = corruptChromeLabel(clear, 11);
+      void descrambleText(btn, clear).then(() => paintCaret(clear));
+    } else {
+      btn.classList.remove("is-chrome-corrupt");
+      paintCaret(clear);
+    }
   });
 
   const banner = document.getElementById("channel-banner");

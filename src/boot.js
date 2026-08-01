@@ -20,7 +20,6 @@ import {
   prefersReducedMotion,
   typeText,
   blinkBootDots,
-  revealTopToBottom,
   revealPanel,
 } from "./motion.js";
 import {
@@ -124,9 +123,14 @@ export function runClearanceGate(skippedRef) {
     const status = document.getElementById("gate-status");
     const cascade = document.getElementById("gate-cascade");
     const flash = document.getElementById("gate-flash");
-    const pad = gate.querySelector(".gate__pad");
+    const pad = gate?.querySelector(".gate__pad");
     const eyes = document.getElementById("gate-eyes");
     const skipBtn = document.getElementById("boot-skip");
+    if (!gate || !display || !status || !cascade || !flash || !pad || !skipBtn) {
+      console.error("[lattice] clearance gate DOM missing");
+      resolve();
+      return;
+    }
     const maxLen = ACCESS_CODE.length;
 
     let buffer = "";
@@ -148,7 +152,13 @@ export function runClearanceGate(skippedRef) {
       k.disabled = false;
     });
 
-    revealTopToBottom(gate.querySelector(".gate"));
+    // Paint pad immediately — stepped reveal previously left it visibility:hidden
+    const gateRoot = gate.querySelector(".gate");
+    gateRoot?.querySelectorAll(":scope > *").forEach((el) => {
+      if (el.hidden || el.hasAttribute("hidden")) return;
+      el.classList.remove("is-pending");
+      el.classList.add("is-shown");
+    });
 
     const interceptLink = gate.querySelector('.lattice-route[data-route="tuner"]');
     const hubBtn = document.getElementById("gate-hub");

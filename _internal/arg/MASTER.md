@@ -250,7 +250,7 @@ Imperial Clearance opens Archives + Guest and decrypts all Log chrome.
 
 ---
 
-## 5. Deep board architecture (Phases B–C)
+## 5. Deep board architecture (shipped Chart + Log)
 
 ### Layers
 
@@ -271,7 +271,7 @@ Flight Log prose → keyword / browse → click fragment word/chip → tray
     → Chart Dominion Seal order → Imperial wells
 ```
 
-- **Chart puzzle** = you *earned* the dossier (ordinal / order).
+- **Chart puzzle** = you *earned* the dossier (named seal / bind order).
 - **Fragment word** = physical token for the wells (diegetic Solus-arc word).
 - **`/volume <planet>`** = confirms a claimed fragment (not an unlock).
 
@@ -286,29 +286,33 @@ Do **not** use elemental key doors. Wrong diegesis.
 Do use a Signalis-*shaped skill* (collect motifs → sort by known grammar):
 
 - True bind order = **inward → outward** (already slots + orbits).
-- Each dossier (unlocked via that planet’s Chart puzzle) embeds one **Dominion Seal ordinal** in liturgical prose.
-- **Sturm** is free (tutorial shape). The Nine are locked. Nu Lunae `?` is a non-Imperial egg.
+- Each dossier (unlocked via that planet’s Chart puzzle) ends on a **named Dominion Seal** (DEVOTION…VENGEANCE) in liturgical prose — not Latin ordinals (PRIMUS…).
+- **Sturm** is free (tutorial shape). The Nine each have a Chart purge (all shipped). Nu Lunae `?` is a non-Imperial egg.
 - Chart rings are secondary confirmation; dossiers are the shareable method.
 
 ### Per-planet puzzles — Chart verb vs residue crumb
 
-| Slot | Planet | Chart verb | Residue crumb (flavor) | Phase |
-|-----:|--------|------------|------------------------|-------|
-| 1 | Qamor | Landing sequence L-2→L-1→L-3→L-5 | Pad / ship **512** | **B** |
-| 2 | Ikeph | Blood hymn reorder | INNER checksum **215** | **B** |
-| 3 | Terra | Chrono rings realign | Log / lore scrap **320** | **B** |
-| 4 | Deshret | Empire phrase text | `/moon kaph` **430** | C |
-| 5 | Teavicta | Cardinal eye E→W→N→S | `/protocol` **540** | C |
-| 6 | Uros | Old name Zezura (Sturm) | — | **B** |
-| 7 | Heixin | Partner Morse → plaintext | `/echo` **760** | C |
-| 8 | Haider | Lights-out 3×5 — blocks **01·04·05·09·10·12** | Plate crumb **870** | C |
-| 9 | Vol | First 3 purges on tray → order bar inner→outer | `/edge` **980** | C |
+All Chart verbs below are **shipped**. Residue crumbs are Terminal / STATUS flavor only — they do **not** unlock dossiers or Log chapters.
+
+| Slot | Planet | Chart verb (shipped) | Residue crumb (flavor) |
+|-----:|--------|----------------------|------------------------|
+| 1 | Qamor | Landing sequence L-2→L-1→L-3→L-5 | Pad / ship **512** |
+| 2 | Ikeph | Blood hymn reorder (`/passage`) | INNER checksum **215** |
+| 3 | Terra | Chrono rings (local time) | Log / lore scrap **320** |
+| 4 | Deshret | Empire phrase text (**All our blood is red**) | `/moon kaph` **430** |
+| 5 | Teavicta | Cardinal eye E→W→N→S | `/protocol` **540** |
+| 6 | Uros | Text **Zezura** | — |
+| 7 | Heixin | Partner Morse pad → **I MISS U** | `/echo` **760** |
+| 8 | Haider | Lights-out 3×5 — **01·04·05·09·10·12** | Plate crumb **870** |
+| 9 | Vol | First 3 purges on tray → order bar inner→outer | `/edge` **980** |
+
+**Retired Chart verbs:** flare B·A·C (`/whoami`), cradle assemble FC1·NL2·WR4, shadow dial tick 5, text VX-48 / hold fast / prickly, Heixin serials-as-Chart, Vol `/edge` flag gate, Teavicta `/protocol` flag gate.
 
 ---
 
 ## 6. Terminal hub (ship OS, not STATUS minigame)
 
-### Phase B (ship now)
+### Shipped commands
 
 | Cmd | Behavior |
 |-----|----------|
@@ -316,15 +320,15 @@ Do use a Signalis-*shaped skill* (collect motifs → sort by known grammar):
 | `/outer` `/inner` | STATUS unlock spine |
 | `/landing` | Landing profiles (Qamor Chart spoil sequence) |
 | `/volume` / `/volume <planet>` | Confirm fragment after claim |
-| `/protocol` | Volume residue **540** (Teavicta Chart is cardinal eye) |
-| `/echo` | Heixin instrument (needs INNER) |
+| `/protocol` | Residue **540** only (Teavicta Chart is cardinal eye) |
+| `/echo` | Damage times + Heixin residue **760** (needs INNER) — not the Chart answer |
 | `/moon <name>` | Kaph catalog → **430** |
-| `/edge` | Volume **980** (carrier greeting) |
+| `/edge` | Residue **980** (carrier greeting) — not a Vol Chart flag |
 | `/translate` | Partial lexicon — Empire blood phrase + partner Morse |
-| `/passage` | Ikeph Empress verse dump |
+| `/passage` | Ikeph Empress verse dump (Chart reorder spoil) |
 | `Celeste` / `celeste` | Easter: “Turn around.” |
 
-Removed: `/catalog` `/orbit` `/seal` (redundant order spoilers).
+**Removed Terminal cmds:** `/whoami` · `/catalog` · `/orbit` · `/seal` (and any Chart flag gates tied to `/protocol` / `/edge`).
 
 ### Planet dossier copy
 
@@ -332,12 +336,12 @@ Edit `PLANET_DOSSIERS` in `content/arg-path.js` (one object per planet: `facts`,
 
 ### Phase C notes
 
-Nu Lunae Chart `?` → oneshot teaser (not Imperial). Guest campaign vs oneshot copy.
+Nu Lunae Chart `?` → oneshot teaser (not Imperial). Guest campaign vs oneshot copy polish. Chart purges themselves are already live.
 
 ### Easter eggs (optional depth)
 
-- Chart Teavicta `?` mystery → Nu Lunae / Enkidu-1 blurb (oneshot hook) — Phase C
-- Terminal “Turn around” on Celeste — Phase B
+- Chart Teavicta `?` mystery → Nu Lunae / Enkidu-1 blurb (oneshot hook) — Phase C copy
+- Terminal “Turn around” on Celeste — shipped
 - Soft radio beds **010.5 / 051.2 / 066.6**
 - Corrupt Guest sub-channel flavor until Imperial
 
@@ -377,8 +381,8 @@ If an entry wants >200 words: split, or move to Archives / Guest. Imperial bind 
 | Phase | When | Player-facing | Your focus |
 |-------|------|---------------|------------|
 | **A — Handshake live** | Shipped | Pin + intercept + pad + STATUS `/outer`/`/inner` + bays | Sensory win; VC premiere; `#signals` |
-| **B — Soft board** | Now | Uros + Qamor + Ikeph + Terra + Terminal hub v1 + richer INNER | Dual codes; click-to-tray; dossier ordinals |
-| **C — Deep optional** | Before session 0 | Deshret/Kaph, Teavicta, Heixin, Haider/Vol, Nu Lunae, Guest split | Heavy spans; campaign vs oneshot copy |
+| **B — Soft board** | Shipped | Flat Log + click-to-tray + **all nine** Chart purges + Terminal hub | Playtest; dossier copy; residue crumbs as flavor only |
+| **C — Table polish** | Before session 0 | Nu Lunae / Guest campaign vs oneshot copy; writing density | Heavy spans; bonded vs unsecured stake |
 
 **Public promise = Phase A.** Never gate friendship on Phase C.
 
@@ -401,12 +405,12 @@ If an entry wants >200 words: split, or move to Archives / Guest. Imperial bind 
 5. Search `hive`/`qamor` → claim **HIVE**; Chart landing sequence → DEVOTION  
 6. Browse Ikeph scrap → claim **OATH**; Chart blood hymn → ERUDITION  
 7. Browse Terra scrap → claim **CARA**; Chart chrono rings → RESOLUTION  
-8. Infer bind **order** from unlocked dossiers  
-9. Partial Imperial bind from tray (wrong seals = deny-shake)  
+8. Smoke-test outer purges: Deshret phrase · Teavicta eye · Uros **Zezura** · Heixin Morse · Haider lights · Vol orbit tray  
+9. Infer bind **order** from unlocked dossiers; partial Imperial bind (wrong seals = deny-shake)  
 
 ### Explicitly Phase C
 
-Deshret/Kaph (`/moon`), Teavicta `/protocol`, Heixin `/echo`, Haider/Vol, Nu Lunae egg, Guest split, **VESPER** partner reveal.
+Nu Lunae egg copy, Guest campaign vs oneshot split, writing budget, **VESPER** partner reveal polish. Chart puzzle verbs themselves are already shipped — do not reinstate volume airlocks or retired Chart types.
 
 ---
 
@@ -434,6 +438,6 @@ Deshret/Kaph (`/moon`), Teavicta `/protocol`, Heixin `/echo`, Haider/Vol, Nu Lun
 
 - Friends can invest in **Phase A** in one evening without waiting for Imperial.  
 - Chart puzzles yield bind **order** (dossiers); Log prose yields **fragments** (click-to-tray).  
-- Terminal feels like Cara’s OS with purposeful instruments only.  
+- Terminal feels like Cara’s OS with purposeful instruments only (no Chart flag gates).  
 - Campaign and oneshot groups share the door, diverge at Guest.  
 - This file is the single source of author truth.

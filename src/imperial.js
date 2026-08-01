@@ -6,7 +6,7 @@ import { IMPERIAL_SLOTS, EMPIRE_SEALS } from "../content/arg-path.js";
 import { wipeLatticeProgress } from "./progress.js";
 import { playBootLogo } from "./boot.js";
 import { audio } from "./audio.js";
-import { sleep, bootMs, prefersReducedMotion, scrambleText, SCRAMBLE_GLYPHS } from "./motion.js";
+import { sleep, bootMs, prefersReducedMotion, scrambleText, descrambleText } from "./motion.js";
 import {
   grantImperialClearance,
   hasImperialClearance,
@@ -34,32 +34,6 @@ const SIDES_OUT_MS = 2000;
 const EMPTY_TRI_HOLD_MS = 2400;
 const BANQUET_SCAN_MS = 1500;
 const RESET_SCAN_MS = 900;
-
-async function descrambleEl(el, clear, durationMs = 850) {
-  if (!el) return;
-  const text = String(clear ?? "");
-  if (prefersReducedMotion()) {
-    el.textContent = text;
-    el.classList.remove("is-scrambled");
-    return;
-  }
-  el.classList.add("is-scrambled");
-  const steps = 14;
-  for (let s = 0; s <= steps; s++) {
-    const t = s / steps;
-    let out = "";
-    for (let i = 0; i < text.length; i++) {
-      const threshold = t * 1.2 - (i / Math.max(1, text.length)) * 0.4;
-      out += Math.random() < threshold
-        ? text[i]
-        : SCRAMBLE_GLYPHS[(i * 11 + s * 5) % SCRAMBLE_GLYPHS.length];
-    }
-    el.textContent = out;
-    await sleep(Math.round(durationMs / steps));
-  }
-  el.textContent = text;
-  el.classList.remove("is-scrambled");
-}
 
 async function waitBanquetImageReady() {
   const img = document.querySelector(".imperial-tri__banquet-img");
@@ -226,7 +200,7 @@ export function initImperialClearance() {
         chip.classList.add("is-scrambled");
         chip.textContent = scrambleText(s.fragment, 4);
         descrambledTray.add(s.fragment);
-        void descrambleEl(chip, s.fragment);
+        void descrambleText(chip, s.fragment, { durationMs: 850 });
       }
     }
   };

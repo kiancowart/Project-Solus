@@ -14,7 +14,7 @@ import { audio } from "./audio.js";
 import {
   prefersReducedMotion,
   scrambleText,
-  animateCorruptBars,
+  descrambleText,
 } from "./motion.js";
 import {
   isDossierUnlocked,
@@ -143,44 +143,8 @@ export function initCartography() {
   let stopWire = null;
   let selectedId = null;
   let selectedG = null;
-  let stopCorruptAnim = null;
-
-  const clearCorruptAnim = () => {
-    if (stopCorruptAnim) {
-      stopCorruptAnim();
-      stopCorruptAnim = null;
-    }
-    readout.classList.remove("is-puzzle-corrupt");
-  };
-
-  const applyCorruptChrome = (clearName) => {
-    const lock = readout.querySelector(".chart-lock");
-    if (!lock || lock.dataset.corrupt === "1") return () => {};
-    lock.dataset.corrupt = "1";
-    lock.classList.add("chart-lock--corrupt");
-    readout.classList.add("is-puzzle-corrupt");
-
-    lock.querySelector(".chart-lock__title")?.remove();
-
-    const top = document.createElement("div");
-    top.className = "chart-corrupt-bar chart-corrupt-bar--top";
-    top.setAttribute("aria-hidden", "true");
-    top.innerHTML = `
-      <span class="chart-corrupt-bar__title is-scrambled" data-corrupt-title>${scrambleText(clearName, 9)}</span>
-      <span class="chart-corrupt-bar__stream" data-corrupt-stream></span>`;
-
-    const bot = document.createElement("div");
-    bot.className = "chart-corrupt-bar chart-corrupt-bar--bottom";
-    bot.setAttribute("aria-hidden", "true");
-    bot.innerHTML = `<span class="chart-corrupt-bar__stream" data-corrupt-stream></span>`;
-
-    lock.insertBefore(top, lock.firstChild);
-    lock.appendChild(bot);
-    return animateCorruptBars(lock, clearName);
-  };
 
   const showIdle = () => {
-    clearCorruptAnim();
     if (stopWire) {
       stopWire();
       stopWire = null;
@@ -190,7 +154,6 @@ export function initCartography() {
   };
 
   const showError = () => {
-    clearCorruptAnim();
     audio.play("open");
     if (stopWire) {
       stopWire();
@@ -267,7 +230,6 @@ export function initCartography() {
   };
 
   const showDossier = (planetId, { scanIn = false } = {}) => {
-    clearCorruptAnim();
     const d = PLANET_DOSSIERS[planetId];
     if (!d) {
       showError();
@@ -333,7 +295,7 @@ export function initCartography() {
     const finish = () => {
       unlockRevealTimer = 0;
       unlockRevealBusy = false;
-      refreshPlanetLabels();
+      refreshPlanetLabels({ animate: false });
       showDossier(planetId, { scanIn: true });
     };
 
@@ -392,9 +354,7 @@ export function initCartography() {
       stopWire = null;
     }
     paintArchive(planetId);
-    clearCorruptAnim();
 
-    try {
     if (puzzle.type === "orbit-order") {
       const need = puzzle.requireDossiers ?? 3;
       const orbitAnswer =
@@ -918,7 +878,7 @@ export function initCartography() {
         if (ok) unlockAndShow(planetId);
         else {
           const feedback = readout.querySelector("#chart-lock-feedback");
-          if (feedback) feedback.textContent = "HYMN REJECTED";
+          flashDenyFeedback(feedback);
           shakeLock(readout.querySelector("#chart-lock"));
         }
       });
@@ -1479,12 +1439,6 @@ export function initCartography() {
         shakeLock(readout.querySelector("#chart-lock"));
       }
     });
-    } finally {
-      const lock = readout.querySelector(".chart-lock");
-      if (lock && lock.dataset.corrupt !== "1") {
-        stopCorruptAnim = applyCorruptChrome(name);
-      }
-    }
   };
 
   const selectPlanet = (planetId) => {
@@ -1493,7 +1447,6 @@ export function initCartography() {
   };
 
   const showSturm = () => {
-    clearCorruptAnim();
     audio.play("dropdownToggle");
     if (stopWire) {
       stopWire();
@@ -1567,7 +1520,7 @@ export function initCartography() {
     });
   };
 
-  const refreshPlanetLabels = () => {
+  const refreshPlanetLabels = ({ animate = true } = {}) => {
     svg.querySelectorAll(".chart-svg__body[data-body]").forEach((g) => {
       const id = g.dataset.body;
       const body = bodies.find((b) => b.id === id);
@@ -1575,10 +1528,30 @@ export function initCartography() {
       if (!body || !label) return;
       const clear = String(body.name ?? id).toUpperCase();
       if (isDossierUnlocked(id)) {
-        label.textContent = clear;
-        label.classList.remove("is-scrambled");
         g.setAttribute("aria-label", body.name);
+        // Don't clobber an in-flight descramble (unlock fires refresh twice)
+        if (label.classList.contains("is-descrambling")) {
+          fitSelectBox(g);
+          return;
+        }
+        if (animate && label.dataset.latticeClear !== "1") {
+          label.dataset.latticeClear = "1";
+          if (!label.classList.contains("is-scrambled")) {
+            label.textContent = scrambleText(clear, clear.length + 3);
+            label.classList.add("is-scrambled");
+          }
+          void descrambleText(label, clear, {
+            onFrame: () => fitSelectBox(g),
+          }).then(() => fitSelectBox(g));
+        } else {
+          label.dataset.latticeClear = "1";
+          label.textContent = clear;
+          label.classList.remove("is-scrambled", "is-descrambling");
+          label.classList.add("is-clear");
+        }
       } else {
+        delete label.dataset.latticeClear;
+        label.classList.remove("is-clear", "is-descrambling");
         label.textContent = scrambleText(clear, clear.length + 3);
         label.classList.add("is-scrambled");
         g.setAttribute("aria-label", "Corrupted orbital body");
@@ -1622,7 +1595,7 @@ export function initCartography() {
       id: body.id,
     });
   });
-  refreshPlanetLabels();
+  refreshPlanetLabels({ animate: false });
 
   const makeSatellite = (cfg, className, ariaLabel, onSelect) => {
     if (!cfg) return null;
@@ -1702,7 +1675,7 @@ export function initCartography() {
 
   // Refresh Vol tray as dossiers unlock elsewhere
   window.addEventListener("lattice:dossier", () => {
-    refreshPlanetLabels();
+    refreshPlanetLabels({ animate: true });
     if (selectedId !== "vol") return;
     if (isDossierUnlocked("vol")) return;
     selectPlanet("vol");

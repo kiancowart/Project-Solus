@@ -138,23 +138,25 @@ Damaged order for `/inner`: **EL0** (ENG·L) → **WL3** (WINGS L) → **NR5** (
 
 ### System Chart — seal order + puzzle answers
 
-Bind order = inward → outward (Dominion Seal ordinals). Chart unlocks **dossiers** (order), not volume codes.
+Bind order = inward → outward (named Dominion Seals). Chart unlocks **dossiers** (order), not volume codes. All nine planet purges are **shipped** (`CHART_PUZZLES` in `arg-path.js`).
 
-| # | Planet | Seal | Chart puzzle answer |
-|--:|--------|------|---------------------|
-| 1 | Qamor | DEVOTION | Sequence **L-2 → L-1 → L-3 → L-5** (`/landing` rough/spoil profile) |
-| 2 | Ikeph | ERUDITION | Reorder blood poem (`/passage`) — glyph lines → clear order |
-| 3 | Terra | RESOLUTION | Chrono rings — align hours + minutes to real local time, then COMMIT |
-| 4 | Deshret | COMMUNION | Text **All our blood is red** (Empire phrase) |
-| 5 | Teavicta | JUSTICE | Cardinal eye **E → W → N → S** |
-| 6 | Uros | AMBITION | Text **Zezura** (Sturm free dossier — Uros's old name) |
-| 7 | Heixin | DOMINANCE | Log Morse → Chart pad `../--/../.../.../..-` → plaintext **I MISS U** |
-| 8 | Haider | SACRIFICE | Lights-out **3×5** — press **01 · 04 · 05 · 09 · 10 · 12** (all lit) |
-| 9 | Vol | VENGEANCE | Tray first **3** purges → drag onto bar **inner→outer** |
+| # | Planet | Seal | Type | Answer |
+|--:|--------|------|------|--------|
+| 1 | Qamor | DEVOTION | `sequence` | **L-2 → L-1 → L-3 → L-5** (`/landing` spoil/rough profile) |
+| 2 | Ikeph | ERUDITION | `reorder` | Blood hymn lines in `/passage` order (glyph → clear) |
+| 3 | Terra | RESOLUTION | `chrono-rings` | Align hours + minutes to real local time → COMMIT |
+| 4 | Deshret | COMMUNION | `text` | **All our blood is red** (Empire phrase; also `/translate`) |
+| 5 | Teavicta | JUSTICE | `cardinal-eye` | Look **E → W → N → S** |
+| 6 | Uros | AMBITION | `text` | **Zezura** (old designation) |
+| 7 | Heixin | DOMINANCE | `morse-translate` | Pad `../--/../.../.../..-` → plaintext **I MISS U** |
+| 8 | Haider | SACRIFICE | `lights-out` | **3×5** all-lit — press **01 · 04 · 05 · 09 · 10 · 12** |
+| 9 | Vol | VENGEANCE | `orbit-order` | Need **3** other dossier purges → tray chips onto bar **inner→outer** |
 
-Sturm dossier is free (tutorial shape). Teavicta `?` = Nu Lunae egg (not Imperial).
+**Sturm** (Uros moon) dossier is free — tutorial shape, no Chart purge. Chart `?` (Teavicta mystery) = Nu Lunae egg (not Imperial).
 
-**Planet descriptions (dossier copy):** edit `PLANET_DOSSIERS` in `content/arg-path.js` (planet-by-planet: `facts` + `sealWhy`). Sturm blurb: `SYSTEM_CHART.sturm` in `content/boot-content.js`.
+**Retired Chart verbs (do not chase):** flare **B→A→C** / `/whoami`, cradle assemble **FC1·NL2·WR4**, shadow dial tick **5**, text **VX-48** / **hold fast** / **prickly**, Heixin serial echo as Chart answer, Vol `/edge` flag gate. Terminal `/protocol` · `/echo` · `/moon` · `/edge` are **residue crumbs only**, not Chart unlocks.
+
+**Planet descriptions (dossier copy):** edit `PLANET_DOSSIERS` in `content/arg-path.js` (`facts` + `sealWhy`). Sturm blurb: `SYSTEM_CHART.sturm` in `content/boot-content.js`.
 
 ---
 
@@ -191,7 +193,7 @@ Search: substring filter on title / date / location / body / fragment. No hit ca
 | Haider | haider, spike | **SPIKE** |
 | Vol | vol, vesper | **VESPER** (partner) |
 
-Other searchable prose hooks (not separate airlocks): **wake**, **dust**, **cowboy**, **kaph**, **plate**, **gunsmith**, **crossing**.
+Other searchable prose hooks (not locks): **wake**, **dust**, **cowboy**, **kaph**, **plate**, **gunsmith**, **crossing**.
 
 Claim: click fragment word/chip → Imperial tray → wells in Chart seal order.
 
@@ -259,13 +261,13 @@ EXTRA: `/landing` · `/protocol` · `/echo` · `/moon` · `/edge` · `/translate
 
 ### 5. System Chart
 
-1. Sturm free; other worlds sealed until Chart puzzles.
-2. Dossiers teach **bind order** only (not volumes).
-3. Puzzle answers in glossary (Chart table).
+1. Sturm free; The Nine sealed until each world’s Chart purge (glossary table).
+2. Dossiers teach **bind order** only (named seals) — not volume codes.
+3. Soft loop: Qamor / Ikeph / Terra / Uros first; outer worlds use the shipped verbs above.
 
 ### 6. Flight Log
 
-1. Flat list after PERSONAL RECORD bay — no per-planet airlocks.
+1. Flat list after PERSONAL RECORD bay — no per-planet airlocks or volume keys.
 2. Search filters the list; open entries; click fragment words into the tray.
 3. Soft loop: claim **STURM** → **HIVE** → **OATH** → **CARA** (then outer worlds).
 
@@ -344,7 +346,7 @@ No handshake → you arrive unsecured. Guest Channel stays colder.
 1. `?cold=1`  
 2. Handshake → bays → Sturm free → claim **STURM**  
 3. Browse / search Log → **HIVE** · **OATH** · **CARA**  
-4. Chart puzzles unlock dossiers (bind order)  
+4. Chart purges unlock dossiers (all nine shipped — glossary)  
 5. Tray bind; Terminal instruments + `Celeste` egg  
 
 If the first ten minutes feel stingy, intrigue fails. Depth = MASTER Phases B/C.

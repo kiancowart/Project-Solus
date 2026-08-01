@@ -2586,96 +2586,6 @@ body.is-nav-locked .nav-item:not(.is-active) {
   background: #000;
 }
 
-.chart__readout.is-puzzle-corrupt {
-  overflow: hidden;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.chart__readout.is-puzzle-corrupt > .chart-lock--corrupt {
-  flex: 1 1 auto;
-  min-height: 0;
-  height: 100%;
-}
-
-.chart-lock--corrupt {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
-  padding: 0;
-}
-
-.chart-corrupt-bar {
-  flex: 1 1 22%;
-  min-height: 2.4rem;
-  max-height: 30%;
-  overflow: hidden;
-  border: 1px solid rgba(255, 47, 24, 0.45);
-  background: rgba(255, 47, 24, 0.06);
-  padding: 0.35rem 0.45rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.2rem;
-  pointer-events: none;
-}
-
-.chart-corrupt-bar__title {
-  margin: 0;
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
-  color: var(--phosphor);
-  text-shadow: var(--glow-soft);
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.chart-corrupt-bar__title.is-scrambled {
-  color: rgba(255, 47, 24, 0.72);
-}
-
-.chart-corrupt-bar__stream {
-  display: block;
-  font-size: 0.48rem;
-  letter-spacing: 0.08em;
-  line-height: 1.35;
-  color: rgba(255, 47, 24, 0.45);
-  white-space: nowrap;
-  overflow: hidden;
-  word-break: break-all;
-}
-
-.chart-lock--corrupt > :not(.chart-corrupt-bar) {
-  flex: 0 1 auto;
-  min-height: 0;
-}
-
-.chart-lock--corrupt .chart-lock__lines {
-  overflow: hidden;
-  gap: 0.22rem;
-}
-
-.chart-lock--corrupt .chart-lock__line {
-  padding: 0.22rem 0.35rem;
-}
-
-.chart-lock--corrupt .chart-lock__line-text {
-  font-size: 0.58rem;
-  letter-spacing: 0.04em;
-}
-
-.chart-lock--corrupt .chrono-align__stage {
-  max-height: min(42vh, 14rem);
-}
-
-.chart-lock--corrupt .chart-lock__nodes {
-  gap: 0.3rem;
-}
-
 .chart-svg__label.is-scrambled {
   fill: rgba(255, 47, 24, 0.55);
 }
@@ -2874,6 +2784,12 @@ body.is-nav-locked .nav-item:not(.is-active) {
 .panel__body > .is-pending,
 .gate > .is-pending {
   visibility: hidden;
+}
+
+/* Clearance pad must stay paint-visible even if a reveal stalls mid-pending */
+.gate > .gate__pad.is-pending,
+.gate > .gate__display.is-pending {
+  visibility: visible;
 }
 
 .panel__body > .is-shown,
@@ -4133,23 +4049,6 @@ body.is-nav-locked .nav-item:not(.is-active) {
   animation: hull-layer-glitch 1.1s steps(3, end) infinite;
 }
 
-.hull-view.is-layer-corrupt::after {
-  content: "░▒▓█░▒▓█░▒▓ CORRUPT FEED ▓▒░█▓▒░█▓▒░";
-  position: absolute;
-  left: 0.4rem;
-  right: 0.4rem;
-  top: 0.35rem;
-  z-index: 3;
-  pointer-events: none;
-  font-size: 0.48rem;
-  letter-spacing: 0.14em;
-  color: rgba(255, 47, 24, 0.55);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: clip;
-  animation: hull-corrupt-ticker 2.4s steps(8, end) infinite;
-}
-
 .hull-mon--outer-corrupt .hull-mon__head,
 .hull-mon--outer-corrupt .hull-mon__detail,
 .hull-mon--outer-corrupt .hull-mon__schematic {
@@ -4217,22 +4116,6 @@ body.is-nav-locked .nav-item:not(.is-active) {
   }
 }
 
-@keyframes hull-corrupt-ticker {
-  0%,
-  100% {
-    opacity: 0.45;
-    letter-spacing: 0.14em;
-  }
-  40% {
-    opacity: 0.8;
-    letter-spacing: 0.22em;
-  }
-  70% {
-    opacity: 0.35;
-    transform: translateX(2px);
-  }
-}
-
 @keyframes hull-text-jitter {
   0%,
   100% {
@@ -4258,7 +4141,6 @@ body.is-nav-locked .nav-item:not(.is-active) {
 
 @media (prefers-reduced-motion: reduce) {
   .hull-view.is-layer-corrupt::before,
-  .hull-view.is-layer-corrupt::after,
   .hull-mon--outer-corrupt .hull-mon__title,
   .hull-mon--outer-corrupt .hull-mon__meta,
   .hull-mon--outer-corrupt .hull-detail__k,
@@ -6224,7 +6106,10 @@ body.is-nav-locked .nav-item:not(.is-active) {
   margin-inline: auto;
 }
 
-.chart-lock__node.is-lit,
+.chart-lock__node.is-lit {
+  background: rgba(255, 47, 24, 0.22);
+  box-shadow: var(--glow-soft);
+}
 
 .chart-lock__lights {
   display: grid;

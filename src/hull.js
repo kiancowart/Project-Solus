@@ -3,7 +3,7 @@
  */
 
 import { audio } from "./audio.js";
-import { corruptChromeLabel } from "./motion.js";
+import { corruptChromeLabel, descrambleText } from "./motion.js";
 import {
   PUZZLE_A,
   PUZZLE_B,
@@ -234,18 +234,29 @@ export function initHullPlan() {
 
     const tabOuter = document.getElementById("hull-tab-outer");
     const tabInner = document.getElementById("hull-tab-inner");
-    if (tabOuter) {
-      if (!tabOuter.dataset.clearLabel) tabOuter.dataset.clearLabel = "OUTER";
-      tabOuter.textContent = prog.optics
-        ? tabOuter.dataset.clearLabel
-        : corruptChromeLabel(tabOuter.dataset.clearLabel, 8);
-    }
-    if (tabInner) {
-      if (!tabInner.dataset.clearLabel) tabInner.dataset.clearLabel = "INNER";
-      tabInner.textContent = prog.inner
-        ? tabInner.dataset.clearLabel
-        : corruptChromeLabel(tabInner.dataset.clearLabel, 9);
-    }
+    const paintHullTab = (tab, clear, unlocked, seed) => {
+      if (!tab) return;
+      if (!tab.dataset.clearLabel) tab.dataset.clearLabel = clear;
+      const label = tab.dataset.clearLabel;
+      if (!unlocked) {
+        tab.dataset.chromeCorrupt = "1";
+        if (!tab.classList.contains("is-descrambling")) {
+          tab.textContent = corruptChromeLabel(label, seed);
+        }
+        return;
+      }
+      if (tab.dataset.chromeCorrupt === "1") {
+        tab.dataset.chromeCorrupt = "0";
+        if (!tab.classList.contains("is-descrambling")) {
+          tab.textContent = corruptChromeLabel(label, seed);
+          void descrambleText(tab, label);
+        }
+      } else if (!tab.classList.contains("is-descrambling")) {
+        tab.textContent = label;
+      }
+    };
+    paintHullTab(tabOuter, "OUTER", prog.optics, 8);
+    paintHullTab(tabInner, "INNER", prog.inner, 9);
 
     if (eye) {
       const dead = !prog.optics;
@@ -719,10 +730,6 @@ export function initFthConsole() {
         push("TRANSLATE // PARTIAL HIT — PARTNER MORSE ROW", "fth-console__line--ok");
         push(`MORSE // ${PARTNER_MORSE.code}`, "fth-console__line--sys");
         push(`EN // ${PARTNER_MORSE.en}`, "fth-console__line--sys");
-        push(
-          "NOTE // FULL TABLE OFFLINE — PARTNER CARRIER + BLOOD PHRASE ONLY",
-          "fth-console__line--sys"
-        );
         return;
       }
 
@@ -732,10 +739,6 @@ export function initFthConsole() {
         push("TRANSLATE // PARTIAL HIT — PARTNER MORSE ROW", "fth-console__line--ok");
         push(`EN // ${PARTNER_MORSE.en}`, "fth-console__line--sys");
         push(`MORSE // ${PARTNER_MORSE.code}`, "fth-console__line--sys");
-        push(
-          "NOTE // FULL TABLE OFFLINE — PARTNER CARRIER + BLOOD PHRASE ONLY",
-          "fth-console__line--sys"
-        );
         return;
       }
 
@@ -756,10 +759,6 @@ export function initFthConsole() {
       push(`AR-LATN // ${arLatn}`, "fth-console__line--sys");
       push(`AR // ${ar}`, "fth-console__line--sys");
       push(`HEX // ${hex}`, "fth-console__line--sys");
-      push(
-        "NOTE // FULL MULTILINGUAL TABLE OFFLINE — BLOOD PHRASE + PARTNER MORSE ONLY",
-        "fth-console__line--sys"
-      );
       return;
     }
 

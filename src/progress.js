@@ -375,16 +375,27 @@ export function wipeLatticeProgress() {
 }
 
 export function applyColdStartFromQuery() {
-  const params = new URLSearchParams(window.location.search);
-  if (!params.has("cold") && !params.has("reset")) return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("cold") && !params.has("reset")) return false;
 
-  wipeLatticeProgress();
+    wipeLatticeProgress();
 
-  // Strip the flag so a refresh doesn't keep wiping mid-playtest
-  params.delete("cold");
-  params.delete("reset");
-  const q = params.toString();
-  const next = `${window.location.pathname}${q ? `?${q}` : ""}${window.location.hash}`;
-  window.history.replaceState({}, "", next);
-  return true;
+    // Strip the flag so a refresh doesn't keep wiping mid-playtest
+    params.delete("cold");
+    params.delete("reset");
+    const q = params.toString();
+    const next = `${window.location.pathname}${q ? `?${q}` : ""}${
+      window.location.hash
+    }`;
+    try {
+      window.history.replaceState({}, "", next);
+    } catch {
+      /* sandboxed / restricted history — wipe still applied */
+    }
+    return true;
+  } catch (err) {
+    console.error("[lattice] cold start failed", err);
+    return false;
+  }
 }

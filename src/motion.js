@@ -90,11 +90,15 @@ export async function revealTopToBottom(container, abortedRef = null) {
     (el) => el.nodeType === 1 && !el.hidden && !el.hasAttribute("hidden")
   );
 
-  if (prefersReducedMotion()) {
+  const showAll = () => {
     blocks.forEach((el) => {
       el.classList.remove("is-pending");
       el.classList.add("is-shown");
     });
+  };
+
+  if (prefersReducedMotion()) {
+    showAll();
     return;
   }
 
@@ -105,18 +109,23 @@ export async function revealTopToBottom(container, abortedRef = null) {
     el.classList.add("is-pending");
   });
 
-  const step = MOTION.blockStepMs ?? 70;
-  const totalMs = Math.max(step, blocks.length * step);
-  audio.play("revealScan", { durationMs: totalMs });
+  try {
+    const step = MOTION.blockStepMs ?? 70;
+    const totalMs = Math.max(step, blocks.length * step);
+    audio.play("revealScan", { durationMs: totalMs });
 
-  for (const el of blocks) {
-    if (abortedRef?.aborted) {
-      audio.stopRevealScan();
-      return;
+    for (const el of blocks) {
+      if (abortedRef?.aborted) {
+        audio.stopRevealScan();
+        break;
+      }
+      el.classList.remove("is-pending");
+      el.classList.add("is-shown");
+      await sleep(step);
     }
-    el.classList.remove("is-pending");
-    el.classList.add("is-shown");
-    await sleep(step);
+  } finally {
+    // Never leave interactive chrome stuck at visibility:hidden
+    showAll();
   }
 }
 
@@ -164,16 +173,24 @@ export function punchLetters(clear, { ratio = 0.18, seed = 1 } = {}) {
   for (let i = 0; i < src.length; i++) {
     if (/[A-Za-z]/.test(src[i])) letters.push(i);
   }
+  if (letters.length < 2) return src;
+
   const punchCount = Math.max(
     1,
     Math.min(letters.length - 1, Math.round(letters.length * ratio))
   );
-  const pick = new Set();
+
+  // Shuffle a copy (Fisher–Yates) so we always get unique indices — never spin
+  // forever if an LCG collapses onto a short residue cycle.
+  const pool = [...letters];
   let s = (seed * 1103515245 + 12345) >>> 0;
-  while (pick.size < punchCount && letters.length) {
+  for (let i = pool.length - 1; i > 0; i--) {
     s = (s * 1103515245 + 12345) >>> 0;
-    pick.add(letters[s % letters.length]);
+    const j = s % (i + 1);
+    [pool[i], pool[j]] = [pool[j], pool[i]];
   }
+  const pick = new Set(pool.slice(0, punchCount));
+
   let out = "";
   for (let i = 0; i < src.length; i++) {
     if (pick.has(i)) {
@@ -188,57 +205,61 @@ export function corruptChromeLabel(clear, seed = 3) {
   return punchLetters(clear, { ratio: 0.22, seed });
 }
 
-function noiseLine(width, seed, t) {
-  const n = SCRAMBLE_GLYPHS.length;
-  let out = "";
-  for (let i = 0; i < width; i++) {
-    const idx = (seed * 17 + i * 13 + t * 7) % n;
-    out += SCRAMBLE_GLYPHS[idx < 0 ? idx + n : idx];
-  }
-  return out;
-}
-
 /**
- * Animate corruption streams inside `.chart-corrupt-bar` elements.
- * Returns a stop() function.
+ * Animate an element from scramble glyphs → clear text (Flight Log / Imperial style).
+ * Works for HTML nodes and SVG `<text>`.
+ *
+ * @param {Element | null} el
+ * @param {string} clearText
+ * @param {{ durationMs?: number, onFrame?: (el: Element, text: string) => void }} [opts]
  */
-export function animateCorruptBars(root, clearTitle = "") {
-  if (!root) return () => {};
-  const streams = [...root.querySelectorAll("[data-corrupt-stream]")];
-  const titleEl = root.querySelector("[data-corrupt-title]");
-  if (prefersReducedMotion()) {
-    streams.forEach((el) => {
-      el.textContent = noiseLine(48, 2, 0);
-    });
-    if (titleEl && clearTitle) {
-      titleEl.textContent = scrambleText(clearTitle, 5);
-    }
-    return () => {};
+export async function descrambleText(el, clearText, opts = {}) {
+  if (!el) return;
+  const clear = String(clearText ?? "");
+  const durationMs = opts.durationMs ?? 900;
+  const onFrame = opts.onFrame;
+
+  if (!clear) {
+    el.textContent = "";
+    el.classList.remove("is-scrambled", "is-descrambling");
+    el.classList.add("is-clear");
+    return;
   }
 
-  let frame = 0;
-  let raf = 0;
-  let alive = true;
+  if (prefersReducedMotion()) {
+    el.textContent = clear;
+    el.classList.remove("is-scrambled", "is-descrambling");
+    el.classList.add("is-clear");
+    onFrame?.(el, clear);
+    return;
+  }
 
-  const tick = () => {
-    if (!alive) return;
-    frame += 1;
-    // ~20fps text churn is enough; full 60fps DOM writes were expensive
-    if (frame % 3 === 0) {
-      streams.forEach((el, si) => {
-        const w = Math.max(36, Math.floor((el.parentElement?.clientWidth || 220) / 7));
-        el.textContent = noiseLine(w, si + 3, frame);
-      });
-      if (titleEl && clearTitle && frame % 6 === 0) {
-        titleEl.textContent = scrambleText(clearTitle, frame);
+  el.classList.add("is-scrambled", "is-descrambling");
+  el.classList.remove("is-clear");
+
+  const steps = Math.max(8, Math.min(22, Math.round(durationMs / 45)));
+  for (let s = 0; s <= steps; s++) {
+    if (!el.isConnected) return;
+    const t = s / steps;
+    let out = "";
+    for (let i = 0; i < clear.length; i++) {
+      const ch = clear[i];
+      if (ch === " " || ch === "\n") {
+        out += ch;
+        continue;
       }
+      const threshold = t * 1.15 - (i / Math.max(1, clear.length)) * 0.35;
+      if (Math.random() < threshold) out += ch;
+      else out += SCRAMBLE_GLYPHS[(i * 13 + s * 7) % SCRAMBLE_GLYPHS.length];
     }
-    raf = requestAnimationFrame(tick);
-  };
-  raf = requestAnimationFrame(tick);
+    el.textContent = out;
+    onFrame?.(el, out);
+    await sleep(Math.round(durationMs / steps));
+  }
 
-  return () => {
-    alive = false;
-    if (raf) cancelAnimationFrame(raf);
-  };
+  if (!el.isConnected) return;
+  el.textContent = clear;
+  el.classList.remove("is-descrambling", "is-scrambled");
+  el.classList.add("is-clear");
+  onFrame?.(el, clear);
 }

@@ -46,7 +46,7 @@ Full ARG bible (engagement, funnels, deep board, phases): [`arg/MASTER.md`](arg/
 1. **Off-site first** — [`intercept.html`](../intercept.html). Carriers: **097.9** · **033.3**.
 2. **Pad `512`** — Opens hub; **STATUS** + **TERMINAL** available; Flight Log / Chart sealed until INNER puzzles.
 3. **STATUS puzzles** — FTH: `/outer` → `/inner` → click INNER bays for Chart / Log.
-4. **Chart + Log** — Chart puzzles unlock dossiers (Dominion Seal ordinals = bind order). Separate volume discoveries open journals. Keywords yield **story fragment words** → click → Imperial tray.
+4. **Chart + Log** — Chart purges unlock dossiers (named Dominion Seals = bind order). Flight Log is flat (no volume airlocks). Keywords yield **story fragment words** → click → Imperial tray.
 5. **Imperial Clearance** — 3×3 wells (planet + fragment word: HIVE…VESPER). Wrong bind → deny-shake. Grants `lattice.clearance=imperial`.
 6. **Whisper** — Pad guide only; does **not** grant Imperial.
 7. **Shareable** — Clues are words/docs; each browser keeps its own progress.
