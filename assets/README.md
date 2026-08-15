@@ -7,7 +7,6 @@ Prefer **SVG** for logos/UI, **WebP** for photos/stills, **MP3** for all audio (
 - `IMAGO.svg` — Empire Imago (boot splash + hub header). Wired via `BOOT_LOGO.src` in `content/boot-content.js`.
 - `666face.webp` — clearance `666` easter egg face.
 - `banquet.webp` — Imperial bind banquet still (lazy-loaded in `index.html` / `src/imperial.js`).
-- `sturm-wireframe.webp` — reference still for Sturm gyro viz (live viz is CSS/SVG).
 - `CARAPACE.svg` — Assault Captain-class Carapace top-down plan (Hull Telemetry schematic).
 
 ## audio/music/

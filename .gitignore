@@ -1,8 +1,15 @@
-# Obsidian vault symlink — read-only reference; never commit vault contents
+# Obsidian vault — never commit (player-facing digests are already compiled into content/)
 lore
 
 # OS / editor noise
 .DS_Store
+Thumbs.db
 *.swp
+*.log
+.env
+.env.*
+node_modules/
 
-# Note: `_internal/` is agent/dev reference (kept in git; not linked from the site UI)
+# Note: `_internal/` is operator/spoiler docs. Keep this GitHub repo PRIVATE.
+# If you ever make the repo public, add `_internal/` here first.
+# Vercel rewrites also 404 that folder so it is not served as a URL.
