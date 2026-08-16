@@ -4800,29 +4800,6 @@ body.is-nav-locked .nav-item:not(.is-active) {
   margin: 0.2rem 0 0.2rem 0.35rem;
 }
 
-.hull-inner__theatre {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.2rem;
-  margin-bottom: 0.1rem;
-}
-
-.hull-inner__sigil--live {
-  animation: hull-inner-pulse 2.8s ease-in-out infinite;
-}
-
-.hull-inner__scan {
-  margin: 0;
-  font-size: 0.48rem;
-  letter-spacing: 0.2em;
-  color: var(--phosphor-dim);
-}
-
-.hull-inner__scan.is-scan {
-  animation: hull-inner-scan 3.2s linear infinite;
-}
-
 .hull-inner__telemetry {
   list-style: none;
   margin: 0.1rem 0 0.25rem;
@@ -4850,33 +4827,6 @@ body.is-nav-locked .nav-item:not(.is-active) {
   margin-top: 0.35rem;
   margin-bottom: 1rem;
   width: 100%;
-}
-
-@keyframes hull-inner-pulse {
-  0%,
-  100% {
-    opacity: 0.75;
-    text-shadow: var(--glow-soft);
-  }
-  50% {
-    opacity: 1;
-    text-shadow: var(--glow);
-  }
-}
-
-@keyframes hull-inner-scan {
-  0% {
-    opacity: 0.35;
-    letter-spacing: 0.16em;
-  }
-  40% {
-    opacity: 1;
-    letter-spacing: 0.22em;
-  }
-  100% {
-    opacity: 0.45;
-    letter-spacing: 0.16em;
-  }
 }
 
 .hull-bay {
@@ -4950,16 +4900,22 @@ body.is-nav-locked .nav-item:not(.is-active) {
 }
 
 .imperial-gate:is(
+  .is-playing-bind,
   .is-binding,
   .is-sides-out,
+  .is-mid-filling,
+  .is-mid-glitch,
   .is-mid-filled,
   .is-banquet-in,
   .is-seal-bound,
   .is-granted
 ) .imperial-controls,
 .imperial-gate:is(
+  .is-playing-bind,
   .is-binding,
   .is-sides-out,
+  .is-mid-filling,
+  .is-mid-glitch,
   .is-mid-filled,
   .is-banquet-in,
   .is-seal-bound,
@@ -4970,11 +4926,26 @@ body.is-nav-locked .nav-item:not(.is-active) {
   pointer-events: none;
 }
 
+.imperial-gate.is-playing-bind,
+.imperial-gate.is-playing-bind .imperial-well,
+.imperial-gate.is-playing-bind .imperial-controls,
+.imperial-gate.is-playing-bind .imperial-autofill,
+.imperial-gate.is-playing-bind .imperial-purge,
+.imperial-gate.is-playing-bind .imperial-frag {
+  pointer-events: none;
+}
+
+.imperial-gate.is-playing-bind {
+  user-select: none;
+}
+
 /* RESET stays gone through the bind sequence, then scans back in */
 .imperial-gate:is(
+  .is-playing-bind,
   .is-binding,
   .is-sides-out,
   .is-mid-filling,
+  .is-mid-glitch,
   .is-mid-filled,
   .is-banquet-in,
   .is-seal-bound,
@@ -4999,6 +4970,11 @@ body.is-nav-locked .nav-item:not(.is-active) {
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
+}
+
+.imperial-gate.is-playing-bind.is-reset-in .imperial-purge,
+.imperial-gate.is-playing-bind.is-reset-ready .imperial-purge {
+  pointer-events: none;
 }
 
 /* Seals glitch out like the radio dial / freq controls */
@@ -5049,8 +5025,11 @@ body.is-nav-locked .nav-item:not(.is-active) {
   }
 }
 
+.imperial-gate.is-playing-bind:not(.is-binding) .imperial-tri__corners,
 .imperial-gate:is(
   .is-sides-out,
+  .is-mid-filling,
+  .is-mid-glitch,
   .is-mid-filled,
   .is-banquet-in,
   .is-seal-bound,
@@ -5456,8 +5435,33 @@ body.is-nav-locked .nav-item:not(.is-active) {
   animation: imperial-mid-pre-glitch 0.55s steps(6, end);
 }
 
-.imperial-gate:is(.is-mid-filled, .is-banquet-in, .is-seal-bound, .is-granted)
-  .imperial-tri--side {
+.imperial-gate:is(
+  .is-mid-filling,
+  .is-mid-glitch,
+  .is-mid-filled,
+  .is-banquet-in,
+  .is-seal-bound,
+  .is-granted
+)
+  .imperial-tri--side,
+.imperial-gate:is(
+  .is-mid-filling,
+  .is-mid-glitch,
+  .is-mid-filled,
+  .is-banquet-in,
+  .is-seal-bound,
+  .is-granted
+)
+  .imperial-tri--side[data-tri="left"],
+.imperial-gate:is(
+  .is-mid-filling,
+  .is-mid-glitch,
+  .is-mid-filled,
+  .is-banquet-in,
+  .is-seal-bound,
+  .is-granted
+)
+  .imperial-tri--side[data-tri="right"] {
   animation: none;
   visibility: hidden;
   opacity: 0;
@@ -5684,6 +5688,8 @@ body.is-nav-locked .nav-item:not(.is-active) {
   .imperial-gate.is-binding .imperial-well__body,
   .imperial-gate:is(
     .is-sides-out,
+    .is-mid-filling,
+    .is-mid-glitch,
     .is-mid-filled,
     .is-banquet-in,
     .is-seal-bound,
@@ -5696,6 +5702,8 @@ body.is-nav-locked .nav-item:not(.is-active) {
 
   .imperial-gate:is(
     .is-sides-out,
+    .is-mid-filling,
+    .is-mid-glitch,
     .is-mid-filled,
     .is-banquet-in,
     .is-seal-bound,
@@ -5841,6 +5849,10 @@ body.is-nav-locked .nav-item:not(.is-active) {
   font-size: 0.78rem;
   letter-spacing: 0.16em;
   color: var(--phosphor);
+}
+
+.chart-lock__title.is-scrambled {
+  color: var(--phosphor-dim);
 }
 
 .chart-lock__prompt {

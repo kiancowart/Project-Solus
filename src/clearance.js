@@ -171,6 +171,12 @@ export function syncImperialGateVisual(granted) {
   const gate = document.getElementById("imperial-gate");
   if (!gate) return;
 
+  // Bind sequence owns these classes + the mid-fill clip-path. A window
+  // focus / applyClearanceUI pass mid-animation used to strip is-sides-out
+  // while playGlitchMidFill kept painting the fill — outline triangles
+  // overlapping the solid mid glyph.
+  if (!granted && gate.classList.contains("is-playing-bind")) return;
+
   gate.classList.toggle("is-granted", granted);
   const assemble = document.getElementById("imperial-assemble");
   if (assemble) assemble.hidden = false;

@@ -5,7 +5,8 @@
  * WHAT THIS FILE DOES
  *   Draws the orbital SVG from SYSTEM_CHART (content/boot-content.js).
  *   Clicking a world either shows its dossier (if unlocked) or the Chart
- *   puzzle from CHART_PUZZLES (content/arg-path.js).
+ *   puzzle from CHART_PUZZLES (content/arg-path.js). Unsolved worlds keep
+ *   the same scrambled name in the readout title as on the map.
  *
  * PUZZLE TYPES (CHART_PUZZLES[planetId].type)
  *   sequence        — click nodes in order (Qamor landing legs)
@@ -374,13 +375,23 @@ export function initCartography() {
     }, DENY_FLASH_MS);
   };
 
+  const planetClearName = (planetId) => {
+    const body = bodies.find((b) => b.id === planetId);
+    return String(body?.name ?? PLANET_DOSSIERS[planetId]?.title ?? planetId).toUpperCase();
+  };
+
+  const planetCorruptName = (planetId) => {
+    const clear = planetClearName(planetId);
+    return scrambleText(clear, clear.length + 3);
+  };
+
   /**
    * Render the lock UI for a planet. Branch on puzzle.type (see file header).
    * Keep puzzle data in CHART_PUZZLES — only interaction code belongs here.
    */
   const showPuzzle = (planetId) => {
     const puzzle = CHART_PUZZLES[planetId];
-    const name = PLANET_DOSSIERS[planetId]?.title ?? planetId.toUpperCase();
+    const name = planetCorruptName(planetId);
     if (!puzzle) {
       showError();
       return;
@@ -575,7 +586,7 @@ export function initCartography() {
 
       readout.innerHTML = `
         <div class="chart-lock chart-lock--orbit" id="chart-lock">
-          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__title is-scrambled">${name}</p>
           <p class="chart-lock__prompt">${puzzle.prompt}</p>
           <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
           <p class="chart-lock__orbit-legend" aria-hidden="true">
@@ -643,7 +654,7 @@ export function initCartography() {
 
       readout.innerHTML = `
         <div class="chart-lock chart-lock--eye" id="chart-lock">
-          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__title is-scrambled">${name}</p>
           <p class="chart-lock__prompt">${puzzle.prompt}</p>
           <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
           <div class="chart-eye" id="chart-eye">
@@ -736,7 +747,7 @@ export function initCartography() {
       let seq = [];
       readout.innerHTML = `
         <div class="chart-lock" id="chart-lock">
-          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__title is-scrambled">${name}</p>
           <p class="chart-lock__prompt">${puzzle.prompt}</p>
           <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
           <div class="chart-lock__nodes" id="chart-lock-nodes"></div>
@@ -907,7 +918,7 @@ export function initCartography() {
 
       readout.innerHTML = `
         <div class="chart-lock" id="chart-lock">
-          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__title is-scrambled">${name}</p>
           <p class="chart-lock__prompt">${puzzle.prompt}</p>
           <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
           <ul class="chart-lock__lines" id="chart-lock-lines"></ul>
@@ -981,7 +992,7 @@ export function initCartography() {
 
       readout.innerHTML = `
         <div class="chart-lock chart-lock--lights" id="chart-lock">
-          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__title is-scrambled">${name}</p>
           <p class="chart-lock__prompt">${puzzle.prompt}</p>
           <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
           <div
@@ -1152,7 +1163,7 @@ export function initCartography() {
 
       readout.innerHTML = `
         <div class="chart-lock chart-lock--morse" id="chart-lock" data-phase="morse">
-          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__title is-scrambled">${name}</p>
           <p class="chart-lock__prompt">${puzzle.prompt}</p>
           <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
           <label class="visually-hidden" for="morse-display">Morse buffer</label>
@@ -1238,7 +1249,7 @@ export function initCartography() {
 
       readout.innerHTML = `
         <div class="chart-lock chart-lock--chrono" id="chart-lock" tabindex="0">
-          <p class="chart-lock__title">${name}</p>
+          <p class="chart-lock__title is-scrambled">${name}</p>
           <p class="chart-lock__prompt">${puzzle.prompt}</p>
           <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
           <div class="chrono-align">
@@ -1462,7 +1473,7 @@ export function initCartography() {
     // Default: typed-answer lock (Deshret blood phrase, Uros "zezura", …)
     readout.innerHTML = `
       <div class="chart-lock" id="chart-lock">
-        <p class="chart-lock__title">${name}</p>
+        <p class="chart-lock__title is-scrambled">${name}</p>
         <p class="chart-lock__prompt">${puzzle.prompt}</p>
         <p class="chart-lock__hint">${puzzle.hint ?? ""}</p>
         <form class="chart-lock__form" id="chart-lock-form" autocomplete="off">
@@ -1571,7 +1582,7 @@ export function initCartography() {
       const body = bodies.find((b) => b.id === id);
       const label = g.querySelector(".chart-svg__label");
       if (!body || !label) return;
-      const clear = String(body.name ?? id).toUpperCase();
+      const clear = planetClearName(id);
       const seenId = `planet:${id}`;
       if (isDossierUnlocked(id)) {
         g.setAttribute("aria-label", body.name);
@@ -1586,7 +1597,7 @@ export function initCartography() {
           markDescrambleSeen(seenId);
           label.dataset.latticeClear = "1";
           if (!label.classList.contains("is-scrambled")) {
-            label.textContent = scrambleText(clear, clear.length + 3);
+            label.textContent = planetCorruptName(id);
             label.classList.add("is-scrambled");
           }
           void descrambleText(label, clear, {
@@ -1602,7 +1613,7 @@ export function initCartography() {
       } else {
         delete label.dataset.latticeClear;
         label.classList.remove("is-clear", "is-descrambling");
-        label.textContent = scrambleText(clear, clear.length + 3);
+        label.textContent = planetCorruptName(id);
         label.classList.add("is-scrambled");
         g.setAttribute("aria-label", "Corrupted orbital body");
       }

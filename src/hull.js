@@ -8,7 +8,8 @@
  *   whose answers live in content/arg-path.js (PUZZLE_A/B, FTH_HUB, OUTER_STATIONS).
  *
  * STATUS FLOW
- *   /outer  → ship id + khan id → optics flag → station labels / serials
+ *   /outer  → ship id + khan id → optics flag → eye live; labels stay off
+ *             until the operator presses the top-left eye button
  *   /inner  → damaged serials in damage order → inner flag → bays clickable
  *   stellar bay → Chart channel    personal bay → Flight Log channel
  *
@@ -293,13 +294,19 @@ export function initHullPlan() {
         eye.title = "Optics bus dark";
         clearPartSelection();
       } else {
-        eye.setAttribute("aria-label", "Toggle station labels");
-        eye.title = "Toggle station labels";
+        // Optics unlocks the eye; squares stay hidden until it is pressed.
         if (!eye.dataset.userToggled) {
-          eye.classList.add("is-on");
-          plan?.classList.remove("is-labels-off");
-          eye.setAttribute("aria-pressed", "true");
+          eye.classList.remove("is-on");
+          plan?.classList.add("is-labels-off");
+          eye.setAttribute("aria-pressed", "false");
         }
+        const on = eye.classList.contains("is-on");
+        eye.setAttribute("aria-pressed", on ? "true" : "false");
+        eye.setAttribute(
+          "aria-label",
+          on ? "Hide station labels" : "Show station labels"
+        );
+        eye.title = on ? "Hide station labels" : "Show station labels";
       }
     }
 

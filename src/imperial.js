@@ -14,6 +14,7 @@
  * ANIMATION TIMING (playBindSequence) — edit the constants at the top
  *   EMPTY_TRI_HOLD_MS, SIDES_OUT_MS, BANQUET_SCAN_MS, RESET_SCAN_MS
  *   CSS classes on #imperial-gate drive the visuals (see main.css).
+ *   is-playing-bind locks interaction + stops clearance resync mid-sequence.
  *
  * PURGE
  *   Confirm Y → wipeLatticeProgress + Imago reset sting + reload pad.
@@ -150,7 +151,26 @@ export function initImperialClearance() {
     setClearanceDraft({ slots: { ...slotState } });
   };
 
+  const beginBindLock = () => {
+    busy = true;
+    root.classList.add("is-playing-bind");
+    setNavInteractionLocked(true);
+    if (submit) submit.disabled = true;
+    if (autofillBtn) autofillBtn.disabled = true;
+  };
+
+  const endBindLock = () => {
+    root.classList.remove("is-playing-bind");
+    setNavInteractionLocked(false);
+    busy = false;
+    if (!hasImperialClearance()) {
+      if (submit) submit.disabled = false;
+      if (autofillBtn) autofillBtn.disabled = false;
+    }
+  };
+
   const syncGrantedUI = () => {
+    if (busy || root.classList.contains("is-playing-bind")) return;
     if (assemble) assemble.hidden = false;
     applyClearanceUI();
   };
@@ -171,6 +191,7 @@ export function initImperialClearance() {
   /** Fragment chips: scrambled until Chart dossier; click/drag fills empty wells. */
   const renderTray = () => {
     if (!tray) return;
+    if (busy || root.classList.contains("is-playing-bind")) return;
     tray.replaceChildren();
     const frags = getRecoveredFragments();
     const known = IMPERIAL_SLOTS.filter((s) =>
@@ -314,6 +335,7 @@ export function initImperialClearance() {
   };
 
   const renderTriad = () => {
+    if (busy || root.classList.contains("is-playing-bind")) return;
     for (const host of triad.querySelectorAll(".imperial-tri__corners")) {
       host.replaceChildren();
       const nums = String(host.dataset.slots || "")
@@ -338,6 +360,7 @@ export function initImperialClearance() {
     let progress = 0;
 
     for (const chunk of chunks) {
+      root.classList.add("is-mid-filling");
       progress = Math.min(1, progress + chunk);
       if (fillEl) {
         const remain = Math.max(0, (1 - progress) * 100);
@@ -371,17 +394,15 @@ export function initImperialClearance() {
    * sleeps / *_MS constants are the edit surface for pace.
    */
   const playBindSequence = async () => {
-    busy = true;
-    setNavInteractionLocked(true);
-    if (submit) submit.disabled = true;
-
-    // Music drops for the bind animation
-    audio.pauseSoundtrack();
-    audio.play("imperial");
-
-    const banquetReady = waitBanquetImageReady();
+    beginBindLock();
 
     try {
+      // Music drops for the bind animation
+      audio.pauseSoundtrack();
+      audio.play("imperial");
+
+      const banquetReady = waitBanquetImageReady();
+
       if (prefersReducedMotion()) {
         syncImperialGateVisual(true);
         completeImperialBind({ playStinger: false });
@@ -435,8 +456,7 @@ export function initImperialClearance() {
         new CustomEvent("lattice:clearance", { detail: { imperial: true } })
       );
     } finally {
-      setNavInteractionLocked(false);
-      busy = false;
+      endBindLock();
     }
   };
 
@@ -472,6 +492,7 @@ export function initImperialClearance() {
       return;
     }
 
+    beginBindLock();
     void playBindSequence();
   };
 
@@ -508,6 +529,7 @@ export function initImperialClearance() {
     onImperialChannel = here;
   });
   window.addEventListener("focus", () => {
+    if (busy || root.classList.contains("is-playing-bind")) return;
     renderTray();
     syncGrantedUI();
   });
