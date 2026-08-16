@@ -1,6 +1,21 @@
 /**
- * LATTICE.OS — Header compass (ship / Skyrim-style heading ribbon)
- * Idle drift + live gyro readouts for an active FUI feel.
+ * =============================================================================
+ * compass.js — Header heading ribbon (Teavicta Chart puzzle)
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Builds a looping tick ribbon in #lattice-compass and idle-drifts around
+ *   the locked cardinal. Teavicta Chart calls setCompassCardinal("N"|"E"|"S"|"W").
+ *
+ * TUNABLE LOOK
+ *   PX_PER_DEG, TICK_STEP, NUMBER_STEP, POINT_STEP, ANIM_MS, LOOPS_*
+ *   Idle wander: pickDriftTarget / stepIdleDrift (degrees, spring constants).
+ *
+ * STARTING HEADING
+ *   East (90°). resetCompass() returns here after Teavicta unlock.
+ *
+ * EVENTS
+ *   lattice:compass — { heading, cardinal }
+ * =============================================================================
  */
 
 import { prefersReducedMotion } from "./motion.js";
@@ -19,8 +34,8 @@ const POINT_LABELS = {
   315: "NW",
 };
 
-/** Pixels per degree — denser ticks read more like a binnacle card */
-const PX_PER_DEG = 2.6;
+/** Pixels per degree — room for larger degree / cardinal labels */
+const PX_PER_DEG = 3.15;
 const LOOP = 360;
 const ANIM_MS = 700;
 /** Extra copies on each side so wide viewports never run out mid-scroll */
@@ -31,7 +46,7 @@ const TICK_STEP = 5;
 const NUMBER_STEP = 15;
 const POINT_STEP = 45;
 
-let heading = 90; // locked cardinal target
+let heading = 90; // locked cardinal target (90 = East at boot)
 let displayHeading = 90;
 let root = null;
 let ribbon = null;
@@ -86,6 +101,7 @@ function tickClass(deg) {
   return "compass-bar__tick";
 }
 
+/** Repeat ticks across several 360° loops so wide screens never show a seam. */
 function buildRibbon() {
   if (!ribbon) return;
   ribbon.replaceChildren();
@@ -194,6 +210,7 @@ function updateHud(dt, paintedHeading) {
   }
 }
 
+/** Slide the ribbon; CSS vars --compass-scan / --compass-breath drive overlays. */
 function paint() {
   if (!ribbon) return;
   breathPhase += 0.018;
@@ -232,6 +249,7 @@ function finishAnim() {
   );
 }
 
+/** Animation frame: ease toward cardinal, then idle drift + HUD digits. */
 function tick(now) {
   const dt = lastNow ? Math.min(0.05, (now - lastNow) / 1000) : 0.016;
   lastNow = now;
@@ -258,6 +276,7 @@ export function getCompassCardinal() {
   return DEG_CARDINAL[wrapDeg(h)] ?? "E";
 }
 
+/** Snap / slew to N E S W. Chart Teavicta puzzle uses this. */
 export function setCompassCardinal(cardinal, { animate = true } = {}) {
   const key = String(cardinal ?? "E").toUpperCase();
   const deg = CARDINAL_DEG[key];
@@ -303,6 +322,7 @@ export function glitchCompass({ durationMs = 220 } = {}) {
   }, durationMs);
 }
 
+/** Build ribbon DOM inside #lattice-compass and start the rAF loop. */
 export function initCompass() {
   root = document.getElementById("lattice-compass");
   if (!root) return;

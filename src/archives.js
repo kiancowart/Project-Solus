@@ -1,5 +1,16 @@
 /**
- * LATTICE.OS — Archives / ship memory digests
+ * =============================================================================
+ * archives.js — Ship-memory search (Imperial-gated)
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Searches LORE_CATALOG.entries (content/lore-catalog.js). Results stay
+ *   SEALED until Imperial Clearance. Bodies are light markdown → CRT HTML.
+ *
+ * WHERE TO EDIT LORE
+ *   Do not hand-edit lore-catalog.js. Add/change markdown under
+ *   lore/Player Facing/ (not the Flight Log folder), then run:
+ *     node scripts/build-lore-catalog.js
+ * =============================================================================
  */
 
 import { LORE_CATALOG } from "../content/lore-catalog.js";
@@ -14,7 +25,7 @@ export function escapeHtml(text) {
     .replace(/"/g, "&quot;");
 }
 
-/** Minimal markdown → CRT-safe HTML for recovered digests. */
+/** Minimal markdown → CRT-safe HTML (bold, italic, paragraphs). No raw HTML. */
 export function renderLoreBody(md) {
   const raw = String(md ?? "").trim();
   if (!raw) return `<p class="adb-pane__pending">Recovery pending</p>`;
@@ -32,6 +43,7 @@ export function renderLoreBody(md) {
   return paras.join("");
 }
 
+/** Bind Archives search form (#adb-search). Token AND-match against entry.search. */
 export function initArchives() {
   const form = document.getElementById("adb-search");
   const input = document.getElementById("adb-query");

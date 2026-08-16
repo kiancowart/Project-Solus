@@ -1,10 +1,29 @@
 /**
- * Flight Log — flat chronological entries (no journal airlocks).
+ * =============================================================================
+ * flight-log-entries.js — EDIT FLIGHT LOG STORIES HERE
+ * =============================================================================
+ * Live source for the Flight Log channel. boot-content.js calls
+ * buildFlatFlightLog() and exports FLIGHT_LOG for src/flight-log.js.
  *
- * Exactly nine entries carry seal fragments (one per Empire world).
- * Those same nine are the only entries whose LOCATION scrambles until
- * that world's Chart dossier puzzle is solved.
- * Filler entries use ship/context locations — never seal planetIds.
+ * ENTRY FIELDS
+ *   id         unique string (flog-01 …)
+ *   title      index label
+ *   date       diegetic stamp (shown in the reader)
+ *   location   clear location for filler entries (no planetId)
+ *   planetId   one of The Nine — ONLY on the nine fragment entries
+ *   fragment   seal word (usually FRAG_BY_PLANET[planetId])
+ *   audio      optional MP3 path (Heixin Morse clip)
+ *   body       story text. Wrap the fragment as [[HIVE]] so it becomes clickable.
+ *
+ * RULES
+ *   Exactly nine entries must have planetId + fragment (one per EMPIRE_SEALS).
+ *   Filler entries: location string, planetId: null, fragment: null.
+ *   Do not put seal planetIds on filler rows or LOC will scramble wrongly.
+ *
+ * FRAGMENT WORDS
+ *   Come from EMPIRE_SEALS in arg-path.js via FRAG_BY_PLANET. Change the word
+ *   there, not as a one-off string here, so Imperial wells stay in sync.
+ * =============================================================================
  */
 
 import { EMPIRE_SEALS, PARTNER_MORSE } from "./arg-path.js";

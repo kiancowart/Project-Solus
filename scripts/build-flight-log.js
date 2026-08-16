@@ -1,17 +1,16 @@
 /**
- * Flight Log — Obsidian → site content (future / optional pipeline)
+ * =============================================================================
+ * build-flight-log.js — OPTIONAL Obsidian import (not the live pipeline yet)
+ * =============================================================================
+ * LIVE site content is content/flight-log-entries.js — edit that file.
  *
- * LIVE source of truth for the site:
- *   content/flight-log-entries.js  (flat chronological entries)
- *
- * This script remains as a framework for regenerating from Obsidian:
+ * This script is a stub for a future import from:
  *   lore/Player Facing/Flight Log/journals.json
  *   lore/Player Facing/Flight Log/entries/*.md
  *
- * When the Obsidian corpus is ready for re-import, extend this script to
- * emit (or merge into) flight-log-entries.js rather than a parallel file.
- *
  * Run: node scripts/build-flight-log.js
+ * (Exits with an error until wired to emit flight-log-entries.js.)
+ * =============================================================================
  */
 
 const fs = require("fs");

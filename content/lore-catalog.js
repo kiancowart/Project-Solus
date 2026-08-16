@@ -1,7 +1,15 @@
 /**
- * Auto-generated Archives catalog (diegetic ship memory digests only).
- * Source: lore/Player Facing/ digests (excluding Flight Log/ and README).
- * Regenerate: node scripts/build-lore-catalog.js
+ * =============================================================================
+ * lore-catalog.js — AUTO-GENERATED. DO NOT HAND-EDIT.
+ * =============================================================================
+ * Archives search index. Source markdown: lore/Player Facing/*.md
+ * (Flight Log folder is excluded).
+ *
+ * To change Archives copy:
+ *   1. Edit or add .md files under lore/Player Facing/
+ *   2. Run:  node scripts/build-lore-catalog.js
+ *   3. This file is overwritten.
+ * =============================================================================
  */
 export const LORE_CATALOG = {
   "generated": "2026-07-23",

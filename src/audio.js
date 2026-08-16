@@ -1,12 +1,46 @@
 /**
- * LATTICE.OS — Terminal audio
+ * =============================================================================
+ * audio.js — Terminal ambience, hub music, UI sound effects
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   One shared TerminalAudio instance (`audio`) used by the whole site.
+ *   Browsers block sound until a click/key — call audio.enable() from a
+ *   gesture (boot.js and intercept.js already do this).
+ *
+ * LAYERS
+ *   Ambience  — looping bed (AMBIENCE in content/boot-content.js)
+ *   Music     — Recursion / Ascendancy (MUSIC.tracks); crushed through Web Audio
+ *   UI SFX    — decoded MP3s in UI_SFX below; missing files fall back to synth
+ *
+ * PLAY() TYPE NAMES (call audio.play("name"))
+ *   click, glitchClick, tunerNudge, deny, codeSuccess / unlock, imperial,
+ *   imagoBoot, imagoReset, flogSearchHit, typewriter, keyInput,
+ *   channelSwitch, journalSelect / dropdownToggle, revealScan,
+ *   boot, milestone, reveal, select, open
+ *
+ *   revealScan / imago* accept { durationMs } to stretch the sample.
+ *   typewriter accepts { glitch: 0–1 } for whisper laugh-lock grit.
+ *
+ * WHERE TO EDIT
+ *   File paths / volumes / crush    → AMBIENCE, MUSIC in content/boot-content.js
+ *   Which MP3 maps to which SFX     → UI_SFX below
+ *   Per-SFX loudness                → gainScale numbers inside #play* methods
+ *
+ * CROSS-PAGE AMBIENCE
+ *   sessionStorage lattice.ambienceLive — pad ↔ intercept keeps the hum going.
+ *   Call markAmbienceLive() on the click that navigates; shouldResumeAmbience()
+ *   on the destination page.
+ *
+ * 666 STARE
+ *   enterDeadSilence() / exitDeadSilence() — no ambience, music, or SFX.
+ * =============================================================================
  */
 
 import { AMBIENCE, MUSIC } from "../content/boot-content.js";
 
 const AMBIENCE_LIVE_KEY = "lattice.ambienceLive";
 
-/** Sampled UI SFX under assets/audio/ui-sfx/ */
+/** Sampled UI SFX under assets/audio/ui-sfx/. Change a path to swap a sound. */
 const UI_SFX = {
   typewriter: ["assets/audio/ui-sfx/typewriter-a.mp3"],
   keyInput: "assets/audio/ui-sfx/key-input.mp3",
@@ -51,6 +85,7 @@ export class TerminalAudio {
     this.enabled = false;
     /** 666 eyes — no ambience, no SFX until caption dismiss */
     this.deadSilent = false;
+    /** Master SFX level 0–1 (Diagnostics SFX slider). */
     this.sfxGain = 0.55;
     this.ambienceGain = Math.max(0, Math.min(1, AMBIENCE?.volume ?? 0.18));
     this.musicGain = Math.max(0, Math.min(1, MUSIC?.volume ?? 0.4));
@@ -117,6 +152,7 @@ export class TerminalAudio {
     if (!this.deadSilent) writeAmbienceLive(true);
   }
 
+  /** Create / resume the AudioContext. Safe to call often. */
   async ensure() {
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -126,6 +162,7 @@ export class TerminalAudio {
     }
   }
 
+  /** Unlock audio after a user gesture. Starts ambience and loads SFX. */
   async enable() {
     if (this.deadSilent) return;
     await this.ensure();
@@ -137,6 +174,7 @@ export class TerminalAudio {
     this.#syncSoundtrack();
   }
 
+  /** Diagnostics AUDIO: OFF — pauses beds, keeps buffers. */
   disable() {
     this.enabled = false;
     writeAmbienceLive(false);
@@ -327,8 +365,7 @@ export class TerminalAudio {
 
   /**
    * Play a named hub track (stops others). Used after pad / Imperial / Diagnostics.
-   * @param {string} trackId
-   * @param {{ fromStart?: boolean }} [opts]
+   * Track ids live in MUSIC.tracks (content/boot-content.js).
    */
   async startTrack(trackId, { fromStart = true } = {}) {
     if (this.deadSilent) return;
@@ -1033,6 +1070,10 @@ export class TerminalAudio {
     );
   }
 
+  /**
+   * Public SFX dispatcher. Unknown types play a short square beep.
+   * Samples load lazily; first play after enable() may be a tick late.
+   */
   play(type = "click", opts = {}) {
     if (this.deadSilent || !this.enabled || !this.ctx) return;
 
@@ -1200,4 +1241,5 @@ export class TerminalAudio {
   }
 }
 
+/** Singleton — import { audio } from "./audio.js" everywhere. */
 export const audio = new TerminalAudio();

@@ -1,8 +1,33 @@
 /**
- * LATTICE.OS — G512 Carapace (Cara), bonded: Solus
- * Boot playback, navigation, CRT fidelity, and interface audio.
+ * =============================================================================
+ * main.js — Hub page entry point (index.html)
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Wires every hub-side feature after the HTML loads. It does not contain
+ *   puzzle answers, boot copy, or audio file paths — those live in content/.
  *
- * Intro splash COPY lives in: content/boot-content.js  ← edit text / logo there
+ * PAGE MAP
+ *   index.html      → this file (src/main.js)
+ *   intercept.html  → src/intercept.js  (radio tuner, separate page)
+ *
+ * STARTUP ORDER (do not shuffle without a reason)
+ *   1. Cold-start wipe if the URL has ?cold=1 or ?reset=1
+ *   2. CRT scroll rails (shared phosphor scrollbar look)
+ *   3. Whisper pad ARG (must exist before boot toggles pad chrome)
+ *   4. Boot / clearance keypad (never wait on other inits)
+ *   5. Nav, diagnostics, Imago return, compass, chart, hull, flight log,
+ *      archives, imperial assembler, then lock/unlock channel chrome
+ *
+ * WHERE TO EDIT INSTEAD OF HERE
+ *   Boot log / pad code / music paths     → content/boot-content.js
+ *   Puzzle answers / seals / dossiers     → content/arg-path.js
+ *   Flight Log stories                    → content/flight-log-entries.js
+ *   Archives lore text                    → lore/Player Facing/*.md then
+ *                                           node scripts/build-lore-catalog.js
+ *
+ * SAFE TO CHANGE HERE
+ *   Init order, or commenting-out a feature while testing (wrap in `safe()`).
+ * =============================================================================
  */
 
 import { applyClearanceUI } from "./clearance.js";
@@ -18,6 +43,8 @@ import { initImperialClearance } from "./imperial.js";
 import { applyColdStartFromQuery } from "./progress.js";
 import { initCrtScrollRails } from "./motion.js";
 
+/* Wipe ARG progress if the operator opened with ?cold=1 or ?reset=1.
+   Runs immediately (not waiting for DOM) so later inits see a clean slate. */
 try {
   applyColdStartFromQuery();
 } catch (err) {
@@ -25,6 +52,7 @@ try {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  /* One failed init must not kill the rest of the hub. */
   const safe = (label, fn) => {
     try {
       fn();
@@ -33,13 +61,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Shared CRT rails (terminal / chart / archives / …) — before channel inits
+  /* Shared CRT rails (terminal / chart / archives / …) — before channel inits */
   safe("crt-rails", () => initCrtScrollRails());
 
-  // Whisper before boot — clearance gate toggles the pad whisper chrome
+  /* Whisper before boot — clearance gate toggles the pad whisper chrome */
   safe("whisper", initWhisper);
 
-  // Pad first — never blocked behind channel inits
+  /* Pad first — never blocked behind channel inits */
   void runBoot().catch((err) => {
     console.error("[lattice] boot failed", err);
   });

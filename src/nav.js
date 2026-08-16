@@ -1,5 +1,26 @@
 /**
- * LATTICE.OS — Navigation, chrono, diagnostics
+ * =============================================================================
+ * nav.js — Channel switching, banner typewriter, Diagnostics sliders
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Hub left-rail clicks swap .panel screens. The red channel banner types
+ *   the active title. Chart / Flight Log labels stay glyph-corrupt until
+ *   all dossiers / fragments are recovered.
+ *
+ * WHERE TO EDIT
+ *   Clear (uncorrupted) nav labels + banner titles → CHROME_CLEAR below
+ *   Keep CHANNEL_TITLES in src/clearance.js in sync with those titles.
+ *   Diagnostics music list / volumes → MUSIC / AMBIENCE in boot-content.js
+ *   Fill-bar HTML lives in index.html (#systems-form).
+ *
+ * LOCKS
+ *   setNavInteractionLocked(true) during Imperial bind so channels cannot switch.
+ *
+ * EVENTS LISTENED
+ *   lattice:dossier / lattice:fragments / lattice:clearance → refreshChannelCorruption
+ * EVENTS FIRED
+ *   lattice:channel { panel } — hull engine-bus jitter uses this
+ * =============================================================================
  */
 
 import { audio } from "./audio.js";
@@ -27,6 +48,7 @@ let bannerTypeAbort = { skipped: true };
 /** Blocks channel switches (e.g. during Imperial bind sequence). */
 let navInteractionLocked = false;
 
+/** Uncorrupted nav chrome — must match CHANNEL_TITLES in clearance.js. */
 const CHROME_CLEAR = {
   terminal: {
     label: "TERMINAL",
@@ -62,6 +84,7 @@ const CHROME_CLEAR = {
   },
 };
 
+/** Remember the clear label/title on first paint so corruption can restore them. */
 function ensureClearChrome(btn, panelId) {
   const known = CHROME_CLEAR[panelId];
   if (!btn.dataset.clearLabel) {
@@ -78,6 +101,10 @@ function setNavButtonLabel(btn, label) {
   btn.textContent = label;
 }
 
+/**
+ * Chart stays corrupt until all 9 dossiers; Flight Log until all 9 fragments.
+ * Locked channels (Imperial / STATUS) also show corrupt glyphs.
+ */
 export function refreshChannelCorruption() {
   const chartCorrupt = !areAllPlanetDossiersUnlocked();
   const flogCorrupt = !areAllFragmentsRecovered();
@@ -174,6 +201,7 @@ export function isNavInteractionLocked() {
   return navInteractionLocked;
 }
 
+/** Type the red banner. Calling again aborts the previous typewriter. */
 export async function typeChannelBanner(panelId, titleOverride) {
   const banner = document.getElementById("channel-banner");
   if (!banner) return;
@@ -187,6 +215,7 @@ export async function typeChannelBanner(panelId, titleOverride) {
   await typeText(banner, title, skippedRef);
 }
 
+/** Left-rail clicks: expand Guest group, or switch panels + type banner. */
 export function initNav() {
   const rail = document.querySelector(".nav-rail");
   const panels = document.querySelectorAll(".panel");
@@ -281,7 +310,9 @@ export function initNav() {
 
 
 /* ==========================================================================
-   DIAGNOSTICS / AUDIO UI
+   DIAGNOSTICS — audio/motion toggles, gain sliders, music picker
+   HTML ids: audio-toggle, reduce-motion, sfx-gain, ambience-gain, music-gain,
+             scan-intensity, music-track / music-track-row
    ========================================================================== */
 
 export function updateAudioToggle(on) {
@@ -321,6 +352,7 @@ export function valueFromPointer(bar, clientX) {
   return ((clientX - rect.left) / rect.width) * 100;
 }
 
+/** Pointer / keyboard fill bars used by Diagnostics gain + scan sliders. */
 export function bindFillBar(bar, onChange) {
   if (!bar || bar.classList.contains("is-disabled")) return;
 
@@ -354,6 +386,7 @@ export function bindFillBar(bar, onChange) {
   });
 }
 
+/** Post-Imperial music dropdown (hidden until clearance). Options from MUSIC.tracks. */
 export function syncMusicTrackPicker() {
   const row = document.getElementById("music-track-row");
   const host = document.getElementById("music-track");
@@ -379,6 +412,7 @@ export function syncMusicTrackPicker() {
       className: "sys-select",
       ariaLabel: "Music track",
       placeholder: "TRACK",
+      menuAlign: "up",
       value: options.some((o) => o.value === active) ? active : options[0]?.value ?? "",
       options,
       onChange: async (id) => {
@@ -403,6 +437,7 @@ export function syncMusicTrackPicker() {
   }
 }
 
+/** Bind Diagnostics controls. Scan slider writes CSS --scan-opacity. */
 export function initSystems() {
   const form = document.getElementById("systems-form");
   const audioBtn = document.getElementById("audio-toggle");

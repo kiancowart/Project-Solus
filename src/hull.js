@@ -1,5 +1,26 @@
 /**
- * LATTICE.OS — Hull plan, STATUS puzzles, FTH console
+ * =============================================================================
+ * hull.js — STATUS hull plan + FTH terminal console
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   STATUS (overview) panel: outer/inner hull views, station marks, INNER bays
+ *   that unlock Chart / Flight Log. The FTH console is a slash-command terminal
+ *   whose answers live in content/arg-path.js (PUZZLE_A/B, FTH_HUB, OUTER_STATIONS).
+ *
+ * STATUS FLOW
+ *   /outer  → ship id + khan id → optics flag → station labels / serials
+ *   /inner  → damaged serials in damage order → inner flag → bays clickable
+ *   stellar bay → Chart channel    personal bay → Flight Log channel
+ *
+ * CONSOLE COMMANDS (handleCommand) — copy/answers in FTH_HUB / PUZZLE_*
+ *   /help /outer /inner /landing /fragment /echo /translate /passage
+ *   Plain "celeste" (no slash) prints FTH_HUB.celeste
+ *
+ * WHERE TO EDIT
+ *   Serials, damage times, answers, help text → content/arg-path.js
+ *   Station mark positions                    → index.html .hull-plan__mark
+ *   Do not hardcode puzzle strings in this file.
+ * =============================================================================
  */
 
 import { audio } from "./audio.js";
@@ -30,13 +51,12 @@ import {
 } from "./progress.js";
 import { applyClearanceUI } from "./clearance.js";
 
+/** Prompt states while the console waits for a non-slash reply. */
 const PROMPT = {
   IDLE: "idle",
   OUTER_SHIP: "outer_ship",
   OUTER_KHAN: "outer_khan",
   INNER_CODE: "inner_code",
-  PROTOCOL: "protocol",
-  EDGE: "edge",
 };
 
 function normalizeToken(raw) {
@@ -77,6 +97,7 @@ function severityClass(sev) {
   return "";
 }
 
+/** Bind STATUS hull SVG/plan. applyHullUI is hung on the function for Imperial refresh. */
 export function initHullPlan() {
   const plan = document.getElementById("hull-plan");
   const eye = document.getElementById("hull-plan-eye");
@@ -208,6 +229,7 @@ export function initHullPlan() {
     });
   });
 
+  /** Paint optics/inner corruption, eye button, INNER seal, bay open-state. */
   const applyHullUI = () => {
     const prog = getHullProgress();
     mon?.classList.toggle("hull-mon--optics", prog.optics);
@@ -217,14 +239,6 @@ export function initHullPlan() {
     document.body.classList.toggle("hull-optics-online", prog.optics);
     document.body.classList.toggle("hull-inner-online", prog.inner);
 
-    document.getElementById("hull-view-outer")?.classList.toggle(
-      "is-layer-corrupt",
-      !prog.optics
-    );
-    document.getElementById("hull-view-inner")?.classList.toggle(
-      "is-layer-corrupt",
-      !prog.inner
-    );
     document.getElementById("hull-tab-outer")?.classList.toggle(
       "is-chrome-corrupt",
       !prog.optics
@@ -312,6 +326,7 @@ export function initHullPlan() {
     });
   };
 
+  /* INNER bays (stellar / personal): first click unlocks Chart or Flight Log. */
   document.querySelectorAll(".hull-bay[data-bay]").forEach((bay) => {
     bay.addEventListener("click", () => {
       if (!getHullProgress().inner) return;
@@ -371,7 +386,7 @@ export function initHullPlan() {
   initHullPlan.applyHullUI = applyHullUI;
 }
 
-/** Dead thrust bus: low feed levels jitter slightly; fill + % stay in lockstep. */
+/** Dead thrust bus: low feed levels jitter slightly; fill + % stay in lockstep. Runs only while STATUS is the active channel. */
 function startEngBusJitter() {
   const rows = [...document.querySelectorAll("[data-eng-bus]")];
   if (!rows.length) return;
@@ -437,6 +452,7 @@ function startEngBusJitter() {
   });
 }
 
+/** FTH slash console on STATUS. Puzzle strings: content/arg-path.js */
 export function initFthConsole() {
   const consoleEl = document.getElementById("fth-console");
   const form = document.getElementById("fth-console-form");
@@ -478,6 +494,7 @@ export function initFthConsole() {
     promptState = PROMPT.IDLE;
   };
 
+  /** Replies while waiting for ship id / khan / inner code. */
   const handlePromptReply = (raw) => {
     const prog = getHullProgress();
 
@@ -539,41 +556,6 @@ export function initFthConsole() {
       resetPrompt();
       return;
     }
-
-    if (promptState === PROMPT.PROTOCOL) {
-      const n = normalizeToken(raw).replace(/[.\-]/g, "");
-      const ok = (FTH_HUB.protocolAnswers ?? []).some(
-        (a) => normalizeToken(a).replace(/[.\-]/g, "") === n
-      );
-      if (!ok) {
-        push(FTH_HUB.protocolDeny, "fth-console__line--err");
-        audio.play("deny");
-        resetPrompt();
-        return;
-      }
-      setHullProgress({ teavictaProtocol: true });
-      FTH_HUB.protocolOk.split("\n").forEach((line) => push(line, "fth-console__line--ok"));
-      audio.play("codeSuccess");
-      resetPrompt();
-      return;
-    }
-
-    if (promptState === PROMPT.EDGE) {
-      const n = normalizeToken(raw).replace(/[.\-]/g, "");
-      const ok = (FTH_HUB.edgeAnswers ?? []).some(
-        (a) => normalizeToken(a).replace(/[.\-]/g, "") === n
-      );
-      if (!ok) {
-        push(FTH_HUB.edgeDeny, "fth-console__line--err");
-        audio.play("deny");
-        resetPrompt();
-        return;
-      }
-      setHullProgress({ volEdge: true });
-      FTH_HUB.edgeOk.split("\n").forEach((line) => push(line, "fth-console__line--ok"));
-      audio.play("codeSuccess");
-      resetPrompt();
-    }
   };
 
   const unknownCmd = (raw) => {
@@ -584,6 +566,7 @@ export function initFthConsole() {
     );
   };
 
+  /** Dispatch /verb. A new slash cancels an open prompt. Answers come from arg-path.js. */
   const handleCommand = (raw) => {
     const trimmed = String(raw ?? "").trim();
     const parsed = parseSlash(raw);
@@ -611,12 +594,14 @@ export function initFthConsole() {
 
     const { verb, args } = parsed;
 
+    /* Slash verbs — strings/answers come from PUZZLE_* and FTH_HUB in arg-path.js. */
     if (verb === "help") {
       push(PUZZLE_A.helpLine, "fth-console__line--sys");
       return;
     }
 
     if (verb === "outer") {
+      /* Ship id + khan id (PUZZLE_A) → optics / station labels. */
       if (prog.optics) {
         push("OUTER AUTH ALREADY ONLINE", "fth-console__line--sys");
         return;
@@ -626,6 +611,7 @@ export function initFthConsole() {
     }
 
     if (verb === "inner") {
+      /* Damaged serials in damage order (PUZZLE_B / OUTER_STATIONS). */
       if (prog.inner) {
         push("INNER PARTITION ALREADY RESTORED", "fth-console__line--sys");
         return;
@@ -636,11 +622,13 @@ export function initFthConsole() {
     }
 
     if (verb === "landing" || verb === "land") {
+      /* Qamor Chart hint — landing-leg actuation tables. */
       FTH_HUB.landing.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
       return;
     }
 
     if (verb === "passage") {
+      /* Ikeph Chart hint — blood verse in order (getIkephPassageLines). */
       push("PASSAGE // EMPRESS REWARD VERSE", "fth-console__line--sys");
       getIkephPassageLines().forEach((line) =>
         push(line, "fth-console__line--sys")
@@ -648,16 +636,8 @@ export function initFthConsole() {
       return;
     }
 
-    if (verb === "protocol" || verb === "storm") {
-      if (prog.teavictaProtocol) {
-        FTH_HUB.protocolOk.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
-        return;
-      }
-      setPrompt(PROMPT.PROTOCOL, FTH_HUB.protocolPrompt);
-      return;
-    }
-
     if (verb === "echo") {
+      /* Replay damage order (needs INNER). Hint for Heixin volume 760. */
       if (!prog.inner) {
         push(FTH_HUB.echoNeedInner, "fth-console__line--err");
         audio.play("deny");
@@ -667,33 +647,8 @@ export function initFthConsole() {
       return;
     }
 
-    if (verb === "moon") {
-      const name = String(args[0] ?? "")
-        .trim()
-        .toLowerCase();
-      if (!name) {
-        push(FTH_HUB.moonUsage, "fth-console__line--sys");
-        return;
-      }
-      if (name === "kaph") {
-        FTH_HUB.moonKaph.split("\n").forEach((line) => push(line, "fth-console__line--ok"));
-        return;
-      }
-      push(FTH_HUB.moonUnknown, "fth-console__line--err");
-      audio.play("deny");
-      return;
-    }
-
-    if (verb === "edge" || verb === "carrier") {
-      if (prog.volEdge) {
-        FTH_HUB.edgeOk.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
-        return;
-      }
-      setPrompt(PROMPT.EDGE, FTH_HUB.edgePrompt);
-      return;
-    }
-
     if (verb === "translate" || verb === "xlat") {
+      /* Blood phrase (EN/AR/hex) or partner Morse ↔ English. */
       const payload = args.join(" ").trim();
       if (!payload) {
         FTH_HUB.translateUsage.split("\n").forEach((line) => push(line, "fth-console__line--sys"));
@@ -770,7 +725,8 @@ export function initFthConsole() {
       return;
     }
 
-    if (verb === "volume" || verb === "bind") {
+    if (verb === "fragment") {
+      /* Confirm a claimed fragment for a world (needs fragment already in tray). */
       const planetArg = String(args[0] ?? "")
         .trim()
         .toLowerCase();
@@ -793,10 +749,9 @@ export function initFthConsole() {
         return;
       }
       push(
-        `VOLUME // ${slot.planetName.toUpperCase()} · CLEAR · FRAGMENT ${slot.fragment} LOGGED`,
+        `FRAGMENT // ${slot.planetName.toUpperCase()} · CLEAR · ${slot.fragment} LOGGED`,
         "fth-console__line--ok"
       );
-      push("Tray holds the word. Chart dossiers hold bind order.", "fth-console__line--sys");
       return;
     }
 

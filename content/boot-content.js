@@ -4,9 +4,11 @@
  * =============================================================================
  * Intro splash COPY lives here. main.js only plays it back.
  *
- * ALSO:
- *   Flight Log stories → lore/Player Facing/Flight Log/ (Obsidian)
- *   Rebuild: node scripts/build-flight-log.js
+ * ALSO EDIT (other content files)
+ *   Puzzle answers / seals / dossiers → content/arg-path.js
+ *   Flight Log stories                → content/flight-log-entries.js
+ *   Archives lore                     → lore/Player Facing/*.md + build-lore-catalog.js
+ *   Tuner frequencies                 → src/intercept.js constants
  *
  * SEQUENCE:  clearance keypad  →  scrolling log  →  Empire logo  →  hub
  *

@@ -1,5 +1,30 @@
 /**
- * LATTICE.OS — Clearance / Imperial partitions / Guest channel
+ * =============================================================================
+ * clearance.js — Imperial flag + which hub channels are locked
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Remembers whether Imperial Clearance is granted, and paints the hub:
+ *   locked nav items, partition-seal overlays, Guest Channel noise, and
+ *   the Imperial triad's already-bound visual state.
+ *
+ * FLAG STORAGE
+ *   localStorage key / values come from CLEARANCE in content/boot-content.js
+ *   (lattice.clearance = "imperial"). Legacy "deep" still counts as granted.
+ *
+ * LOCK RULES (isPanelLocked)
+ *   Imperial granted     → nothing locked
+ *   lockedUntilImperial  → Archives + Guest Channel (need 9-slot bind)
+ *   lockedUntilProgress  → Flight Log + Chart (need STATUS bay puzzles)
+ *
+ * WHERE TO EDIT
+ *   Which panels stay sealed          → CLEARANCE in content/boot-content.js
+ *   Banner titles                     → CHANNEL_TITLES below (keep in sync
+ *                                       with CHROME_CLEAR in src/nav.js)
+ *   Seal overlay copy                 → CLEARANCE.seal / progressSeal
+ *
+ * EVENTS
+ *   lattice:clearance — fired after applyClearanceUI({ imperial })
+ * =============================================================================
  */
 
 import { CLEARANCE } from "../content/boot-content.js";
@@ -14,8 +39,10 @@ const CLEARANCE_KEY = CLEARANCE?.storageKey ?? "lattice.clearance";
 const CLEARANCE_IMPERIAL = CLEARANCE?.imperialValue ?? "imperial";
 const CLEARANCE_LEGACY_DEEP = CLEARANCE?.deepValue ?? "deep";
 
+/** True for this page load even if localStorage is blocked. */
 let sessionImperial = false;
 
+/** True after a successful 9-slot bind (or pad cheat 111). */
 export function hasImperialClearance() {
   if (sessionImperial) return true;
   try {
@@ -31,6 +58,7 @@ export function hasDeepClearance() {
   return hasImperialClearance();
 }
 
+/** Write the Imperial flag. Call completeImperialBind() in imperial.js for the full unlock. */
 export function grantImperialClearance() {
   sessionImperial = true;
   try {
@@ -49,6 +77,7 @@ export function grantDeepClearance() {
    GUEST CHANNEL — corrupt signal display
    ========================================================================== */
 
+/** Glyph soup for the Guest "corrupt signal" sub-channel (visual only). */
 const GUEST_NOISE =
   "ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghijkmnopqrstuvwxyz0123456789/·#▓░▒";
 
@@ -152,6 +181,12 @@ export function syncImperialGateVisual(granted) {
 
   if (granted) {
     gate.classList.add(...IMPERIAL_GATE_BOUND_CLASSES);
+    const img = gate.querySelector(".imperial-tri__banquet-img");
+    const deferred = img?.getAttribute("data-src");
+    if (img && deferred && !img.getAttribute("src")) {
+      img.src = deferred;
+      img.removeAttribute("data-src");
+    }
   } else {
     gate.classList.remove(...IMPERIAL_GATE_BOUND_CLASSES);
   }
@@ -160,6 +195,10 @@ export function syncImperialGateVisual(granted) {
   if (fillEl) fillEl.style.clipPath = "";
 }
 
+/**
+ * Repaint locks, seals, Imperial gate chrome, and Archives meta line.
+ * Call after any clearance / STATUS unlock change.
+ */
 export function applyClearanceUI() {
   const imperial = hasImperialClearance();
   document.body.classList.toggle("has-deep-clearance", imperial);

@@ -1,5 +1,25 @@
 /**
- * LATTICE.OS — Motion helpers
+ * =============================================================================
+ * motion.js — Typewriter, stepped reveals, scramble glyphs, CRT widgets
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Shared motion helpers. Timings come from MOTION in content/boot-content.js.
+ *
+ * SECTIONS
+ *   1. sleep / bootPace / typeText / blinkBootDots / revealPanel
+ *   2. scramble / punch / descramble (corruption chrome)
+ *   3. CRT scroll rails (phosphor scrollbar matching intercept)
+ *   4. createCrtSelect — custom dropdown; never use native <select>
+ *
+ * REDUCED MOTION
+ *   prefersReducedMotion() is true if Diagnostics MOTION: OFF or OS reduce-motion.
+ *   Typewriter snaps to full text; descramble snaps to clear.
+ *
+ * WHERE TO TUNE
+ *   typeMs, hitchEvery, hitchMs, blockStepMs, dotsFrameMs, bootPace
+ *     → MOTION in content/boot-content.js
+ *   Glyph alphabet → SCRAMBLE_GLYPHS below
+ * =============================================================================
  */
 
 import { MOTION } from "../content/boot-content.js";
@@ -29,6 +49,10 @@ export function prefersReducedMotion() {
   );
 }
 
+/**
+ * Type fullText into el one character at a time. skippedRef.skipped jumps to the end.
+ * onTick runs after each character (boot log uses it to stick-scroll).
+ */
 export async function typeText(el, fullText, skippedRef = null, onTick = null, pace = 1) {
   if (prefersReducedMotion()) {
     el.textContent = fullText;
@@ -83,6 +107,7 @@ export async function blinkBootDots(dotsEl, durationMs, skippedRef = null) {
   if (!skippedRef?.skipped) dotsEl.textContent = "...";
 }
 
+/** Stepped top→bottom reveal of a container's children. Plays revealScan SFX. */
 export async function revealTopToBottom(container, abortedRef = null) {
   if (!container) return;
 
@@ -129,6 +154,7 @@ export async function revealTopToBottom(container, abortedRef = null) {
   }
 }
 
+/** Reveal a hub panel's .panel__body (channel switch). */
 export async function revealPanel(panel) {
   panel.classList.add("is-revealing");
   const body = panel.querySelector(".panel__body");
@@ -143,6 +169,7 @@ export async function revealPanel(panel) {
 /** Block/shade glyphs only — no punctuation or math symbols */
 export const SCRAMBLE_GLYPHS = "░▒▓█▄▀■□▪▫";
 
+/** Deterministic full scramble (keeps spaces, hyphens, periods). Same seed → same glyphs. */
 export function scrambleText(clear, seed = 0) {
   const src = String(clear ?? "");
   if (!src) return "";
@@ -362,15 +389,8 @@ function closeAllCrtSelects(except = null) {
 }
 
 /**
- * Custom phosphor dropdown. Returns `{ root, getValue, setValue, setOptions, open, close }`.
- * @param {{
- *   options?: { value: string, label: string }[],
- *   value?: string,
- *   className?: string,
- *   ariaLabel?: string,
- *   placeholder?: string,
- *   onChange?: (value: string) => void,
- * }} opts
+ * Custom phosphor dropdown. Returns { root, getValue, setValue, setOptions, open, close }.
+ * Used by Diagnostics music picker and Imperial well planet menus.
  */
 export function createCrtSelect({
   options = [],
@@ -378,6 +398,7 @@ export function createCrtSelect({
   className = "",
   ariaLabel = "",
   placeholder = "—",
+  menuAlign = "auto",
   onChange = null,
 } = {}) {
   const root = document.createElement("div");
@@ -476,14 +497,17 @@ export function createCrtSelect({
       closeAllCrtSelects(root);
       root.classList.add("is-open");
       menu.hidden = false;
-      menu.classList.remove("crt-select__menu--up");
+      menu.classList.toggle("crt-select__menu--up", menuAlign === "up");
+      if (menuAlign !== "up") menu.classList.remove("crt-select__menu--up");
       trigger.setAttribute("aria-expanded", "true");
-      requestAnimationFrame(() => {
-        const rect = menu.getBoundingClientRect();
-        if (rect.bottom > window.innerHeight - 8) {
-          menu.classList.add("crt-select__menu--up");
-        }
-      });
+      if (menuAlign === "auto") {
+        requestAnimationFrame(() => {
+          const rect = menu.getBoundingClientRect();
+          if (rect.bottom > window.innerHeight - 8) {
+            menu.classList.add("crt-select__menu--up");
+          }
+        });
+      }
     },
     close() {
       root.classList.remove("is-open");

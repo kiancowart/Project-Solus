@@ -273,7 +273,7 @@ Flight Log prose → keyword / browse → click fragment word/chip → tray
 
 - **Chart puzzle** = you *earned* the dossier (named seal / bind order).
 - **Fragment word** = physical token for the wells (diegetic Solus-arc word).
-- **`/volume <planet>`** = confirms a claimed fragment (not an unlock).
+- **`/fragment <planet>`** = confirms a claimed fragment (not an unlock).
 
 Good: browse Log → find **HIVE** → click into tray; Chart Qamor purge for DEVOTION order.  
 Bad: treat STATUS checksums as journal passwords.  
@@ -299,14 +299,14 @@ All Chart verbs below are **shipped**. Residue crumbs are Terminal / STATUS flav
 | 1 | Qamor | Landing sequence L-2→L-1→L-3→L-5 | Pad / ship **512** |
 | 2 | Ikeph | Blood hymn reorder (`/passage`) | INNER checksum **215** |
 | 3 | Terra | Chrono rings (local time) | Log / lore scrap **320** |
-| 4 | Deshret | Empire phrase text (**All our blood is red**) | `/moon kaph` **430** |
-| 5 | Teavicta | Cardinal eye E→W→N→S | `/protocol` **540** |
+| 4 | Deshret | Empire phrase text (**All our blood is red**) | — |
+| 5 | Teavicta | Cardinal eye E→W→N→S | — |
 | 6 | Uros | Text **Zezura** | — |
 | 7 | Heixin | Partner Morse pad → **I MISS U** | `/echo` **760** |
 | 8 | Haider | Lights-out 3×5 — **01·04·05·09·10·12** | Plate crumb **870** |
-| 9 | Vol | First 3 purges on tray → order bar inner→outer | `/edge` **980** |
+| 9 | Vol | First 3 purges on tray → order bar inner→outer | — |
 
-**Retired Chart verbs:** flare B·A·C (`/whoami`), cradle assemble FC1·NL2·WR4, shadow dial tick 5, text VX-48 / hold fast / prickly, Heixin serials-as-Chart, Vol `/edge` flag gate, Teavicta `/protocol` flag gate.
+**Retired Chart verbs:** flare B·A·C (`/whoami`), cradle assemble FC1·NL2·WR4, shadow dial tick 5, text VX-48 / hold fast / prickly, Heixin serials-as-Chart.
 
 ---
 
@@ -319,16 +319,13 @@ All Chart verbs below are **shipped**. Residue crumbs are Terminal / STATUS flav
 | `/help` | Command list (purposeful only) |
 | `/outer` `/inner` | STATUS unlock spine |
 | `/landing` | Landing profiles (Qamor Chart spoil sequence) |
-| `/volume` / `/volume <planet>` | Confirm fragment after claim |
-| `/protocol` | Residue **540** only (Teavicta Chart is cardinal eye) |
+| `/fragment` / `/fragment <planet>` | Confirm fragment after claim |
 | `/echo` | Damage times + Heixin residue **760** (needs INNER) — not the Chart answer |
-| `/moon <name>` | Kaph catalog → **430** |
-| `/edge` | Residue **980** (carrier greeting) — not a Vol Chart flag |
 | `/translate` | Partial lexicon — Empire blood phrase + partner Morse |
 | `/passage` | Ikeph Empress verse dump (Chart reorder spoil) |
 | `Celeste` / `celeste` | Easter: “Turn around.” |
 
-**Removed Terminal cmds:** `/whoami` · `/catalog` · `/orbit` · `/seal` (and any Chart flag gates tied to `/protocol` / `/edge`).
+**Removed Terminal cmds:** `/whoami` · `/catalog` · `/orbit` · `/seal` · `/protocol` · `/moon` · `/edge` · `/volume` (renamed `/fragment`).
 
 ### Planet dossier copy
 

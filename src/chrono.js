@@ -1,13 +1,29 @@
 /**
- * LATTICE.OS — Chrono (local military time + Terra offset bus)
+ * =============================================================================
+ * chrono.js — Header military clock + Terra Chart offset bus
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Paints #chrono with the visitor's local time, then applies hour/minute
+ *   offsets until the Terra Chart puzzle is solved. Seconds always stay real.
  *
- * Display uses the visitor's computer clock (local), not UTC.
- * Hours/minutes can carry intentional offsets (Terra Chart puzzle);
- * seconds always track real local seconds.
+ * DEFAULT MISALIGNMENT (change these to retune Terra)
+ *   HOUR_OFFSET_DEFAULT   = -5
+ *   MINUTE_OFFSET_DEFAULT = -12
+ *   Solved state is 0 / 0 (true local). isDossierUnlocked("terra") locks that.
+ *
+ * TERRA PUZZLE
+ *   Chart rings call nudgeHourOffset / nudgeMinuteOffset.
+ *   Header digits hitch via glitchChronoPart("h"|"m").
+ *   On unlock, cartography.js calls lockChronoAligned().
+ *
+ * EVENTS
+ *   lattice:chrono — { h, m, s, hourOffset, minuteOffset, aligned }
+ * =============================================================================
  */
 
 import { isDossierUnlocked } from "./progress.js";
 
+/** Intentional starting error for Terra. Solved Chart dossier snaps both to 0. */
 const HOUR_OFFSET_DEFAULT = -5;
 const MINUTE_OFFSET_DEFAULT = -12;
 
@@ -30,6 +46,7 @@ export function getRealLocalTime(date = new Date()) {
   };
 }
 
+/** Offsets are 0 after Terra dossier unlock, else the live ring values. */
 export function getChronoOffsets() {
   if (isDossierUnlocked("terra")) {
     return { hourOffset: 0, minuteOffset: 0 };
@@ -69,6 +86,7 @@ function emit() {
   );
 }
 
+/** Split #chrono into HH : MM : SS spans (once). */
 function ensureChronoParts() {
   if (!chronoEl) return null;
   if (chronoEl.dataset.parts === "1") {
@@ -162,6 +180,7 @@ export function lockChronoAligned() {
   emit();
 }
 
+/** Start the 200ms paint loop. Called from enterHub() in boot.js. */
 export function startChrono() {
   chronoEl = document.getElementById("chrono");
   if (!chronoEl || running) return;

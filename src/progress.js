@@ -63,8 +63,6 @@ export function getHullProgress() {
     inner: false,
     chartPuzzle: false,
     logPuzzle: false,
-    teavictaProtocol: false,
-    volEdge: false,
   });
 }
 
@@ -108,8 +106,6 @@ export function unlockChannelsForImperialBind() {
     logPuzzle: true,
     optics: true,
     inner: true,
-    teavictaProtocol: true,
-    volEdge: true,
   });
   for (const slot of IMPERIAL_SLOTS) {
     markDossierUnlocked(slot.planetId);
@@ -388,6 +384,7 @@ const COLD_KEYS = [
   "lattice.whisperDone",
   "lattice.whisperSealed",
   "lattice.whisperSudokuSeen",
+  "lattice.sealOrder",
   ...PROGRESS_STORAGE_KEYS,
 ];
 

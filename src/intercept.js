@@ -1,5 +1,31 @@
 /**
- * Celeste AUX bleed — radio tuner → intercept reveal
+ * =============================================================================
+ * intercept.js — Radio tuner page (intercept.html only)
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Separate page from the hub. Operator spins a dial 000.0–108.0 MHz.
+ *   Parking on 097.9 for ~2 seconds locks and reveals Celeste's message.
+ *   033.3 plays the blood poem (does not lock). Hidden easter-egg beds
+ *   at 10.5 / 51.2 / 66.6 are audio + waveform only (no glow, no lock).
+ *
+ * WHAT TO EDIT (tuner feel / carriers)
+ *   Frequencies, audio files, lock time, hear windows → constants below
+ *     GREETING.freq (97.9), ECHO.freq (33.3), EASTER_BEDS
+ *   Blood poem lines + timestamps → BLOOD_LYRICS in content/arg-path.js
+ *   Spoken intercept MP3 → INTERCEPT_MESSAGE_AUDIO
+ *   Message HTML copy → intercept.html article.intercept__body
+ *
+ * LOCK SEQUENCE (#lockGreeting)
+ *   Controls fade → clean 097.9 playback (skippable) → flatten viz →
+ *   split the frame → reveal message + left audio rail.
+ *
+ * PROGRESS
+ *   lattice.interceptTuned = "1" after first 097.9 lock (shows pad route).
+ *   Imperial clearance (from hub) reveals the hub route under the dial.
+ *
+ * AMBIENCE
+ *   First gesture unlocks terminal ambience via src/audio.js (same as hub).
+ * =============================================================================
  */
 
 import { audio } from "./audio.js";
@@ -14,20 +40,22 @@ applyColdStartFromQuery();
    ========================================================================== */
 
 /**
- * Intercept message audio reader.
- * Left rail tracks playback progress (top → bottom).
- * Click a point on the rail to jump there. Right rail mirrors scroll.
+ * Left-rail intercept message player.
+ * Click the rail to seek (no drag). Arrow keys step 5% when the rail is focused.
+ * Right rail (if present) mirrors intercept-scroll position.
  */
 
 /** Spoken Presage Projection intercept (Celeste). */
 export const INTERCEPT_MESSAGE_AUDIO = "assets/audio/voice/intercept-message.mp3";
 
+/** Phosphor fill: scaleY(0–1) from the top of the rail. */
 function setRailFill(el, amount) {
   if (!el) return;
   const t = Math.max(0, Math.min(1, amount));
   el.style.transform = `scaleY(${t})`;
 }
 
+/** mm:ss for the hover tip. */
 function formatClock(sec) {
   if (!Number.isFinite(sec) || sec < 0) return "00:00";
   const s = Math.floor(sec);
@@ -330,9 +358,18 @@ function bindAmbienceUnlock() {
 
 bindAmbienceUnlock();
 
+/* ==========================================================================
+   TUNER CONSTANTS — frequencies, lock feel, audio beds
+   Change GREETING.freq / ECHO.freq / EASTER_BEDS to retune the puzzle.
+   After changing, wipe with ?cold=1 if you need a fresh first-lock.
+   ========================================================================== */
+
+/** Dial range in MHz. Display is zero-padded to 000.0 */
 const FREQ_MIN = 0;
 const FREQ_MAX = 108.0;
+/** How long (ms) you must sit still on a lockable carrier to snap. */
 const LOCK_HOLD_MS = 2000;
+/** |tuned − carrier| must be ≤ this to count as "on mark" (and to snap). */
 const LOCK_TOLERANCE = 0.12;
 /** Soft pull toward a carrier — keep narrow so spinning past stays easy */
 const DETENT_RANGE = 0.75;
@@ -340,7 +377,9 @@ const DETENT_RANGE = 0.75;
 const DETENT_MAX_ACCEL = 0.28;
 const DETENT_PULL = 1.05;
 const DETENT_SPEED_FLOOR = 0.55;
+/** 097.9 greeting bed (muffled until lock, then plays clean once). */
 const SIGNAL_SRC = "assets/audio/music/carrier-0979.mp3";
+/** 033.3 blood / emergency bed. */
 const BLOOD_SRC = "assets/audio/music/carrier-0333.mp3";
 /** Puzzle carriers are silent outside this ±MHz band */
 const SIGNAL_HEAR_WINDOW = 15;
@@ -351,7 +390,9 @@ const EGG_HEAR_WINDOW = 10;
  * only near/exact center reads either bed clearly.
  */
 const SIGNAL_CLARITY_CURVE = 3.8;
+/** Web Audio master for tuner beds + static (0–1). */
 const MASTER_VOLUME = 0.28;
+/** Visualizer bar count in #radio-viz. */
 const BAR_COUNT = 72;
 
 /** Greeting carrier — full Celeste aperture */
@@ -462,6 +503,10 @@ function setStorageFlag(key) {
   }
 }
 
+/**
+ * RadioTuner — dial, visualizer, carrier mix, lock ritual, message reveal.
+ * Instantiated once on DOMContentLoaded. All DOM ids live in intercept.html.
+ */
 class RadioTuner {
   constructor() {
     this.root = $(".radio");
@@ -484,7 +529,7 @@ class RadioTuner {
     this.messageAudio = null;
     this.lyricRoot = $("#blood-lyric");
 
-    this.freq = 82.4;
+    this.freq = 82.4; // starting MHz (matches intercept.html .radio__freq-value)
     this.dialAngle = -18;
     this.direction = 0;
     this.holdMs = 0;
@@ -528,6 +573,7 @@ class RadioTuner {
     this.freqData = null;
   }
 
+  /** Build bars, bind hold-to-spin, start the rAF loop. */
   init() {
     this.#buildBars();
     this.#bindControls();
@@ -548,6 +594,7 @@ class RadioTuner {
     setStorageFlag(TUNED_KEY);
   }
 
+  /** Show pad / hub icons under the dial after first 097.9 lock (+ Imperial for hub). */
   #syncClearanceExit() {
     const tuned = this.#hasTunedBefore();
     const imperial = hasImperialClearance();
@@ -566,6 +613,7 @@ class RadioTuner {
     }
   }
 
+  /** Keep terminal ambience alive when jumping to index.html. */
   #bindClearanceHandoff() {
     const links = [
       ...this.padBtns,
@@ -580,6 +628,7 @@ class RadioTuner {
     }
   }
 
+  /** Create BAR_COUNT visualizer spans. Heights live in --h (CSS). */
   #buildBars() {
     if (!this.vizRoot) return;
     this.vizRoot.replaceChildren();
@@ -596,6 +645,7 @@ class RadioTuner {
     }
   }
 
+  /** Hold arrows / A-D / left-right to spin. Hold longer → faster. Locked dial ignores. */
   #bindControls() {
     const setActiveBtn = (dir) => {
       this.btnLeft?.classList.toggle("is-active", dir === -1);
@@ -668,6 +718,10 @@ class RadioTuner {
     });
   }
 
+  /**
+   * Build Web Audio graph on first spin: 097.9 + 033.3 + eggs + brownish static.
+   * All beds loop muted until #applyAudioMix raises their gains near a mark.
+   */
   async #ensureAudio() {
     if (this.audioReady) {
       if (this.ctx?.state === "suspended") await this.ctx.resume();
@@ -798,6 +852,7 @@ class RadioTuner {
     this.#applyAudioMix(this.clarity);
   }
 
+  /** Looping noise buffer (filtered white + occasional pops). */
   #makeNoiseBuffer(seconds = 2) {
     const len = Math.floor(this.ctx.sampleRate * seconds);
     const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -813,12 +868,17 @@ class RadioTuner {
     return buf;
   }
 
+  /** CSS --clarity drives phosphor glow. Easter beds must NOT raise this. */
   #setClarity(c) {
     this.clarity = clamp(c, 0, 1);
     this.root?.style.setProperty("--clarity", this.clarity.toFixed(3));
     this.#applyAudioMix(this.clarity);
   }
 
+  /**
+   * Mix beds from current frequency. Egg closer than a puzzle carrier wins.
+   * Static (noiseGain) falls off as clarity rises; muff filters open toward lock.
+   */
   #applyAudioMix(puzzleClarity) {
     if (!this.audioReady) return;
     const t = this.ctx.currentTime;
@@ -876,6 +936,10 @@ class RadioTuner {
     }
   }
 
+  /**
+   * Main loop: accelerate dial, detent/snap, arm lock, paint viz, cue blood lyrics.
+   * Speed curve: holdMs/2500 then ^1.65 — tweak those numbers to change spin feel.
+   */
   #tick(ts) {
     const dt = Math.min(0.05, (ts - this.lastTs) / 1000);
     this.lastTs = ts;
@@ -964,6 +1028,7 @@ class RadioTuner {
     this.raf = requestAnimationFrame((t) => this.#tick(t));
   }
 
+  /** Poem only while sitting on 033.3 (±LOCK_TOLERANCE), not the wider hear band. */
   #syncBloodLyrics() {
     if (!this.lyricRoot || this.locked || this.revealed) {
       if (this.bloodLyricLive) this.#stopBloodLyrics();
@@ -1006,6 +1071,7 @@ class RadioTuner {
     this.#tickBloodTypewriter(t);
   }
 
+  /** Restart the blood bed from 0 so lyric `at` times stay in sync. */
   #startBloodLyrics() {
     this.bloodLyricLive = true;
     this.#resetBloodLyricState({ keepRoot: true });
@@ -1045,6 +1111,7 @@ class RadioTuner {
     this.lyricRoot.replaceChildren();
   }
 
+  /** Cue a lyric line and start typewriter. Previous line fades (CSS .is-fading). */
   #cueBloodLyric(line, nowT) {
     if (!this.lyricRoot) return;
 
@@ -1114,6 +1181,7 @@ class RadioTuner {
     }
   }
 
+  /** Blend analyser FFT + hash static into bar --h. flatViz collapses to zero. */
   #paintViz(dt) {
     if (!this.barNodes.length || this.hideBars) return;
 
@@ -1177,6 +1245,7 @@ class RadioTuner {
     }
   }
 
+  /** Sit still on a lockable carrier for LOCK_HOLD_MS → freeze dial and run ritual. */
   async #lockOn(carrier) {
     if (this.locked) return;
     if (carrier.lockable === false) return;
@@ -1212,6 +1281,10 @@ class RadioTuner {
     await this.#lockGreeting();
   }
 
+  /**
+   * 097.9 lock choreography. Waits (#wait) are the edit points for pacing.
+   * Skip button / Enter aborts #playCleanSignal early.
+   */
   async #lockGreeting() {
     // Dial / arrows / freq leave; visualizer stays through the playback
     await this.#wait(280);
@@ -1248,6 +1321,7 @@ class RadioTuner {
     this.#revealMessage();
   }
 
+  /** Un-muffle 097.9, play once (13s cap), fade master. */
   async #playCleanSignal() {
     if (!this.signal || !this.ctx) return;
 
@@ -1310,6 +1384,7 @@ class RadioTuner {
     this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.18);
   }
 
+  /** Show intercept message + init left-rail audio. CTA foot fades in after 700ms. */
   #revealMessage() {
     if (this.revealed) return;
     this.revealed = true;

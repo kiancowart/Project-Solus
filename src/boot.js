@@ -1,5 +1,32 @@
 /**
- * LATTICE.OS — Boot sequence & clearance gate
+ * =============================================================================
+ * boot.js — Clearance keypad, boot log, Imago logo, hub entry
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Plays the opening ritual on index.html:
+ *     keypad gate → typed boot log → Empire Imago → hub
+ *   Also handles returning to the pad from the hub (Imago click).
+ *
+ * COPY / TIMING / CODES (edit those files, not this one)
+ *   ACCESS_CODE, GATE_EASTER_EGGS, BOOT_LINES, BOOT_LOGO, ACCESS_SUCCESS, MUSIC
+ *     → content/boot-content.js
+ *   Typewriter speed / hitch / reveal steps
+ *     → MOTION in content/boot-content.js
+ *
+ * EASTER EGGS ON THE PAD (handled in runClearanceGate → submit)
+ *   ACCESS_CODE (512)  — success → boot log
+ *   111                — dev full Imperial + STATUS unlocks
+ *   222                — wipe all progress and reload
+ *   666                — no-mask stare (dead silence until caption click)
+ *   420 / GATE_NICE_TRY_CODES — custom DENIED lines
+ *
+ * SKIP
+ *   After ACCEPTED, #boot-skip / Enter jumps straight to hub.
+ *
+ * URL
+ *   index.html?hub=1  — skip pad if Imperial is already granted
+ *                       (used by intercept.html hub route)
+ * =============================================================================
  */
 
 import {
@@ -39,6 +66,7 @@ import { wipeLatticeProgress } from "./progress.js";
    BOOT SEQUENCE — clearance keypad → log → logo → hub
    ========================================================================== */
 
+/** Swap Imago <img> src from BOOT_LOGO (or show the triangle placeholder). */
 export function prepareBootLogo() {
   const stage = document.getElementById("boot-logo");
   const img = document.getElementById("boot-logo-img");
@@ -66,6 +94,10 @@ export function prepareBootLogo() {
   return stage;
 }
 
+/**
+ * Stepped Imago appearance. variant "reset" uses the purge sting (imagoReset).
+ * Timings: BOOT_LOGO.loadMs / loadSteps / holdMs in content/boot-content.js
+ */
 export async function playBootLogo({ variant = "boot" } = {}) {
   if (!BOOT_LOGO.enabled) return;
 
@@ -110,12 +142,17 @@ export async function playBootLogo({ variant = "boot" } = {}) {
   log.classList.remove("is-dimmed");
 }
 
+/** Pad display: typed digits plus trailing underscores, spaced. "51" → "5 1 _" */
 export function formatGateDisplay(value, maxLen) {
   const chars = value.split("");
   while (chars.length < maxLen) chars.push("_");
   return chars.join(" ");
 }
 
+/**
+ * Number-pad gate. Resolves when the operator succeeds (or skips after ACCEPTED).
+ * skippedRef.skipped = true means jump to hub and skip the boot log / Imago.
+ */
 export function runClearanceGate(skippedRef) {
   return new Promise((resolve) => {
     const gate = document.getElementById("boot-gate");
@@ -222,6 +259,7 @@ export function runClearanceGate(skippedRef) {
       }, 700);
     };
 
+    /** Hide the pad, show the no-mask face. No audio until caption click. */
     const stare = () => {
       setWhisperPadVisible(false);
       locked = true;
@@ -245,6 +283,7 @@ export function runClearanceGate(skippedRef) {
       window.removeEventListener("keydown", onKeydown);
     };
 
+    /** Dismiss 666 stare and restore the pad. */
     const unstare = async () => {
       if (!gate.classList.contains("is-staring")) return;
       audio.exitDeadSilence();
@@ -279,6 +318,7 @@ export function runClearanceGate(skippedRef) {
       void unstare();
     });
 
+    /** Correct ACCESS_CODE (or 111 after it grants Imperial). */
     const succeed = async () => {
       setWhisperPadVisible(false);
       locked = true;
@@ -336,6 +376,7 @@ export function runClearanceGate(skippedRef) {
       cleanupAndResolve();
     };
 
+    /** ENTER with a full buffer — check ACCESS_CODE then GATE_EASTER_EGGS. */
     const submit = () => {
       if (locked) return;
       if (buffer.length < maxLen) return;
@@ -430,6 +471,7 @@ export function runClearanceGate(skippedRef) {
   });
 }
 
+/** Hide boot screen, show hub, start chrono + soundtrack, type the banner. */
 export async function enterHub() {
   const bootScreen = document.getElementById("boot");
   const hubScreen = document.getElementById("hub");
@@ -456,7 +498,7 @@ export async function enterHub() {
   if (active) await revealPanel(active);
 }
 
-/** Leave hub and reopen the clearance keypad; success returns to hub */
+/** Leave hub and reopen the clearance keypad; success returns to hub. */
 export async function returnToClearance() {
   const bootScreen = document.getElementById("boot");
   const hubScreen = document.getElementById("hub");
@@ -500,6 +542,7 @@ export async function returnToClearance() {
   await enterHub();
 }
 
+/** Hub Imago mark + nav "pad" / "tuner" links. */
 export function initImagoReturn() {
   const mark = document.querySelector(".imago-mark");
   let busy = false;
@@ -529,6 +572,7 @@ export function initImagoReturn() {
   });
 }
 
+/** index.html?hub=1 from intercept — strip the flag; only skip pad if Imperial. */
 function consumeHubEntryQuery() {
   try {
     const url = new URL(window.location.href);
@@ -546,6 +590,7 @@ function consumeHubEntryQuery() {
   }
 }
 
+/** Full first-visit sequence: pad → (optional skip) → boot log → Imago → hub. */
 export async function runBoot() {
   const log = document.getElementById("boot-log");
   const skipBtn = document.getElementById("boot-skip");

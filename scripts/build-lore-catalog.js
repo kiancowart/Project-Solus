@@ -1,12 +1,17 @@
 /**
- * Build Archives catalog from Obsidian Player Facing digests only.
- * Flight Log drafts are excluded (they ship via build-flight-log.js).
+ * =============================================================================
+ * build-lore-catalog.js — Regenerates content/lore-catalog.js
+ * =============================================================================
+ * Walks lore/Player Facing/ for .md digests (skips Flight Log/ and README),
+ * strips YAML frontmatter + [[wikilinks]], writes a JS module the Archives
+ * channel imports.
+ *
+ * Run from the project root:
+ *   node scripts/build-lore-catalog.js
  *
  * Author folder name "Player Facing/" never appears in catalog fields
- * shown to operators — use diegetic labels instead.
- *
- * Output: content/lore-catalog.js
- * Run: node scripts/build-lore-catalog.js
+ * shown to operators — locators look like MEM/KHANS.
+ * =============================================================================
  */
 
 const fs = require("fs");

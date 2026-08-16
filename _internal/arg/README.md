@@ -97,19 +97,15 @@ Never pin “the password is 512.” Fiction points via **G512** / Triad languag
 | `/help` | — | Lists cmds |
 | `/outer` | `ENTR SHIP ID` → `ENTR KHAN ID` | Ship **G512** → Khan **S. Raei** (spaces/period optional: `S RAEI`, `S.RAEI`) → optics |
 | `/inner` | `DAMAGED PART SERIALS` | **EL0 WL3 NR5** (compact ok). Also arms **outer/optics** if not done. INNER live shows Ikeph crumb **215** |
-| `/landing` or `/land` | — | Landing-gear actuation profiles (Qamor Chart uses spoil/rough: **L-2 → L-1 → L-3 → L-5**) |
-| `/protocol` or `/storm` | `ENTR STORM PROTOCOL PHRASE` | **unconquered** / **unconquered storm** / **teavicta** → volume residue **540** (Chart Teavicta is separate: cardinal eye) |
+| `/landing` or `/land` | — | Landing profiles: MARKED BERTH · ROUGH TERRAIN · NEUTRAL (Qamor Chart uses **ROUGH TERRAIN**: **L-2 → L-1 → L-3 → L-5**) |
 | `/echo` | — (needs INNER) | Damage times + Heixin volume **760** + serials |
-| `/moon` | — | Usage |
-| `/moon kaph` | — | Catalog **430** (Deshret) |
-| `/edge` or `/carrier` | `ENTR DEAD CARRIER` | **097.9** / **0979** / **97.9** → volume **980** + token `NONUS-EDGE` |
 | `/translate` | optional string | Empire blood phrase + partner Morse lexicon |
 | `/passage` | — | Ikeph Empress / blood verse dump |
-| `/volume` | — | Usage |
-| `/volume <planet>` or `/bind <planet>` | — | Confirm fragment **only after** claim |
+| `/fragment` | — | Usage |
+| `/fragment <planet>` | — | Confirm fragment **only after** claim |
 | `Celeste` (no slash) | — | **Turn around.** (no unlock) |
 
-Shipped help line: `/help · /outer · /inner · /landing · /volume · /protocol · /echo · /moon · /edge · /translate · /passage`
+Shipped help line: `/help · /outer · /inner · /landing · /fragment · /echo · /translate · /passage`
 
 ---
 
@@ -142,7 +138,7 @@ Bind order = inward → outward (named Dominion Seals). Chart unlocks **dossiers
 
 | # | Planet | Seal | Type | Answer |
 |--:|--------|------|------|--------|
-| 1 | Qamor | DEVOTION | `sequence` | **L-2 → L-1 → L-3 → L-5** (`/landing` spoil/rough profile) |
+| 1 | Qamor | DEVOTION | `sequence` | **L-2 → L-1 → L-3 → L-5** (`/landing` ROUGH TERRAIN) |
 | 2 | Ikeph | ERUDITION | `reorder` | Blood hymn lines in `/passage` order (glyph → clear) |
 | 3 | Terra | RESOLUTION | `chrono-rings` | Align hours + minutes to real local time → COMMIT |
 | 4 | Deshret | COMMUNION | `text` | **All our blood is red** (Empire phrase; also `/translate`) |
@@ -154,7 +150,7 @@ Bind order = inward → outward (named Dominion Seals). Chart unlocks **dossiers
 
 **Sturm** (Uros moon) dossier is free — tutorial shape, no Chart purge. Chart `?` (Teavicta mystery) = Nu Lunae egg (not Imperial).
 
-**Retired Chart verbs (do not chase):** flare **B→A→C** / `/whoami`, cradle assemble **FC1·NL2·WR4**, shadow dial tick **5**, text **VX-48** / **hold fast** / **prickly**, Heixin serial echo as Chart answer, Vol `/edge` flag gate. Terminal `/protocol` · `/echo` · `/moon` · `/edge` are **residue crumbs only**, not Chart unlocks.
+**Retired Chart verbs (do not chase):** flare **B→A→C** / `/whoami`, cradle assemble **FC1·NL2·WR4**, shadow dial tick **5**, text **VX-48** / **hold fast** / **prickly**, Heixin serial echo as Chart answer. Removed Terminal cmds: `/protocol` · `/moon` · `/edge` · `/volume` (now `/fragment`).
 
 **Planet descriptions (dossier copy):** edit `PLANET_DOSSIERS` in `content/arg-path.js` (`facts` + `sealWhy`). Sturm blurb: `SYSTEM_CHART.sturm` in `content/boot-content.js`.
 
@@ -169,11 +165,8 @@ Flat chronological log once PERSONAL RECORD bay unlocks. Numbers below show up a
 | **512** | Pad / ship id (also Qamor flavor) |
 | **215** | INNER live telemetry · `CANOPY CHECKSUM · IKEPH VOL 215` |
 | **320** | Diegetic scrap in Log / lore (Terra) |
-| **430** | `/moon kaph` catalog |
-| **540** | `/protocol` auth residue |
 | **760** | `/echo` time rule |
 | **870** | INNER · `SIDEARM PLATE · KSP-512 · CODE 870` |
-| **980** | `/edge` volume index |
 
 Search: substring filter on title / date / location / body / fragment. No hit cap, no locked volumes.
 
@@ -252,7 +245,7 @@ EXTRA: Whisper **reward** then **no**. Eggs: `who are you` → TURN AROUND; **Ki
 1. `/outer` → **G512** → **S. Raei** *or* skip to `/inner`.
 2. `/inner` → **EL0 WL3 NR5** (also arms optics if needed).
 
-EXTRA: `/landing` · `/protocol` · `/echo` · `/moon` · `/edge` · `/translate` · `/passage` · gated `/volume` · `Celeste` → Turn around. Full answers in glossary.
+EXTRA: `/landing` · `/echo` · `/translate` · `/passage` · gated `/fragment` · `Celeste` → Turn around. Full answers in glossary.
 
 ### 4. STATUS → INNER bays
 

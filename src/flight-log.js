@@ -1,5 +1,24 @@
 /**
- * LATTICE.OS — Flight Log (flat chronological entries)
+ * =============================================================================
+ * flight-log.js — Chronological log reader + fragment claims
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Lists FLIGHT_LOG.entries (built from content/flight-log-entries.js).
+ *   Search filters the index. Opening an entry pages the body. Nine entries
+ *   hide a seal fragment in [[WORD]] markup — click claims it for Imperial.
+ *
+ * SCRAMBLE RULE
+ *   Only fragment entries scramble LOCATION until that world's Chart dossier
+ *   is unlocked. Filler entries stay clear. After unlock, descramble plays
+ *   once (hasSeenDescramble), then stays clear.
+ *
+ * AUDIO
+ *   Optional entry.audio path (Heixin Morse clip). Player UI is in the reader.
+ *
+ * WHERE TO EDIT
+ *   Story text, dates, fragments, audio paths → content/flight-log-entries.js
+ *   Fragment words themselves → EMPIRE_SEALS.fragment in content/arg-path.js
+ * =============================================================================
  */
 
 import { FLIGHT_LOG } from "../content/boot-content.js";
@@ -15,6 +34,7 @@ import {
 } from "./progress.js";
 import { scrambleText, descrambleText } from "./motion.js";
 
+/** Bind Flight Log UI. refreshAccess() is hung on the function for Chart/Imperial. */
 export function initFlightLog() {
   const flog = document.getElementById("flog");
   const host = document.getElementById("flog-journals");
@@ -163,7 +183,7 @@ export function initFlightLog() {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
 
-  /** Unscrambled fragment-entry locations render as <strong> */
+  /** Unscrambled fragment-entry locations render as <strong> (visual cue). */
   const locationInnerHtml = (text, { scrambled, hasFragment }) => {
     const esc = escapeHtml(text);
     if (hasFragment && !scrambled) return `<strong>${esc}</strong>`;
@@ -192,6 +212,7 @@ export function initFlightLog() {
   const needsScramble = (entry) =>
     Boolean(entry?.fragment) && Boolean(entry?.planetId) && !planetUnlocked(entry);
 
+  /** [[HIVE]] in the body → clickable fragment. Strip brackets for search. */
   const plainBody = (text) =>
     String(text ?? "").replace(/\[\[([A-Za-z0-9\-]+)\]\]/g, "$1");
 
@@ -632,6 +653,7 @@ export function initFlightLog() {
     indexLabel.dataset.relabeled = "1";
   }
 
+  /** Re-open the current entry after Chart unlock so LOC descrambles. */
   const refreshAccess = () => {
     paintList();
     if (activeEntry) {

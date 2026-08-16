@@ -1,5 +1,31 @@
 /**
- * LATTICE.OS — Cartography / wire globe / Chart puzzles
+ * =============================================================================
+ * cartography.js — System Chart (The Nine) + per-planet puzzles
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Draws the orbital SVG from SYSTEM_CHART (content/boot-content.js).
+ *   Clicking a world either shows its dossier (if unlocked) or the Chart
+ *   puzzle from CHART_PUZZLES (content/arg-path.js).
+ *
+ * PUZZLE TYPES (CHART_PUZZLES[planetId].type)
+ *   sequence        — click nodes in order (Qamor landing legs)
+ *   reorder         — drag verse lines (Ikeph blood poem)
+ *   chrono-rings    — align header clock (Terra) via chrono.js
+ *   text            — type an answer (Deshret phrase, Uros "zezura")
+ *   cardinal-eye    — look N/E/S/W on the header compass (Teavicta)
+ *   morse-translate — partner Morse (Heixin)
+ *   lights-out      — 3×5 toggle grid (Haider)
+ *   orbit-order     — rank collected worlds inner→outer (Vol)
+ *
+ * WHERE TO EDIT
+ *   Orbit radii / names / Sturm blurb → SYSTEM_CHART in boot-content.js
+ *   Puzzle answers / dossier prose    → CHART_PUZZLES / PLANET_DOSSIERS
+ *   This file is the UI engine — keep answers out of it.
+ *
+ * UNLOCK SIDE EFFECTS
+ *   Terra → lockChronoAligned()    Teavicta → resetCompass()
+ *   lattice:dossier event refreshes nav chrome + Flight Log scramble.
+ * =============================================================================
  */
 
 import { SYSTEM_CHART } from "../content/boot-content.js";
@@ -45,6 +71,7 @@ import {
    CARTOGRAPHY — The Nine orbital chart
    ========================================================================== */
 
+/** Polar → SVG xy. angleDeg 0 = +X (right); used for planet + moon placement. */
 export function polarToXY(cx, cy, r, angleDeg) {
   const a = (angleDeg * Math.PI) / 180;
   return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
@@ -65,6 +92,7 @@ function answersMatch(input, answers) {
   });
 }
 
+/** Build the chart SVG, readout, and per-planet lock UIs. */
 export function initCartography() {
   const mapHost = document.getElementById("chart-map");
   const readout = document.getElementById("chart-readout");
@@ -79,6 +107,7 @@ export function initCartography() {
   const idle = SYSTEM_CHART.idle ?? "SELECT ORBITAL BODY";
   const errorText = SYSTEM_CHART.error ?? "GYROSCOPIC DATA SYNC ERROR";
 
+  /** Ikeph-only archive tease until that dossier is unlocked (hints /passage). */
   const IKEPH_ARCHIVE = {
     code: "CART.ARCHIVE // STATUS=PARTIAL · ANCHOR BLEED",
     body:
@@ -165,6 +194,7 @@ export function initCartography() {
     readout.innerHTML = `<p class="chart__error">${errorText}</p>`;
   };
 
+  /** Size the selection box around a planet group (body + label). */
   const fitSelectBox = (g) => {
     const content = g.querySelector(".chart-svg__content");
     const box = g.querySelector(".chart-svg__box");
@@ -231,6 +261,7 @@ export function initCartography() {
     paintArchive(null);
   };
 
+  /** Unlocked dossier: facts + sealWhy from PLANET_DOSSIERS. Seal header after Imperial. */
   const showDossier = (planetId, { scanIn = false } = {}) => {
     const d = PLANET_DOSSIERS[planetId];
     if (!d) {
@@ -276,6 +307,7 @@ export function initCartography() {
   let unlockRevealTimer = 0;
   let unlockRevealBusy = false;
 
+  /** Mark dossier unlocked, fire lattice:dossier, then scan into the writeup. */
   const unlockAndShow = (planetId) => {
     if (unlockRevealBusy) return;
     if (isDossierUnlocked(planetId)) {
@@ -342,6 +374,10 @@ export function initCartography() {
     }, DENY_FLASH_MS);
   };
 
+  /**
+   * Render the lock UI for a planet. Branch on puzzle.type (see file header).
+   * Keep puzzle data in CHART_PUZZLES — only interaction code belongs here.
+   */
   const showPuzzle = (planetId) => {
     const puzzle = CHART_PUZZLES[planetId];
     const name = PLANET_DOSSIERS[planetId]?.title ?? planetId.toUpperCase();
@@ -358,6 +394,7 @@ export function initCartography() {
     paintArchive(planetId);
 
     if (puzzle.type === "orbit-order") {
+      /* Vol: drag collected worlds onto a bar in inner→outer order. */
       const need = puzzle.requireDossiers ?? 3;
       const orbitAnswer =
         puzzle.answer ?? (SYSTEM_CHART.bodies ?? []).map((b) => b.id);
@@ -599,6 +636,7 @@ export function initCartography() {
     }
 
     if (puzzle.type === "cardinal-eye") {
+      /* Teavicta: look E→W→N→S on the header compass (CHART_PUZZLES.teavicta.answer). */
       const answer = puzzle.answer ?? ["E", "W", "N", "S"];
       let step = 0;
       resetCompass({ animate: false });
@@ -694,6 +732,7 @@ export function initCartography() {
     }
 
     if (puzzle.type === "sequence") {
+      /* Qamor: click landing-leg nodes in puzzle.answer order. */
       let seq = [];
       readout.innerHTML = `
         <div class="chart-lock" id="chart-lock">
@@ -753,6 +792,7 @@ export function initCartography() {
     }
 
     if (puzzle.type === "reorder") {
+      /* Ikeph: drag blood-poem lines into puzzle.answer id order. */
       let order = (puzzle.lines ?? []).map((l) => l.id);
       const byId = Object.fromEntries((puzzle.lines ?? []).map((l) => [l.id, l]));
       let swapping = false;
@@ -888,6 +928,7 @@ export function initCartography() {
     }
 
     if (puzzle.type === "lights-out") {
+      /* Haider: click toggles self + NESW neighbors; solved when all lit. */
       const rows = puzzle.rows ?? 3;
       const cols = puzzle.cols ?? 5;
       const size = rows * cols;
@@ -963,6 +1004,7 @@ export function initCartography() {
     }
 
     if (puzzle.type === "morse-translate") {
+      /* Heixin: type the English of PARTNER_MORSE (or paste Morse). */
       let buffer = "";
       let phase = "morse";
       const targetMorse = puzzle.morse ?? PARTNER_MORSE.code;
@@ -1181,6 +1223,7 @@ export function initCartography() {
     }
 
     if (puzzle.type === "chrono-rings") {
+      /* Terra: spin rings until header clock matches real local (offsets → 0). */
       let selected = "minutes";
       let raf = 0;
       let unlocking = false;
@@ -1416,7 +1459,7 @@ export function initCartography() {
     }
 
 
-    // text
+    // Default: typed-answer lock (Deshret blood phrase, Uros "zezura", …)
     readout.innerHTML = `
       <div class="chart-lock" id="chart-lock">
         <p class="chart-lock__title">${name}</p>
@@ -1749,6 +1792,7 @@ export function initCartography() {
 /**
  * 2D wireframe globe with sphere-projected (bowed) latitudes & longitudes.
  */
+/** Spinning wire-frame globe in unlocked dossiers. Returns a stop() function. */
 export function startWireGlobe(svg) {
   const svgNS = "http://www.w3.org/2000/svg";
   const lats = svg.querySelector(".wire-globe__lats");

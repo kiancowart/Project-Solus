@@ -1,5 +1,26 @@
 /**
- * Imperial Clearance — triad seal assembler + purge
+ * =============================================================================
+ * imperial.js — Nine-well seal assembler + purge / bind animation
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Imperial Clearance panel: three triangles × three wells. Each well wants
+ *   the matching planet + Flight Log fragment. Well → seal mapping shuffles
+ *   within veil / neutral / scourge bands (progress.getSealWellAssignments).
+ *
+ * CORRECT BIND
+ *   Planet dropdown + fragment for that well's seal (EMPIRE_SEALS).
+ *   Fragment chips in the tray stay scrambled until that Chart dossier is done.
+ *
+ * ANIMATION TIMING (playBindSequence) — edit the constants at the top
+ *   EMPTY_TRI_HOLD_MS, SIDES_OUT_MS, BANQUET_SCAN_MS, RESET_SCAN_MS
+ *   CSS classes on #imperial-gate drive the visuals (see main.css).
+ *
+ * PURGE
+ *   Confirm Y → wipeLatticeProgress + Imago reset sting + reload pad.
+ *
+ * DEV
+ *   Pad code 111 calls completeImperialBind() without the animation.
+ * =============================================================================
  */
 
 import { IMPERIAL_SLOTS, EMPIRE_SEALS } from "../content/arg-path.js";
@@ -29,14 +50,20 @@ import { initFlightLog } from "./flight-log.js";
 import { setNavInteractionLocked } from "./nav.js";
 
 const INTERCEPT_HREF = "intercept.html";
+/** CRT blackout before Imago on purge. */
 const BLACKOUT_MS = 900;
+/** Well corner ids per triangle (top-left, top-right, bottom). */
 const CORNER_ORDER = ["tl", "tr", "bb"];
+/** Left + right triangles hitch onto mid. */
 const SIDES_OUT_MS = 2000;
 /** Hold on three empty triangles after seals glitch out */
 const EMPTY_TRI_HOLD_MS = 2400;
+/** Banquet image scan-in. */
 const BANQUET_SCAN_MS = 1500;
+/** Reset / purge scan. */
 const RESET_SCAN_MS = 900;
 
+/** Decode banquet image before the bind scan so it does not pop in late. */
 async function waitBanquetImageReady() {
   const img = document.querySelector(".imperial-tri__banquet-img");
   if (!img) return;
@@ -72,6 +99,7 @@ function normFrag(s) {
     .replace(/[▽▼\s]+/g, "");
 }
 
+/** Physical wells 1–9 (HTML data-slots on each triangle). */
 function wellNumbers() {
   return [1, 2, 3, 4, 5, 6, 7, 8, 9];
 }
@@ -90,6 +118,7 @@ export function completeImperialBind({ playStinger = true } = {}) {
   initFlightLog.refreshAccess?.();
 }
 
+/** Bind #imperial-gate wells, tray, submit, autofill, and purge confirm. */
 export function initImperialClearance() {
   const root = document.getElementById("imperial-gate");
   const triad = document.getElementById("imperial-triad");
@@ -139,6 +168,7 @@ export function initImperialClearance() {
     audio.play("deny");
   };
 
+  /** Fragment chips: scrambled until Chart dossier; click/drag fills empty wells. */
   const renderTray = () => {
     if (!tray) return;
     tray.replaceChildren();
@@ -206,6 +236,7 @@ export function initImperialClearance() {
     }
   };
 
+  /** One well: seal name (shuffled), planet CRT-select, fragment text/drop. */
   const buildWell = (slotNum, corner) => {
     const seal = getSealForWell(slotNum);
     const st = slotState[slotNum];
@@ -335,6 +366,10 @@ export function initImperialClearance() {
     audio.play("revealScan", { durationMs, gainScale });
   };
 
+  /**
+   * Bind choreography. CSS classes are the edit surface for look;
+   * sleeps / *_MS constants are the edit surface for pace.
+   */
   const playBindSequence = async () => {
     busy = true;
     setNavInteractionLocked(true);
@@ -564,6 +599,7 @@ export function initImperialClearance() {
   });
 }
 
+/** Tell Flight Log / others that fragments changed (tray refresh). */
 export function refreshImperialTray() {
   window.dispatchEvent(new CustomEvent("lattice:fragments"));
 }

@@ -1,5 +1,27 @@
 /**
- * LATTICE.OS — Whisper ARG
+ * =============================================================================
+ * whisper.js — Kharon-Celeste corner ARG (clearance pad only)
+ * =============================================================================
+ * WHAT THIS FILE DOES
+ *   Tiny chat on the number-pad screen. Appears after several DENIED attempts.
+ *   Dialogue, answers, sudoku grid, and farewell lines live in WHISPER
+ *   (content/boot-content.js) — edit that object, not this file, for copy.
+ *
+ * STEP ENGINE
+ *   WHISPER.steps[] is played in order. acceptMode:
+ *     exact | contains | affirmative | negative
+ *   softReject / softRejects: wrong-but-close replies that do not advance.
+ *   expandAfter: grow the panel after leaving that step.
+ *   grid: sudoku beat — blanks encode 5-1-2; accept ["512"].
+ *   laughLock: packing HAHA then seals the tab forever.
+ *
+ * STORAGE (WHISPER.*Key)
+ *   lattice.whisperStep / whisperDone / whisperSealed / whisperSudokuSeen
+ *
+ * VISIBILITY
+ *   setWhisperPadVisible(true) while the pad is showing (boot.js).
+ *   whisperPadControl.onDenied() counts heat toward revealing the tab.
+ * =============================================================================
  */
 
 import { WHISPER, MOTION } from "../content/boot-content.js";
@@ -10,7 +32,7 @@ import { sleep, typeText, revealTopToBottom, prefersReducedMotion } from "./moti
    WHISPER — Kharon-Celeste corner ARG (pad screen only)
    ========================================================================== */
 
-/** Shown only while the clearance number pad is active */
+/** Boot.js calls these while the pad is on/off screen. Filled inside initWhisper(). */
 export let whisperPadControl = {
   show() {},
   hide() {},
@@ -18,6 +40,7 @@ export let whisperPadControl = {
   resetHeat() {},
 };
 
+/** Show/hide the whisper tab with the pad. Resets deny-heat on show. */
 export function setWhisperPadVisible(on) {
   if (on) {
     whisperPadControl.resetHeat();
@@ -25,6 +48,7 @@ export function setWhisperPadVisible(on) {
   } else whisperPadControl.hide();
 }
 
+/** Bind #whisper DOM. Safe no-op if the pad markup is missing. */
 export function initWhisper() {
   const root = document.getElementById("whisper");
   const tab = document.getElementById("whisper-tab");
@@ -128,7 +152,7 @@ export function initWhisper() {
   let busy = false;
   let farewellIndex = 0;
   let lastBot = null; // { text, cls, grid? }
-  let denyHeat = 0;
+  let denyHeat = 0; // consecutive pad DENIED count; tab appears after enough heat
   let strugglePending = false;
   let struggleSaid = false;
   let sealed = readSealed();
@@ -149,7 +173,7 @@ export function initWhisper() {
 
   let { step, done } = readProgress();
 
-  /** Letters/digits + spacing only; apostrophes dropped so don't → dont */
+  /** Letters/digits + spacing only; apostrophes dropped so don't → dont. Used for all matching. */
   const normalizeAnswer = (raw) =>
     String(raw ?? "")
       .toLowerCase()
@@ -242,6 +266,7 @@ export function initWhisper() {
     return null;
   };
 
+  /** Hide tab + glitch the number pad (CSS .is-pad-glitched). Still usable. */
   const sealTerminal = async () => {
     sealed = true;
     writeSealed();
@@ -537,6 +562,7 @@ export function initWhisper() {
     await sleep(2150);
   };
 
+  /** Advance to the next WHISPER.steps item; skip "please" beat if already said. */
   const advanceAfterAccept = async (current, raw) => {
     if (current.success) {
       await typeLine(current.success, "whisper__line--ok");
@@ -618,6 +644,7 @@ export function initWhisper() {
     if (!silent) audio.play("click");
   };
 
+  /* Boot.js uses these while the pad is visible. onDenied() counts heat toward showing the tab. */
   whisperPadControl = {
     show() {
       if (sealed) {
@@ -691,7 +718,7 @@ export function initWhisper() {
     try {
       await typeLine(`> ${raw}`, "", { record: false });
 
-      // Name forbid — works at any point (before other interrupts)
+      /* Interrupts (any step): forbidden name, identity ask, early pad-code. */
       if (hasForbiddenName(raw)) {
         const reply = WHISPER?.forbiddenName?.reply ?? "Don't say that name.";
         await typeLine(reply, "whisper__line--prompt", { record: false });
@@ -737,6 +764,7 @@ export function initWhisper() {
       }
 
       const current = steps[step];
+      /* softReject = close-but-wrong (does not advance). laughLock packs HAHA and seals. */
       const soft = findSoftReject(current, raw);
       const accepted = matchesStepList(
         raw,

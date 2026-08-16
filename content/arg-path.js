@@ -1,4 +1,26 @@
 /**
+ * =============================================================================
+ * arg-path.js — EDIT PUZZLE ANSWERS, SEALS, DOSSIERS HERE
+ * =============================================================================
+ * This is the ARG content file. Logic lives in src/; copy and solutions live here.
+ * After changing answers, wipe progress with ?cold=1 so old flags do not stick.
+ *
+ * QUICK MAP
+ *   BLOOD_LYRICS          intercept.html 033.3 poem timestamps
+ *   PUZZLE_A / PUZZLE_B   STATUS /outer and /inner
+ *   FTH_HUB               Terminal command output strings
+ *   OUTER_STATIONS        Hull serials + damage order (INNER code is derived)
+ *   CHART_PUZZLES         Per-planet Chart lock (type + answer)
+ *   EMPIRE_SEALS          Nine seals ↔ planets ↔ fragment words
+ *   SEAL_BANDS            Which wells (1–9) belong to veil / neutral / scourge
+ *   PLANET_DOSSIERS       Chart writeup prose after a puzzle
+ *   PARTNER_MORSE         Heixin audio / Chart / /translate
+ *   EMPIRE_BLOOD_PHRASE   Terra scrap + Deshret + /translate
+ *
+ * STORAGE KEY NAMES
+ *   ARG_PROGRESS_KEYS — do not rename unless you also wipe old localStorage
+ * =============================================================================
+ *
  * ARG main path — puzzle solutions & Imperial 9-slot map
  * Edit freely; wipe progress with ?cold=1 after changing solutions.
  */
@@ -48,7 +70,7 @@ export const PUZZLE_A = {
   promptKhan: "ENTR KHAN ID",
   successLine: "OUTER AUTH OK — OPTICS BUS ARMED",
   helpLine:
-    "CMDS: /help · /outer · /inner · /landing · /volume · /protocol · /echo · /moon · /edge · /translate · /passage",
+    "CMDS: /help · /outer · /inner · /landing · /fragment · /echo · /translate · /passage",
   unknownLine: "CMD NOT RECOGNIZED — TYPE /help FOR COMMAND LIST",
 };
 
@@ -57,24 +79,16 @@ export const PUZZLE_A = {
    --------------------------------------------------------------------------- */
 export const FTH_HUB = {
   landing: [
-    "LANDING GEAR BUS // LEGS L-1 … L-6",
-    "PROFILE · PAD-GRADE APRON (MARKED BERTH)",
+    "PROFILE · MARKED BERTH",
     "  ACTUATION // L-1 · L-4 · L-5 · L-2",
-    "PROFILE · SPOIL / BROKEN STRATA (ROUGH TERRAIN)",
+    "PROFILE · ROUGH TERRAIN",
     "  ACTUATION // L-2 · L-1 · L-3 · L-5",
-    "PROFILE · DUST-FLAT BERTH (UNMARKED NATURAL)",
+    "PROFILE · NEUTRAL",
     "  ACTUATION // L-3 · L-5 · L-6 · L-4",
   ].join("\n"),
-  volumeSealed: "VOLUME INDEX SEALED — CLAIM THAT WORLD'S FRAGMENT FIRST",
-  volumeUsage: "USAGE: /volume <planet>  — confirms fragment after claim",
+  volumeSealed: "FRAGMENT SEALED — CLAIM THAT WORLD'S FRAGMENT FIRST",
+  volumeUsage: "USAGE: /fragment <planet>  — confirms fragment after claim",
   celeste: "Turn around.",
-  protocolPrompt: "ENTR STORM PROTOCOL PHRASE",
-  protocolAnswers: ["unconquered", "unconquered storm", "teavicta"],
-  protocolOk: [
-    "PROTOCOL OK — STORM AUTH CLEARED",
-    "AUTH RESIDUE // VOLUME INDEX 540",
-  ].join("\n"),
-  protocolDeny: "ERR — PROTOCOL REJECTED",
   echoOk: [
     "ECHO // DAMAGE ORDER REPLAY",
     "EL0 @ 03:14:08 → WL3 @ 03:29:41 → NR5 @ 03:47:19",
@@ -82,21 +96,6 @@ export const FTH_HUB = {
     "SERIALS LOGGED // EL0 WL3 NR5",
   ].join("\n"),
   echoNeedInner: "ECHO SEALED — RESTORE INNER FIRST",
-  moonUsage: "USAGE: /moon <name>  — prison-moon ledger lookup",
-  moonKaph: [
-    "MOON LEDGER // KAPH",
-    "CATALOG ID // 430",
-    "PARENT // DESHRET",
-  ].join("\n"),
-  moonUnknown: "ERR — NO MOON INDEX UNDER THAT NAME",
-  edgePrompt: "ENTR DEAD CARRIER",
-  edgeAnswers: ["097.9", "0979", "97.9"],
-  edgeOk: [
-    "EDGE CARRIER LOCKED",
-    "TOKEN // NONUS-EDGE",
-    "VOLUME INDEX // 980",
-  ].join("\n"),
-  edgeDeny: "ERR — CARRIER DEAD",
   translateUsage: [
     "STATUS // DEGRADED — FULL LEXICON CORRUPTED",
     "PARTIAL LEXICON RECOVERY // EMPIRE MOTTO (EN · AR-LATN · AR · HEX)",
@@ -578,7 +577,7 @@ export function sealByPlanetId(planetId) {
   return EMPIRE_SEALS.find((s) => s.planetId === id) ?? null;
 }
 
-/** Resolve a seal from a recovered fragment word (tray / /volume). */
+/** Resolve a seal from a recovered fragment word (tray / /fragment). */
 export function sealByFragment(fragment) {
   const f = String(fragment ?? "")
     .trim()
