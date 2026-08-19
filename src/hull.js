@@ -40,8 +40,8 @@ import {
   normalizeMorseCode,
   decodeMorseLetters,
   morseCodesMatch,
-  getIkephPassageLines,
 } from "../content/arg-path.js";
+import { getIkephPassageLines } from "../content/chart-content.js";
 import {
   getHullProgress,
   setHullProgress,

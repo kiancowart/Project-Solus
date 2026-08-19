@@ -5,8 +5,9 @@
  * Intro splash COPY lives here. main.js only plays it back.
  *
  * ALSO EDIT (other content files)
- *   Puzzle answers / seals / dossiers → content/arg-path.js
- *   Flight Log stories                → content/flight-log-entries.js
+ *   System Chart all display copy      → content/chart-content.js
+ *   Puzzle answers / seals (ARG)       → content/arg-path.js
+ *   Flight Log stories                 → content/flight-log-entries.js
  *   Archives lore                     → lore/Player Facing/*.md + build-lore-catalog.js
  *   Tuner frequencies                 → src/intercept.js constants
  *
@@ -464,54 +465,7 @@ export const BOOT_LINES = [
   { text: "GIVE YOUR LIFE TO HER", cls: "boot-line--vow", delay: 2800 },
 ];
 
-/* ---------------------------------------------------------------------------
-   SYSTEM CHART — Cartography / The Nine (orbits + Sturm fix)
-   r = orbit radius in SVG units; angle = degrees from +X; size = body radius
-   --------------------------------------------------------------------------- */
-export const SYSTEM_CHART = {
-  idle: "SELECT ORBITAL BODY",
-  error: "GYROSCOPIC DATA SYNC ERROR",
-  /** Inner → outer (The Nine) */
-  bodies: [
-    { id: "qamor", name: "Qamor", r: 34, angle: -35, size: 2.4 },
-    { id: "ikeph", name: "Ikeph", r: 52, angle: 48, size: 3.1 },
-    { id: "terra", name: "Terra", r: 72, angle: 160, size: 3.2 },
-    { id: "deshret", name: "Deshret", r: 94, angle: -110, size: 2.8 },
-    { id: "teavicta", name: "Teavicta", r: 128, angle: 22, size: 6.2 },
-    { id: "uros", name: "Uros", r: 162, angle: -55, size: 5.4 },
-    { id: "heixin", name: "Heixin", r: 192, angle: 95, size: 4.2 },
-    { id: "haider", name: "Haider", r: 218, angle: -150, size: 4.0 },
-    { id: "vol", name: "Vol", r: 242, angle: 12, size: 2.0 },
-  ],
-  /** Only named / marked moon on the chart */
-  sturm: {
-    id: "sturm",
-    name: "Sturm",
-    parent: "uros",
-    /** Offset from parent center (SVG units) */
-    offset: 16,
-    angle: 48,
-    blurb:
-      "Splinter-Nation Moon of Uros — the parent world still carries its old belt name in Empire maps: Zezura. After the first Belt War, Sturm became one of the first Uros moons contested between the young Nivian Republic and the Arkhidian Empire. As conflicts extended, it was abandoned as a territory — now a Splinter-Nation of unwanted Nivian rebels, Arkhidian outcasts, and those born under crusade weather. Most of the surface is desert, with bursts of woodland and water from failed Arkhidian Crusades. Lattice local fix after impact: VX-48. Prison-moon shadows on Deshret still count five ticks from dawn when the brand aligns.",
-  },
-  /** Nu Lunae / Enkidu-1 — non-Imperial easter egg framework */
-  mystery: {
-    id: "teavicta-mystery",
-    parent: "teavicta",
-    offset: 18,
-    angle: -72,
-    mark: "?",
-    readout:
-      "NU LUNAE // ENKIDU-1 — AUX bleed on Teavicta's shoulder. Not an Imperial well. Guest Channel may answer later. Do not bind this mark.",
-  },
-  /** Shared archive bay under the chart — filled by planetary extracts later */
-  archive: {
-    title: "SYSTEM ARCHIVE",
-    code: "CART.ARCHIVE // STATUS=NONFUNCTIONAL",
-    body:
-      "Archive mesh is still repairing after impact. Planetary extracts and cross-indexed memory are inaccessible.",
-  },
-};
+export { SYSTEM_CHART } from "./chart-content.js";
 
 /* =============================================================================
    FLIGHT LOG — flat chronological entries (content/flight-log-entries.js)

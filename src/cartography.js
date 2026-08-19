@@ -3,9 +3,9 @@
  * cartography.js — System Chart (The Nine) + per-planet puzzles
  * =============================================================================
  * WHAT THIS FILE DOES
- *   Draws the orbital SVG from SYSTEM_CHART (content/boot-content.js).
+ *   Draws the orbital SVG from SYSTEM_CHART (content/chart-content.js).
  *   Clicking a world either shows its dossier (if unlocked) or the Chart
- *   puzzle from CHART_PUZZLES (content/arg-path.js). Unsolved worlds keep
+ *   puzzle from CHART_PUZZLES (content/chart-content.js). Unsolved worlds keep
  *   the same scrambled name in the readout title as on the map.
  *
  * PUZZLE TYPES (CHART_PUZZLES[planetId].type)
@@ -19,8 +19,8 @@
  *   orbit-order     — rank collected worlds inner→outer (Vol)
  *
  * WHERE TO EDIT
- *   Orbit radii / names / Sturm blurb → SYSTEM_CHART in boot-content.js
- *   Puzzle answers / dossier prose    → CHART_PUZZLES / PLANET_DOSSIERS
+ *   All Chart display copy            → content/chart-content.js
+ *   Puzzle answers (STATUS hooks)     → content/arg-path.js (re-exports puzzles)
  *   This file is the UI engine — keep answers out of it.
  *
  * UNLOCK SIDE EFFECTS
@@ -29,15 +29,18 @@
  * =============================================================================
  */
 
-import { SYSTEM_CHART } from "../content/boot-content.js";
 import {
+  SYSTEM_CHART,
   CHART_PUZZLES,
   PLANET_DOSSIERS,
+} from "../content/chart-content.js";
+import {
   sealById,
   PARTNER_MORSE,
   morseCodesMatch,
 } from "../content/arg-path.js";
 import { audio } from "./audio.js";
+import { scrambleUnclearedPlanetNames } from "./planet-text.js";
 import {
   prefersReducedMotion,
   scrambleText,
@@ -108,23 +111,12 @@ export function initCartography() {
   const idle = SYSTEM_CHART.idle ?? "SELECT ORBITAL BODY";
   const errorText = SYSTEM_CHART.error ?? "GYROSCOPIC DATA SYNC ERROR";
 
-  /** Ikeph-only archive tease until that dossier is unlocked (hints /passage). */
-  const IKEPH_ARCHIVE = {
-    code: "CART.ARCHIVE // STATUS=PARTIAL · ANCHOR BLEED",
-    body:
-      "Corrupt extract hitch on Ikeph. Latched residue overheard — Terminal accepts hidden command /passage.",
-  };
-
-  const paintArchive = (forPlanetId = null) => {
+  const paintArchive = () => {
     if (!archiveBody || !archive) return;
-    const showPassageHint =
-      forPlanetId === "ikeph" && !isDossierUnlocked("ikeph");
-    const code = showPassageHint ? IKEPH_ARCHIVE.code : (archive.code ?? "");
-    const body = showPassageHint ? IKEPH_ARCHIVE.body : (archive.body ?? "");
     archiveBody.innerHTML = `
-      <p class="chart-archive__code">${code}</p>
-      <p class="chart-archive__text">${body}</p>`;
-    archiveEl?.classList.toggle("is-live", showPassageHint);
+      <p class="chart-archive__code">${archive.code ?? ""}</p>
+      <p class="chart-archive__text">${archive.body ?? ""}</p>`;
+    archiveEl?.classList.remove("is-live");
   };
 
   if (archiveEl && archive) {
@@ -274,14 +266,14 @@ export function initCartography() {
       stopWire();
       stopWire = null;
     }
-    paintArchive(planetId);
+    paintArchive(null);
     const seal = sealById(d.sealId) ?? null;
     const showSealHeader = hasImperialClearance() && seal;
     const sealLine = showSealHeader
       ? `<p class="chart-dossier__slot">SEAL OF ${seal.name}</p>`
       : "";
-    const facts = d.facts ?? d.body ?? "";
-    const why = d.sealWhy ?? "";
+    const facts = scrambleUnclearedPlanetNames(d.facts ?? d.body ?? "");
+    const why = scrambleUnclearedPlanetNames(d.sealWhy ?? "");
     const scanClass = scanIn ? " is-scanning-in" : "";
     readout.innerHTML = `
       <div class="chart-dossier${scanClass}">
@@ -319,7 +311,7 @@ export function initCartography() {
     markDossierUnlocked(planetId);
     audio.play("unlock");
     if (planetId === "terra") lockChronoAligned();
-    paintArchive(planetId);
+    paintArchive(null);
     if (planetId === "teavicta") resetCompass({ animate: true });
     window.dispatchEvent(
       new CustomEvent("lattice:dossier", { detail: { planetId } })
@@ -402,7 +394,7 @@ export function initCartography() {
       stopWire();
       stopWire = null;
     }
-    paintArchive(planetId);
+    paintArchive(null);
 
     if (puzzle.type === "orbit-order") {
       /* Vol: drag collected worlds onto a bar in inner→outer order. */
@@ -689,7 +681,6 @@ export function initCartography() {
           <p class="chart-lock__feedback" id="chart-lock-feedback" aria-live="polite"></p>
         </div>`;
 
-      const lock = readout.querySelector("#chart-lock");
       const eye = readout.querySelector("#chart-eye");
       const pupil = readout.querySelector("#chart-eye-pupil");
       const feedback = readout.querySelector("#chart-lock-feedback");
@@ -733,7 +724,6 @@ export function initCartography() {
             setCompassCardinal(answer[step], { animate: true });
             return;
           }
-          shakeLock(lock);
           step = 0;
           resetCompass({ animate: true });
           window.setTimeout(() => setLook(""), 280);
@@ -1509,6 +1499,10 @@ export function initCartography() {
       stopWire = null;
     }
     paintArchive(null);
+    const meta = scrambleUnclearedPlanetNames(
+      sturm.meta ?? "UROS · CURRENT LOC ▽"
+    );
+    const blurb = scrambleUnclearedPlanetNames(sturm.blurb ?? "");
     readout.innerHTML = `
       <div class="chart-sturm">
         <div class="wire-globe" aria-hidden="true">
@@ -1520,8 +1514,8 @@ export function initCartography() {
           <div class="wire-globe__scan"></div>
         </div>
         <p class="chart-sturm__name">${sturm.name}</p>
-        <p class="chart-sturm__meta">UROS · LOCAL FIX · ▽</p>
-        <p class="chart-sturm__blurb">${sturm.blurb ?? ""}</p>
+        <p class="chart-sturm__meta">${meta}</p>
+        <p class="chart-sturm__blurb">${blurb}</p>
       </div>`;
     const globeSvg = readout.querySelector(".wire-globe__svg");
     if (globeSvg) stopWire = startWireGlobe(globeSvg);
@@ -1534,9 +1528,9 @@ export function initCartography() {
       stopWire = null;
     }
     paintArchive(null);
-    const text =
-      mystery?.readout ??
-      "NU LUNAE // AUX bleed — not Imperial.";
+    const text = scrambleUnclearedPlanetNames(
+      mystery?.readout ?? "NU LUNAE // AUX bleed — not Imperial."
+    );
     readout.innerHTML = `<p class="chart__mystery">${text}</p>`;
   };
 
@@ -1737,6 +1731,9 @@ export function initCartography() {
   // Refresh Vol tray as dossiers unlock elsewhere
   window.addEventListener("lattice:dossier", () => {
     refreshPlanetLabels({ animate: true });
+    if (selectedId === "sturm") showSturm();
+    else if (selectedId === mystery?.id) showMystery();
+    else if (selectedId && isDossierUnlocked(selectedId)) showDossier(selectedId);
     if (selectedId !== "vol") return;
     if (isDossierUnlocked("vol")) return;
     selectPlanet("vol");

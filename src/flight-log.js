@@ -8,9 +8,9 @@
  *   hide a seal fragment in [[WORD]] markup — click claims it for Imperial.
  *
  * SCRAMBLE RULE
- *   Only fragment entries scramble LOCATION until that world's Chart dossier
- *   is unlocked. Filler entries stay clear. After unlock, descramble plays
- *   once (hasSeenDescramble), then stays clear.
+ *   Fragment entries scramble LOCATION until that world's Chart dossier unlocks.
+ *   Every mention of an uncleared planet name inside log body copy is corrupted too
+ *   (shared rule with Chart moon/dossier panels — see planet-text.js).
  *
  * AUDIO
  *   Optional entry.audio path (Heixin Morse clip). Player UI is in the reader.
@@ -24,6 +24,7 @@
 import { FLIGHT_LOG } from "../content/boot-content.js";
 import { IMPERIAL_SLOTS, sealByPlanetId } from "../content/arg-path.js";
 import { audio } from "./audio.js";
+import { scrambleUnclearedPlanetNames } from "./planet-text.js";
 import { applyClearanceUI } from "./clearance.js";
 import {
   getRecoveredFragments,
@@ -236,7 +237,7 @@ export function initFlightLog() {
     const scrambled =
       needsScramble(entry) ||
       (pendingDescrambleId != null && pendingDescrambleId === entry?.id);
-    let html = escapeHtml(text);
+    let html = escapeHtml(scrambleUnclearedPlanetNames(text));
     // Wrap known fragment tokens (whole words)
     for (const id of knownFragments) {
       const re = new RegExp(`\\b(${id})\\b`, "gi");
