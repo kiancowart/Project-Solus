@@ -727,7 +727,6 @@ export function initFthConsole() {
       push("TRANSLATE // PARTIAL HIT — BOUND CORPUS ROW", "fth-console__line--ok");
       push(`EN // ${en}`, "fth-console__line--sys");
       push(`AR-LATN // ${arLatn}`, "fth-console__line--sys");
-      push(`AR // ${ar}`, "fth-console__line--sys");
       push(`HEX // ${hex}`, "fth-console__line--sys");
       return;
     }

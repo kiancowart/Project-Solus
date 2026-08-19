@@ -148,9 +148,11 @@ export const PLANET_DOSSIERS = {
   terra: {
     title: "TERRA",
     sealId: "resolution",
-    facts: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum rhoncus est pellentesque elit ullamcorper dignissim cras tincidunt lobortis feugiat vivamus at augue eget arcu dictum varius duis at consectetur. Empire scrap still stamps the blood creed in phonetic Arabic — ${EMPIRE_BLOOD_PHRASE.arLatn}.`,
+    facts: `Terra is the third planet from the sun in The Nine. It is considered the origin of human life in the system. The Profane Fall left the planet uninhabitable and, as such, humans escaped their homeland in an event called the Terra Exodus. Now, the planet is considered a holy land by all peoples, to be left untouched so as not to repeat the mistakes of the past. 
+    <br><br>
+    From space, the planet appears primarily composed of rocky desert, as much of Terra’s supposed greenery has died and its water has been dried out or taken. The planet’s clouds are still visible, not least of which is a sizable, indefinite storm. This storm has been likened to Teavicta's endless red storm.`,
     sealWhy:
-      "Lorem mollis aliquam ut porttitor leo a diam sollicitudin tempor id eu nisl nunc mi ipsum faucibus vitae aliquet nec ullamcorper sit amet risus nullam eget felis eget nunc Resolution.",
+      "The seal of **Resolution** is represented by Terra. The planet serves as an example of human endurance to withstand punishment to one's faith, body, and mind, and yet the perseverance of those faithful to the Red Empress. As the origin point of humanity, Terra is often sited as the source of the Empire phrase: kullu dima'ina ahmar",
   },
 
   /* ----- PLANET — DESHRET ----- */
