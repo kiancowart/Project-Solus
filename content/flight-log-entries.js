@@ -43,7 +43,8 @@ export const FLIGHT_LOG_UI = {
 };
 
 /* ---------------------------------------------------------------------------
-   FLIGHT LOG ENTRIES — chronological (flog-01 … flog-18 + heixin partner)
+   FLIGHT LOG ENTRIES — chronological (18 total)
+   9 fragment/planet entries + 9 narrative entries
    --------------------------------------------------------------------------- */
 export const FLIGHT_LOG_ENTRIES = [
   /* ----- SHIP — CARA (no planet) ----- */
@@ -247,17 +248,6 @@ ${PARTNER_MORSE.code}
 [[${FRAG_BY_PLANET.heixin}]]`,
   },
 
-  /* ----- SHIP — CARA (no planet) ----- */
-  {
-    id: "flog-18",
-    title: "HOLDING PATTERN",
-    date: "1542.03.30",
-    location: "CARA · HOLD",
-    planetId: null,
-    fragment: null,
-    body:
-      "End of this batch. Marks in the index. Nine of them bite. The rest are oxygen. Glory to her — or so the forms say.\n\nSed porttitor lectus nibh. Vivamus magna justo, lacinia eget consectetur sed, convallis at tellus. Curabitur aliquet quam id dui posuere blandit. Proin eget tortor risus.",
-  },
 ];
 
 export function buildFlatFlightLog() {
