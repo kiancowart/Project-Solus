@@ -17,6 +17,7 @@
  *
  * WHERE TO EDIT
  *   Story text, dates, fragments, audio paths → content/flight-log-entries.js
+ *   Draft desk (manual promote) → lore/Player Facing/Flight Log/
  *   Fragment words themselves → EMPIRE_SEALS.fragment in content/arg-path.js
  * =============================================================================
  */

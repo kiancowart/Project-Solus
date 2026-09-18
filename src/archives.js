@@ -3,13 +3,14 @@
  * archives.js — Ship-memory search (Imperial-gated)
  * =============================================================================
  * WHAT THIS FILE DOES
- *   Searches LORE_CATALOG.entries (content/lore-catalog.js). Results stay
- *   SEALED until Imperial Clearance. Bodies are light markdown → CRT HTML.
+ *   Searches LORE_CATALOG.entries (content/lore-catalog.js).
+ *   recovered:true  → body opens only after Imperial Clearance
+ *   recovered:false → search can hit; partition stays locked (mystery)
  *
  * WHERE TO EDIT LORE
- *   Do not hand-edit lore-catalog.js. Add/change markdown under
- *   lore/Player Facing/ (not the Flight Log folder), then run:
- *     node scripts/build-lore-catalog.js
+ *   lore/Player Facing/Archives/Recovered/  — sparse readable digests
+ *   lore/Player Facing/Archives/Sealed/     — index stubs (keywords only)
+ *   Then: node scripts/build-lore-catalog.js
  * =============================================================================
  */
 
@@ -43,6 +44,16 @@ export function renderLoreBody(md) {
   return paras.join("");
 }
 
+function partitionMetaText() {
+  const entries = LORE_CATALOG?.entries ?? [];
+  const n = entries.length;
+  const r = LORE_CATALOG?.recoveredCount ?? entries.filter((e) => e.recovered).length;
+  if (!hasDeepClearance()) {
+    return `${n} PARTITION${n === 1 ? "" : "S"} · SEALED`;
+  }
+  return `${r}/${n} RECOVERED · ONLINE`;
+}
+
 /** Bind Archives search form (#adb-search). Token AND-match against entry.search. */
 export function initArchives() {
   const form = document.getElementById("adb-search");
@@ -55,10 +66,7 @@ export function initArchives() {
   const entries = LORE_CATALOG?.entries ?? [];
   const paintMeta = () => {
     if (!meta) return;
-    const n = entries.length;
-    meta.textContent = hasDeepClearance()
-      ? `${n} PARTITION${n === 1 ? "" : "S"} · ONLINE`
-      : `${n} PARTITION${n === 1 ? "" : "S"} · SEALED`;
+    meta.textContent = partitionMetaText();
   };
   paintMeta();
 
@@ -76,15 +84,27 @@ export function initArchives() {
       <p class="adb-pane__pending">Recovery pending</p>`;
   };
 
-  const showLocked = (label) => {
+  const showImperialLocked = (label) => {
     pane.innerHTML = `
       <p class="adb-pane__title">${escapeHtml(label)}</p>
       <p class="adb-pane__pending">Partition locked · Imperial Clearance required</p>`;
   };
 
+  const showSealedIndex = (entry) => {
+    pane.innerHTML = `
+      <p class="adb-pane__status">INDEX MATCH · UNRECOVERED</p>
+      <p class="adb-pane__title">${escapeHtml(entry.title)}</p>
+      <p class="adb-pane__path">${escapeHtml(entry.path)}</p>
+      <p class="adb-pane__pending">Lattice found a pointer. The body is corrupt or beyond this clearance.</p>`;
+  };
+
   const showRecord = (entry) => {
+    if (!entry.recovered) {
+      showSealedIndex(entry);
+      return;
+    }
     if (!hasDeepClearance()) {
-      showLocked(entry.title);
+      showImperialLocked(entry.title);
       return;
     }
     if (!entry.body) {
@@ -111,7 +131,9 @@ export function initArchives() {
     const items = hits
       .slice(0, 24)
       .map((entry) => {
-        const flag = deep ? "READY" : "SEALED";
+        let flag = "SEALED";
+        if (!entry.recovered) flag = "INDEX";
+        else if (deep) flag = "READY";
         return `<button type="button" class="adb-hit" data-id="${escapeHtml(entry.id)}" data-sfx="open">
           <span class="adb-hit__title">${escapeHtml(entry.title)}</span>
           <span class="adb-hit__flag">${flag}</span>
@@ -151,9 +173,14 @@ export function initArchives() {
     );
 
     const deep = hasDeepClearance();
+    const openable = hits.filter((h) => h.recovered);
+    const sealedOnly = hits.length > 0 && openable.length === 0;
+
     let status;
     if (!hits.length) {
       status = "NO MEMORY HITS";
+    } else if (sealedOnly) {
+      status = `${hits.length} INDEX HIT${hits.length === 1 ? "" : "S"} · BODY UNRECOVERED`;
     } else if (!deep) {
       status = `${hits.length} HIT${hits.length === 1 ? "" : "S"} · PARTITION LOCKED`;
     } else {

@@ -2,7 +2,9 @@
  * =============================================================================
  * chart-content.js — ALL SYSTEM CHART DISPLAY COPY
  * =============================================================================
- * Edit this file for every text panel in Cartography (Stellar Chart):
+ * Edit this file for every text panel in Cartography (Stellar Chart).
+ * Draft planet / moon writeups in Obsidian: lore/Player Facing/Planets/,
+ * then promote here manually (same pattern as Flight Log).
  *
  *   CHART_SHELL     — idle / error / system archive footer
  *   SYSTEM_CHART    — orbit map geometry + moon readouts
@@ -88,7 +90,7 @@ export const SYSTEM_CHART = {
       <br><br>
       Most Uros moons are rather cold due to their distance from the central sun. However, Sturm's atmosphere and ozone layer serve to magnify the rays of the sun, leading to the moon being far hotter than its siblings and therefore developing a vastly different environment with its own water cycle. Sturm's surface is primarily white sands, broken up by dense rainforests. These forests are most prevalent in areas where the sun's heat is most concentrated. Water often gets 'trapped' within these forests' radius, making them places where life can thrive. The coolest regions of the moon would be at either pole, where there are large collections of ice over miles of water.
       <br><br>
-      Sturm's unique environment is the result of events that took place when its parent planet went by an older name: <b>Zezura</b>. During the First Belt War, the Empire launched Holy Crusades in Zezurian Belt Orbit to claim contested territory. However, resistance from old Zezura resulted in this planet getting its name, meaning Storm. A place of great turbulence. This conflict impeded the Empire's efforts to terraform and claim the moon, but did not cease them entirely. When the First Belt War came to an end, Sturm was in turn abandoned, and all that was left there would be the dregs of the Zezurian crusades. The moon is a residual, its population hailing from all over the system, and its environment a mixture of environments made by incomplete terraforming and great battles. `,
+      Sturm's unique environment is the result of events that took place when its parent planet went by an older name: <b>Zezura</b>. During the First Belt War, the Empire launched Holy Crusades in Zezurian Belt Orbit to claim contested territory. However, resistance from old Zezura resulted in this planet getting its name: A place of great turbulence, a storm. This conflict impeded the Empire's efforts to terraform and claim the moon, but did not cease them entirely. When the First Belt War came to an end, Sturm was in turn abandoned, and all that was left there would be the dregs of the Zezurian crusades. The moon is a residual, its population hailing from all over the system, and its environment a mixture of environments made by incomplete terraforming and great battles. `,
   },
 
   /* ----- MOON — NU LUNAE / ENKIDU-1 (Teavicta ? mark) ----- */
@@ -123,7 +125,9 @@ export const PLANET_DOSSIERS = {
     title: "QAMOR",
     sealId: "devotion",
     facts:
-      `The planet closest to The Nine's sun, it is one of the hottest worlds in The Nine, while also dropping to some of the coldest temperatures during nightfall. Qamor's surface inhospitability made it difficult to grow colonies or terraform the planet, even with Empire technology. As such, the primary purpose of Qamor quickly became the harvest of its resources: primarily metal. The planet has been under complete Empire control for generations, and in that time the entirety of the planet has been converted into the largest mining site in The Nine. Eighty-five percent of Qamor's population is composed of working miners who live and work beneath the surface.
+      `The planet closest to The Nine's sun, it is one of the hottest worlds in The Nine, while also dropping to some of the coldest temperatures during nightfall. Qamor's surface inhospitability made it difficult to grow colonies or terraform the planet, even with Empire technology. As such, the primary purpose of Qamor quickly became the harvest of its resources: primarily metal. In the time the planet has been under Empire control, the entirety of the planet has been converted into the largest mining site in The Nine. Eighty-five percent of Qamor's population is composed of working miners who live and work beneath the surface.
+      <br><br>
+      The internal structure of Qamor is very hollow, allowing for the construction of working habitats for the miners that are set around one another due to the bizarre gravity existing within the planet. 
       <br><br>
       The metal harvested from the planet accounts for a massive portion of the Empire's weapon, armor, and vehicle production. Additionally, what gasses are harvested are also exported for the purpose of other technologies, including agriculture.`,
     sealWhy:
@@ -148,11 +152,11 @@ export const PLANET_DOSSIERS = {
   terra: {
     title: "TERRA",
     sealId: "resolution",
-    facts: `Terra is the third planet from the sun in The Nine. It is considered the origin of human life in the system. The Profane Fall left the planet uninhabitable and, as such, humans escaped their homeland in an event called the Terra Exodus. Now, the planet is considered a holy land by all peoples, to be left untouched so as not to repeat the mistakes of the past. 
+    facts: `Terra is the third planet from the sun in The Nine. The origin of human life in the system; it was made uninhabitable after the Profane Fall, forcing humans to escape their homeland in an event called the Terra Exodus. Now, the planet is considered hallowed land by all, to be left untouched. Past mistakes shall remain in the past. 
     <br><br>
-    From space, the planet appears primarily composed of rocky desert, as much of Terra’s supposed greenery has died and its water has been dried out or taken. The planet’s clouds are still visible, not least of which is a sizable, indefinite storm. This storm has been likened to Teavicta's endless red storm.`,
+    From space, the planet appears primarily composed of rocky desert, as much of Terra’s supposed greenery has died and its water has been dried out or taken. The planet’s clouds are still visible, not least of which is a sizable, indefinite storm. This storm has been likened to <b>Teavicta</b>’s endless red storm.`,
     sealWhy:
-      "The seal of **Resolution** is represented by Terra. The planet serves as an example of human endurance to withstand punishment to one's faith, body, and mind, and yet the perseverance of those faithful to the Red Empress. As the origin point of humanity, Terra is often sited as the source of the Empire phrase: kullu dima'ina ahmar",
+      "The seal of <b>Resolution</b> is represented by Terra. The planet serves as an example of human endurance to withstand punishment to one's faith, body, and mind, and yet the perseverance of those faithful to the Red Empress. As the origin point of humanity, Terra and its Exodus is often sited as the source of the Empire phrase of unity: kullu dima'ina ahmar",
   },
 
   /* ----- PLANET — DESHRET ----- */
@@ -160,9 +164,11 @@ export const PLANET_DOSSIERS = {
     title: "DESHRET",
     sealId: "communion",
     facts:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Massa tincidunt dui ut ornare lectus sit amet est placerat in egestas erat imperdiet sed euismod nisi porta lorem mollis aliquam ut porttitor.",
+      `The fourth planet from the sun and the capital planet of the [[Arkhidian Empire]]. It is credited as one of the earliest colonized planets in The Nine and is one of the few fully terraformed planets that can support human life without O.A. suits. The Arkhidian control over the planet has been unchallenged since the Terra Exodus.
+      <br><br>
+      Deshret’s surface is primarily comprised of beautiful red sands speckled with rocky terrain and large dunes. The planet's surface temperature rises to high heat during the day and is conversely cold at night, with there being no formal "seasons" but instead brief waxing and waning periods of shifting temperature and weather. The planet’s heat means weather events such as snow and rain are exceedingly rare, but not impossible. The lack of humidity on the planet has not impeded there being a great deal of plant and animal life.  Life thrives under the watchful eyes of the Beacons of the great Arkhidian cities, almost all of which rest near the Tri-Oceans: Al-Euphra, Al-Tairah, and Al-Dagra.`,
     sealWhy:
-      "Amet nisl suscipit adipiscing bibendum est ultricies integer quis auctor elit sed vulputate mi sit amet mauris commodo quis imperdiet massa tincidunt nunc pulvinar sapien et Communion.",
+      "The seal of <b>Communion</b> is represented by Deshret. The crown of the Arkhidian Empire, of course, links to oneness with the Empress, her empire, and her people. Those born on the Red Sand, closer to The Empress's Embrace, feel all the closer to her and her people. Hence the Arkhidian phrase: All our Blood is Red.",
   },
 
   /* ----- PLANET — TEAVICTA ----- */

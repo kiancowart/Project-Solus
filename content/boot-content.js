@@ -6,9 +6,11 @@
  *
  * ALSO EDIT (other content files)
  *   System Chart all display copy      → content/chart-content.js
+ *                                         (draft in lore/Player Facing/Planets/; promote manually)
  *   Puzzle answers / seals (ARG)       → content/arg-path.js
  *   Flight Log stories                 → content/flight-log-entries.js
- *   Archives lore                     → lore/Player Facing/*.md + build-lore-catalog.js
+ *                                         (draft in lore/Player Facing/Flight Log/; promote manually)
+ *   Archives lore                     → lore/Player Facing/Archives/ + build-lore-catalog.js
  *   Tuner frequencies                 → src/intercept.js constants
  *
  * SEQUENCE:  clearance keypad  →  scrolling log  →  Empire logo  →  hub

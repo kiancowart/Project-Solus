@@ -1,8 +1,10 @@
 /**
  * =============================================================================
- * flight-log-entries.js — ALL FLIGHT LOG DISPLAY COPY
+ * flight-log-entries.js — ALL FLIGHT LOG DISPLAY COPY (LIVE SOURCE OF TRUTH)
  * =============================================================================
  * Edit this file for every text panel in the Flight Log channel.
+ * Draft in Obsidian under lore/Player Facing/Flight Log/, then promote here
+ * manually. Do not run scripts/build-flight-log.js — it is a stub.
  *
  * ENTRY FIELDS (reader panel mapping)
  *   title     → flog-reader__title / flog-entry__title     (index row label)

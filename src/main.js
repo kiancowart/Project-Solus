@@ -22,8 +22,9 @@
  *   Boot log / pad code / music paths     → content/boot-content.js
  *   Puzzle answers / seals / dossiers     → content/arg-path.js
  *   Flight Log stories                    → content/flight-log-entries.js
- *   Archives lore text                    → lore/Player Facing/*.md then
- *                                           node scripts/build-lore-catalog.js
+ *                                           (Obsidian drafts: lore/Player Facing/Flight Log/)
+ *   Archives lore text                    → lore/Player Facing/Archives/
+ *                                           then node scripts/build-lore-catalog.js
  *
  * SAFE TO CHANGE HERE
  *   Init order, or commenting-out a feature while testing (wrap in `safe()`).

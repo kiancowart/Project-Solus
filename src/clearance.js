@@ -261,8 +261,11 @@ export function applyClearanceUI() {
   if (meta && LORE_CATALOG) {
     const entries = LORE_CATALOG.entries ?? [];
     const n = entries.length;
+    const r =
+      LORE_CATALOG.recoveredCount ??
+      entries.filter((e) => e.recovered).length;
     meta.textContent = imperial
-      ? `${n} PARTITION${n === 1 ? "" : "S"} · ONLINE`
+      ? `${r}/${n} RECOVERED · ONLINE`
       : `${n} PARTITION${n === 1 ? "" : "S"} · SEALED`;
   }
 }

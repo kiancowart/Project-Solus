@@ -1,15 +1,15 @@
 /**
  * =============================================================================
- * build-flight-log.js — OPTIONAL Obsidian import (not the live pipeline yet)
+ * build-flight-log.js — STUB ONLY (does not build the site)
  * =============================================================================
- * LIVE site content is content/flight-log-entries.js — edit that file.
+ * LIVE Flight Log copy is content/flight-log-entries.js — edit that file.
+ * Draft in Obsidian: lore/Player Facing/Flight Log/ (manual promote when ready).
  *
- * This script is a stub for a future import from:
- *   lore/Player Facing/Flight Log/journals.json
- *   lore/Player Facing/Flight Log/entries/*.md
+ * This script exits with an error on purpose. Do not run it as part of a
+ * rebuild checklist. A future importer may emit flight-log-entries.js once
+ * Obsidian entry frontmatter matches the live flat schema.
  *
- * Run: node scripts/build-flight-log.js
- * (Exits with an error until wired to emit flight-log-entries.js.)
+ * Archives digests (not Flight Log) use: node scripts/build-lore-catalog.js
  * =============================================================================
  */
 
@@ -23,59 +23,20 @@ const root = path.join(
   "Flight Log"
 );
 const journalsPath = path.join(root, "journals.json");
-const entriesDir = path.join(root, "entries");
-
-function parseFrontmatter(raw) {
-  let text = String(raw ?? "").replace(/^\uFEFF/, "");
-  if (!text.startsWith("---")) {
-    return { meta: {}, body: text.trim() };
-  }
-  const end = text.indexOf("\n---", 3);
-  if (end === -1) return { meta: {}, body: text.trim() };
-  const yaml = text.slice(3, end).trim();
-  const body = text.slice(end + 4).trim();
-  const meta = {};
-  for (const line of yaml.split("\n")) {
-    const m = line.match(/^([A-Za-z0-9_]+):\s*(.*)$/);
-    if (!m) continue;
-    const key = m[1];
-    let val = m[2].trim();
-    if (val === "true") val = true;
-    else if (val === "false") val = false;
-    else if (val === "null" || val === "~") val = null;
-    else if (
-      (val.startsWith('"') && val.endsWith('"')) ||
-      (val.startsWith("'") && val.endsWith("'"))
-    ) {
-      val = val.slice(1, -1);
-    } else if (val.startsWith("[") && val.endsWith("]")) {
-      try {
-        val = JSON.parse(val.replace(/'/g, '"'));
-      } catch {
-        /* keep string */
-      }
-    } else if (/^-?\d+(\.\d+)?$/.test(val)) {
-      val = Number(val);
-    }
-    meta[key] = val;
-  }
-  return { meta, body };
-}
 
 function main() {
+  const hint =
+    "STUB: build-flight-log.js does not update the site.\n" +
+    "Live copy: content/flight-log-entries.js\n" +
+    "Draft desk: lore/Player Facing/Flight Log/ (promote manually).\n" +
+    "For Archives Ship Memory: node scripts/build-lore-catalog.js";
+
   if (!fs.existsSync(journalsPath)) {
-    console.error(
-      "Obsidian Flight Log not found at lore/Player Facing/Flight Log/.\n" +
-        "Live site content is content/flight-log-entries.js — edit that file for now.\n" +
-        "This builder is reserved for a future Obsidian import pass."
-    );
+    console.error(hint);
     process.exit(1);
   }
-  console.error(
-    "Obsidian corpus found, but the live site uses flat content/flight-log-entries.js.\n" +
-      "Wire this script to emit that shape before relying on it in CI."
-  );
-  process.exit(2);
+  console.error(hint);
+  process.exit(1);
 }
 
 main();
